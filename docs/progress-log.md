@@ -629,3 +629,19 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - An agent `memory` value Poirot does not know (the fixture's `project`) is left unset, as Poirot's enum did.
   - `skills/synced/<id>/<name>/` is not read, as in Poirot (parity E12).
 - **Follow-ups:** Claude Code's synced-skills layout (fixtures/windows MANIFEST fact 4) is outside parity; record it as a Later candidate if the user wants those skills listed → product decision.
+
+### M1-25 · Settings and hooks readers · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/config/read/{settings,hooks}.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core -- config::read::settings config::read::hooks` → 6 passed; `cargo clippy -p heimdall-core --all-targets -- -D warnings` → exit 0.
+  - The global hooks (`PreToolUse` with two handlers, `SessionStart` with a null matcher) and the project hook (`PostToolUse`, matcher `Bash`) load from the synthetic fixtures with their scope and group index.
+  - http and command handlers keep `url`, `timeout` and `statusMessage`. The fixture's `websocket` handler is dropped, as Poirot's enum did.
+  - Unknown handler keys (`async`, `env`) are kept in `extra` and named in `extraKeys`.
+  - `project_model` matches `loadProjectModel`: `claude-sonnet-4-6` for the fixture repo, `None` when missing.
+- **Deviations:**
+  - Hook events are kept as text, so an event newer than Heimdall still appears; Poirot dropped unknown events.
+  - A settings file that does not parse is a `Parse` error from `settings::load` and counts in `skipped` for hooks, instead of silently reading as empty.
+- **Follow-ups:** none.
