@@ -264,6 +264,13 @@ pub fn last_component(path: &str) -> &str {
     path.trim_end_matches(['/', '\\']).rsplit(['/', '\\']).next().unwrap_or(path)
 }
 
+/// Accepts `name` only if it can be joined to a folder as a single file name: not empty, not `.`
+/// or `..`, and free of separators, drive colons and NUL. Session ids reach file paths this way.
+pub fn plain_file_name(name: &str) -> Result<&str> {
+    let bad = name.is_empty() || name == "." || name == ".." || name.contains(['/', '\\', ':', '\0']);
+    if bad { Err(AppError::invalid_input(format!("not a plain file name: {name:?}"))) } else { Ok(name) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -353,5 +360,13 @@ mod tests {
         ));
         assert!(ClaudeHome::resolve(Some(PathBuf::new()), Some(PathBuf::from("/h"))).is_ok(), "empty override is ignored");
         assert!(matches!(ClaudeHome::resolve(None, None), Err(AppError::NotFound { .. })));
+    }
+
+    #[test]
+    fn plain_file_names_reject_anything_that_leaves_the_folder() {
+        assert!(plain_file_name("0a1b-session").is_ok());
+        for bad in ["", ".", "..", "../x", "a/b", "a\\b", "C:x", "a\0b"] {
+            assert!(plain_file_name(bad).is_err(), "{bad:?}");
+        }
     }
 }

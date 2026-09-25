@@ -492,3 +492,20 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - An item with an unknown status drops only that item (`TodoItem::list_from_json`, M1-09); Poirot dropped the whole file.
   - Unreadable files and bad items are counted in `skipped`.
 - **Follow-ups:** none.
+
+### M1-17 · Debug log loader · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/data/debug_log.rs`, `crates/heimdall-core/src/paths.rs` (`plain_file_name`, the guard for ids joined into file names)
+- **Evidence:**
+  - `cargo test -p heimdall-core -- debug_log paths::` → 39 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 22 DebugLogLoaderTests (parsing, unknown level → debug, brackets inside messages, `hasLog`, `allSessionIds`, and paging by offset and limit with `total`).
+  - `page` streams the file line by line and keeps only the requested window. The contract's optional `level` filter is supported: `total` counts matching entries, and ids stay file positions (`a_level_filter_pages_matching_entries_and_keeps_file_ids`).
+  - A session id that is not a plain file name, such as `../secrets`, is rejected before any path is built (`session_ids_cannot_leave_the_debug_folder`).
+- **Deviations:**
+  - Timestamps without fractional seconds also parse.
+  - Invalid UTF-8 is replaced rather than ending the read.
+  - `allSessionIds` is sorted.
+  - The task text's "multi-line entries" means multiple lines, as in Poirot's `parse_multipleLines`. Poirot has no continuation lines, and neither does Heimdall.
+- **Follow-ups:** none.
