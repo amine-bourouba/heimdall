@@ -203,3 +203,26 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
 - **Files touched:** `docs/spec/upstream-sync.md`
 - **Evidence:** first run 2026-09-25 through a throwaway clone (so `$POIROT` stays untouched): upstream head is `a29dd6e`, 0 new commits.
 - **Follow-ups:** next run 2026-10-25 → Legacy parity extraction.
+
+### M1-02 · Create package.json with the full frontend toolchain · 2026-09-25
+
+- **Agent:** dependency-manager (executed by the coordinating agent)   **Reviewers:** pending (architect-reviewer, security-auditor)
+- **Status:** done
+- **Files touched:** `package.json`, `package-lock.json`; task data M1-02, M2-01, M2-23, new task M2-31, M4-08, port-plan P-8
+- **Evidence:**
+  - `npm ci --include=dev` exits 0; `npm audit --include=dev --audit-level=high` → 0 vulnerabilities.
+  - Deviations: `@lucide/vue` replaces the deprecated `lucide-vue-next`; `happy-dom` replaces jsdom (jsdom 30 needs Node 22.22+); WebdriverIO deferred to new task M2-31 because 9.32 pulls a high-severity `extract-zip` advisory.
+  - Environment notes for this machine: the shell sets `NODE_ENV=production` (npm skips dev dependencies unless `--include=dev`) and `NODE_TLS_REJECT_UNAUTHORIZED=0` (TLS verification off).
+- **Follow-ups:** consider Node 22.22+ or 24 LTS locally (a few transitive dev tools warn on 22.17) → Release.
+
+### M1-04 · Scaffold the Vite + Vue 3 + TypeScript + Tailwind v4 frontend · 2026-09-25
+
+- **Agent:** vue-expert (executed by the coordinating agent)   **Reviewers:** pending (architect-reviewer)
+- **Status:** done
+- **Files touched:** `index.html`, `src/main.ts`, `src/App.vue`, `src/env.d.ts`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`
+- **Evidence:**
+  - `npm run build` → `dist/index.html`; `npm run typecheck` exit 0; `npm run lint` clean.
+  - Throwaway files proved `vue/no-v-html` and the `@tauri-apps/api/core` import ban both fire, and that `src/lib/markdown/MarkdownView.vue` is exempt from the `v-html` ban.
+  - Port from `HEIMDALL_DEV_PORT` (default 1420), `strictPort: true`; Tailwind v4 plugin wired.
+  - Deviation: one `tsconfig.json` covers the app and config files, so there is no `tsconfig.node.json`.
+- **Follow-ups:** M2-06 must import `src/styles/main.css` in `src/main.ts` → Vue shell.
