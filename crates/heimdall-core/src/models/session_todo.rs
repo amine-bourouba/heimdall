@@ -28,7 +28,7 @@ impl TodoItem {
     /// Stable id from the content (Poirot used `content.hashValue`, which changes between runs):
     /// 64-bit FNV-1a, so the same content always gets the same id.
     pub fn id(&self) -> u64 {
-        self.content.bytes().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3))
+        crate::stable_hash(self.content.as_bytes())
     }
 
     /// Decode a todo file's array item by item: an item that does not parse (for example an

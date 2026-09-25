@@ -47,7 +47,7 @@ Every command returns `Result<T, AppError>`. The generated wrapper surfaces this
 | `ProjectId` | The folder name under `~/.claude/projects/` (for example `c--Users-pc-src-app`) | No separator, not `.` or `..`, and must exist as a child of the projects folder |
 | `SessionId` | UUID for main sessions; `agent-<id>` for sub-agent transcripts | `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` or `^agent-[A-Za-z0-9_-]{1,128}$` |
 | `BlockId` | `<messageId>:<index>` | Must resolve in the cached full parse of the named session |
-| `HistoryEntryId` | Hash of the raw line plus its timestamp | Must match a line in the current file |
+| `HistoryEntryId` | `<timestamp ms>-<FNV-1a of the raw line>`, plus `-<n>` for the n-th repeat of an identical line (`data::history::entry_id`) | Must match a line in the current file |
 | `VersionId` | `<backupFileName>` from a file-history record | Must appear in the session's file-history records |
 | `MemorySourceId` | `project:<ProjectId>` or `folder:<index>` into `Prefs.customMemoryFolders` | Must resolve to a known source |
 | `ConfigRef` | `{ kind: ConfigKind, project: ProjectContext \| null, slug: string }` | Slug has no separator; resolved under the scope's root only |

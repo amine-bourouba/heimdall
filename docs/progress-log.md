@@ -456,3 +456,24 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
     - `parse_summary_sums_tokens_per_group` → 750 (Poirot: 600).
     - `usage_counts_once_when_tool_results_split_a_message` → first group carries (2, 209), total 211.
 - **Follow-ups:** none.
+
+### M1-15 · History reader with stable per-entry ids · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:**
+  - `crates/heimdall-core/src/data/history.rs`.
+  - `crates/heimdall-core/src/lib.rs`: `stable_hash`, the FNV-1a helper, moved out of the todo model to be shared.
+  - `crates/heimdall-core/src/models/session_todo.rs`: uses `stable_hash`.
+  - `docs/ipc-contract.md`: `HistoryEntryId` format.
+- **Evidence:**
+  - `cargo test -p heimdall-core -- history session_todo` → 30 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 12 HistoryLoaderTests (millisecond timestamps, `pastedContents`, null `pastedContents`, `entryCount`, `uniqueProjects`).
+  - Entry ids are `<timestamp ms>-<FNV-1a of the raw line>`. `ids_follow_the_line_not_its_position` inserts a line above and the ids do not change. Identical lines get `-1`, `-2`… (`identical_lines_get_distinct_ids`). This fixes C-23's root cause for the delete in M3-46.
+  - `page(offset, limit)` returns the contract's `HistoryPage` with `total` and `skipped`.
+  - The Windows fixture history (28 lines, with a `sessionId` key Poirot ignores) parses with 0 skipped.
+- **Deviations:**
+  - A `pastedContents` value stored as an object keeps its `content`, or its JSON text; Poirot dropped the whole line.
+  - Non-UTF-8 lines are skipped and counted instead of failing the file.
+  - A missing file is an empty history; other I/O errors are reported.
+- **Follow-ups:** none.
