@@ -705,3 +705,20 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `npx.cmd`, `npx.exe` and `uvx.exe` count as the npx and uvx runners.
   - Pattern parts are matched literally: Poirot passed arguments to `pgrep` unescaped, so `server.js` also matched `serverXjs` (`literal_parts_do_not_act_as_regex`).
 - **Follow-ups:** none.
+
+### M1-29 · Fuzzy and exact matcher with UTF-16 highlight ranges · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/search/{matcher,mod}.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core search::` → 11 passed; `cargo clippy -p heimdall-core --all-targets -- -D warnings` → exit 0.
+  - Carried-over: the 4 matching assertions of HighlightedTextTests, and the 6 `fuzzyMatch` cases deferred from PlanTests and MemoryFileTests in M1-10.
+  - The worked examples in `docs/spec/search-overlay.md` reproduce exactly:
+    - fuzzy `swordfish`/`ssh` scores 37 with ranges `[0,1),[7,8),[8,9)`;
+    - exact `ssh config` gives `[0,3)`;
+    - a one-character query scores 10.
+  - Ranges are UTF-16: in `日本語 🎉 SSH tunnel`, "SSH" is `[7,10)` (the emoji counts 2), "🎉" is `[4,6)` and "本語" is `[1,3)`.
+  - Exact mode highlights every non-overlapping occurrence; fuzzy highlights each matched character, as the spec's §2.4 describes.
+- **Deviations:** characters are compared per Unicode scalar after lower-casing each one, so ranges map to the original text. Poirot compared grapheme clusters; the two differ only inside multi-scalar emoji and combining sequences.
+- **Follow-ups:** none.
