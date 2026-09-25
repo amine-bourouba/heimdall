@@ -477,3 +477,18 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Non-UTF-8 lines are skipped and counted instead of failing the file.
   - A missing file is an empty history; other I/O errors are reported.
 - **Follow-ups:** none.
+
+### M1-16 · Todo loader · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/data/todos.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core data::todos` → 14 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 13 TodoLoaderTests, including `<sessionId>-agent-<agentId>.json` with UUID session and agent ids, merging agent files, and ignoring unrelated files.
+  - `load_all` groups files by the part before `-agent-` and leaves out sessions whose files are empty.
+- **Deviations:**
+  - Files are read in name order, so the merged order is the same on every OS; Poirot used directory order.
+  - An item with an unknown status drops only that item (`TodoItem::list_from_json`, M1-09); Poirot dropped the whole file.
+  - Unreadable files and bad items are counted in `skipped`.
+- **Follow-ups:** none.
