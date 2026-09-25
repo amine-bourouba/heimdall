@@ -509,3 +509,17 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `allSessionIds` is sorted.
   - The task text's "multi-line entries" means multiple lines, as in Poirot's `parse_multipleLines`. Poirot has no continuation lines, and neither does Heimdall.
 - **Follow-ups:** none.
+
+### M1-18 · Facets loader · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/data/facets.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core data::facets` → 11 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 10 FacetsLoaderTests.
+  - `load_all` keys by the `session_id` inside each file, as Poirot does, and counts files that do not parse in `skipped`.
+  - `load` rejects a session id that is not a plain file name.
+- **Deviations:**
+  - The model reads missing keys as defaults (M1-09), so a file with no `session_id` is keyed by its file name instead of being dropped.
+- **Follow-ups:** none.
