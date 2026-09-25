@@ -688,3 +688,20 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - The default model is the `model` in the global `settings.json`, shown as a display name. Poirot always showed "Opus 5" (C-27).
   - Catalog display names written by Poirot (`Sonnet 5`) are recognised as they are; ids and aliases go through `friendly_name`.
 - **Follow-ups:** the model write must store an id or alias (C-27) → M3-40.
+
+### M1-28 · MCP process status on sysinfo · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/mcp_status.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core mcp_status` → 19 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 14 MCPServerStatusCheckerTests, run against an injected process list and auth-cache set.
+  - Pattern building ports MCPServerStatusChecker.swift:160-214 (`patterns_follow_the_runner_rules`), and matching runs on each process's joined command line. `running_command_lines()` reads it through `sysinfo`; `the_real_process_list_is_readable` passes on Windows.
+  - Windows shape: `npx.cmd -y @modelcontextprotocol/server-filesystem` matches `node.exe …\npm-cache\_npx\…\node_modules\.bin\..\@ModelContextProtocol\server-filesystem\…` (case-insensitive on Windows) and is unknown without that process.
+  - HTTP and SSE status is URL well-formedness only (`url::Url::parse`), labelled P-5 in the module and at the check.
+  - The "any user stdio server connected means the idle ones failed" heuristic is kept (`a_connected_stdio_server_marks_the_idle_ones_failed`).
+- **Deviations:**
+  - `npx.cmd`, `npx.exe` and `uvx.exe` count as the npx and uvx runners.
+  - Pattern parts are matched literally: Poirot passed arguments to `pgrep` unescaped, so `server.js` also matched `serverXjs` (`literal_parts_do_not_act_as_regex`).
+- **Follow-ups:** none.
