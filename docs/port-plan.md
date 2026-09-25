@@ -101,6 +101,7 @@ Every cited path in this plan and the task files was checked against `$POIROT` a
 | C-23 | — | History delete finds its line by an index embedded in the entry id and rewrites the whole file, so a line Claude Code appends in between is lost (`Services/HistoryLoader.swift:60-105`; found by M0-05). |
 | C-24 | — | Current Claude Code writes tool results between the records of one assistant message, so the full parse splits that message into several groups and counts its usage once per group, while the summary tier counts it once. The two tiers disagree in Poirot. Heimdall counts usage once per message id in both tiers (`TranscriptParser.swift:98-108`; found by M1-13 on the Windows fixtures). |
 | C-25 | — | Both tiers take a message's usage from its first record, but streamed records carry growing `output_tokens` and only the last one is final. On the Windows fixtures this counts 118,515 output tokens where the last records sum to 373,792. Heimdall takes each message's last record (D5). |
+| C-26 | — | StatsComputer adds a message's usage once for every streamed record of it (`StatsComputer.swift:218-245`), so recomputed analytics multiply input and cache-read tokens by the number of records per message. Heimdall's recomputation counts each message id once, from its last record, as D5 decided for sessions (found by M1-20). |
 
 ### 3.2 Assumptions (unverified until the named task confirms them)
 

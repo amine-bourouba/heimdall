@@ -548,3 +548,26 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - The scrubber now applies the folder pseudonyms inside paths (new test case), and the 126 occurrences in the fixture were rewritten to the existing `proj-10` and `proj-11` pseudonyms.
   - The history was rewritten before any push, so no commit contains them.
 - **Follow-ups:** none.
+
+### M1-20 · Stats cache staleness and local recomputation · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/data/{stats,stats_cache}.rs`, `crates/heimdall-core/src/projects/discovery.rs` (`is_uuid` made public), `docs/port-plan.md` (C-26)
+- **Evidence:**
+  - `cargo test -p heimdall-core -- data::stats` → 15 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 6 StatsComputerTests and the 5 loader cases of StatsCacheTests.
+  - Staleness matches StatsCacheLoader.swift:36-51:
+    - It is stale when the token series stops before activity, or either series ends before the latest session day (found from the newest main transcript's modification time).
+    - A fresh cache is kept. A stale one is replaced by a recomputation, or kept when there is nothing to recompute.
+  - Recomputation:
+    - It reads only UUID-named transcripts and non-sidechain, non-synthetic records.
+    - It fills per-day message, session and tool-call counts, per-model tokens and web searches, the hour histogram, the longest session, the first session date and the totals.
+    - `costUSD` is 0, with the 200k/1M context window and 32k max output as in Poirot.
+  - Days and hours use an injected time zone (`compute_in`); the app uses local time. `days_and_hours_follow_the_time_zone` checks a UTC 23:30 record landing on the next day at +02:00.
+  - Transcript lines are read into a small typed record, and message content is only scanned to count `tool_use` blocks.
+  - The Windows fixture recomputes with sorted days and non-zero output tokens.
+- **Deviations:**
+  - Usage counts once per message id, from its last record (D5 applied to analytics; C-26). A message that appears in two transcripts (a resumed session) is counted once. `a_message_split_over_records_counts_its_last_usage_once` shows what Poirot would have reported. The carried-over tests have one record per message, so their numbers are unchanged.
+  - Session files are matched case-insensitively, as Swift's `UUID(uuidString:)` did.
+- **Follow-ups:** none.

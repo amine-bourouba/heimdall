@@ -131,7 +131,7 @@ fn load_project_with(dir: &Path, os: TargetOs, exists: &dyn Fn(&str) -> bool) ->
 }
 
 /// A lower-case hyphenated UUID, as Claude Code names session files.
-fn is_uuid(s: &str) -> bool {
+pub fn is_uuid(s: &str) -> bool {
     let b = s.as_bytes();
     b.len() == 36
         && b.iter().enumerate().all(|(i, c)| match i {
