@@ -37,8 +37,8 @@ pub fn summarize(records: impl Iterator<Item = Value>, ctx: ParseContext) -> Opt
     let mut user_count: u32 = 0;
     let mut earliest: Option<DateTime<Utc>> = None;
     let mut latest: Option<DateTime<Utc>> = None;
-    let mut tokens = TokenUsage::default();
     let mut seen_ids: HashSet<String> = HashSet::new();
+    let mut usage_by_id: HashMap<String, TokenUsage> = HashMap::new();
     let mut searchable = Searchable::default();
     let mut cwds: HashMap<String, u32> = HashMap::new();
     let empty = Value::Object(serde_json::Map::new());
@@ -73,18 +73,19 @@ pub fn summarize(records: impl Iterator<Item = Value>, ctx: ParseContext) -> Opt
         if preview.is_none() {
             preview = first_assistant_text(message.get("content"));
         }
-        // Records of one API message repeat its usage; count it once per message id.
+        // Records of one API message repeat its usage and output grows while it streams, so the
+        // last record's usage counts, once per message id (D5).
         let id = message.get("id").and_then(Value::as_str).map_or_else(|| format!("record-{n}"), String::from);
-        if seen_ids.insert(id)
-            && let Some(u) = blocks::usage(message.get("usage"))
-        {
-            tokens = tokens.add(&u);
+        if let Some(u) = blocks::usage(message.get("usage")) {
+            usage_by_id.insert(id.clone(), u);
         }
+        seen_ids.insert(id);
     }
 
     if user_count == 0 && seen_ids.is_empty() {
         return None;
     }
+    let tokens = usage_by_id.values().fold(TokenUsage::default(), |acc, u| acc.add(u));
     Some(Session {
         tokens,
         ended_at: latest,
@@ -156,6 +157,8 @@ mod tests {
         assert_eq!(run(&lines).unwrap().model.as_deref(), Some("claude-sonnet-4-6"));
     }
     #[test]
+    /// Deviation (D5): msg_1 counts its last record (200 + 100), where Poirot counted the first
+    /// (100 + 50) and expected 600.
     fn parse_summary_sums_tokens_per_group() {
         let lines = [
             u("Hi"),
@@ -163,7 +166,7 @@ mod tests {
             assistant(json!([{"type": "tool_use", "id": "t1", "name": "Read", "input": {"path": "/a"}}]), "msg_1", "m", "2026-01-28T10:01:01.000Z", (200, 100)),
             assistant(json!([{"type": "text", "text": "B"}]), "msg_2", "m", "2026-01-28T10:02:00.000Z", (300, 150)),
         ];
-        assert_eq!(run(&lines).unwrap().total_tokens, 600);
+        assert_eq!(run(&lines).unwrap().total_tokens, 750);
     }
     #[test]
     fn parse_summary_skips_sidechain_records() {

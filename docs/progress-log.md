@@ -441,3 +441,18 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Index entries are not pre-sorted by `created`, because sessions are sorted by start time at the end anyway.
   - `cwd` counts are gathered during the summary pass, so no transcript is read twice.
 - **Follow-ups:** none.
+
+### D5 · Per-message token usage from the final streamed record · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/transcript/{full,summary}.rs`, `docs/port-plan.md` (D5 answered, C-25 updated)
+- **Evidence:**
+  - The user chose the last record. Both tiers keep the latest usage seen for each message id and sum those. In the full parse, the usage sits on the message's first group only, so a message split by tool results is still counted once.
+  - `cargo test -p heimdall-core` → 309 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - `summary_tokens_match_the_full_parse_for_every_fixture_transcript` still passes, so the two tiers agree on every fixture transcript under the new rule.
+  - Expectations changed, with the deviation noted on each test:
+    - `parse_usage_deduplicated_per_group` → usage (200, 100), total 300 (Poirot: 150).
+    - `parse_summary_sums_tokens_per_group` → 750 (Poirot: 600).
+    - `usage_counts_once_when_tool_results_split_a_message` → first group carries (2, 209), total 211.
+- **Follow-ups:** none.

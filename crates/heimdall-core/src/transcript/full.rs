@@ -2,7 +2,7 @@
 //! consecutive assistant records with the same message id merge into one message. Every other
 //! record type (system, summary, progress, file-history-*) is passed over.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use chrono::{DateTime, Utc};
@@ -44,10 +44,10 @@ pub fn parse_records(records: impl Iterator<Item = Value>, ctx: ParseContext) ->
     let mut messages: Vec<Message> = Vec::new();
     let mut searchable = Searchable::default();
     let mut pending: Option<Message> = None;
-    // Tool results now sit between records of one API message, so its records can form several
-    // groups; its usage is counted once, on the first record seen (as the summary tier does).
-    let mut counted_ids: HashSet<String> = HashSet::new();
-    let mut tokens = TokenUsage::default();
+    // Every record of one API message repeats its usage, and output tokens grow while it streams,
+    // so the last record's usage is the message's (D5). Tool results sit between those records, so
+    // one message can form several groups; its usage goes on the first group only.
+    let mut usage_by_id: HashMap<String, TokenUsage> = HashMap::new();
 
     for (n, record) in records.enumerate() {
         let Some(kind @ ("user" | "assistant")) = record.get("type").and_then(Value::as_str) else { continue };
@@ -72,9 +72,8 @@ pub fn parse_records(records: impl Iterator<Item = Value>, ctx: ParseContext) ->
         } else {
             let id = message.get("id").and_then(Value::as_str).map_or_else(|| format!("record-{n}"), String::from);
             let new_blocks = blocks::assistant_blocks(message.get("content"));
-            let usage = counted_ids.insert(id.clone()).then(|| blocks::usage(message.get("usage"))).flatten();
-            if let Some(u) = usage {
-                tokens = tokens.add(&u);
+            if let Some(u) = blocks::usage(message.get("usage")) {
+                usage_by_id.insert(id.clone(), u);
             }
             match &mut pending {
                 Some(group) if group.id == id => group.blocks.extend(new_blocks),
@@ -85,7 +84,7 @@ pub fn parse_records(records: impl Iterator<Item = Value>, ctx: ParseContext) ->
                         role: Role::Assistant,
                         timestamp,
                         model: model.map(String::from),
-                        usage,
+                        usage: None,
                         blocks: new_blocks,
                     });
                 }
@@ -99,6 +98,13 @@ pub fn parse_records(records: impl Iterator<Item = Value>, ctx: ParseContext) ->
 
     let started_at = messages.iter().filter_map(|m| m.timestamp).min().or(ctx.index_started_at).unwrap_or(DateTime::UNIX_EPOCH);
     let model = messages.iter().find(|m| m.role == Role::Assistant).and_then(|m| m.model.clone());
+    let mut placed: HashSet<String> = HashSet::new();
+    for m in messages.iter_mut().filter(|m| m.role == Role::Assistant) {
+        if placed.insert(m.id.clone()) {
+            m.usage = usage_by_id.get(&m.id).copied();
+        }
+    }
+    let tokens = usage_by_id.values().fold(TokenUsage::default(), |acc, u| acc.add(u));
     Some(Session {
         total_tokens: tokens.total(),
         tokens,
@@ -263,6 +269,7 @@ mod tests {
         assert!(matches!(&m.blocks[1], ContentBlock::ToolUse(t) if t.name == "Read"));
     }
     #[test]
+    /// Deviation (D5): the group's usage is its last record's, where Poirot kept the first (100, 50).
     fn parse_usage_deduplicated_per_group() {
         let lines = [
             assistant_with(json!([{"type": "text", "text": "A"}]), "msg_dup", "claude-opus-4-6", "2026-01-28T10:01:00.000Z", (100, 50)),
@@ -270,7 +277,7 @@ mod tests {
         ];
         let s = parse_lines(&lines).unwrap();
         let u = s.messages[0].usage.unwrap();
-        assert_eq!((s.messages.len(), u.input, u.output, s.total_tokens), (1, 100, 50, 150));
+        assert_eq!((s.messages.len(), u.input, u.output, s.total_tokens), (1, 200, 100, 300));
     }
     #[test]
     fn usage_counts_once_when_tool_results_split_a_message() {
@@ -283,7 +290,7 @@ mod tests {
         ];
         let s = parse_lines(&lines).unwrap();
         assert_eq!(s.messages.len(), 3);
-        assert_eq!((s.messages[2].usage, s.total_tokens), (None, 10));
+        assert_eq!((s.messages[0].usage, s.messages[2].usage, s.total_tokens), (Some(TokenUsage::new(2, 209)), None, 211));
     }
     #[test]
     fn parse_started_at_uses_earliest_timestamp() {
