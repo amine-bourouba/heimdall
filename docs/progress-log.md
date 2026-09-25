@@ -368,3 +368,42 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `ColorThemeId` has the 20 ids from PoirotTheme.swift.
 - **Deviations:** VS Code is stored as `vscode` (ADR 0007), not Poirot's raw value `code`. The raw-value test asserts `vscode`; the CLI command is still `code`.
 - **Follow-ups:** `update_prefs` validation (fontScale range and step, per-OS terminal and editor options) and the schema migration hook → M1-39.
+
+### M1-12 · Full-parse tier, content blocks, system content and tool input · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/transcript/{full,blocks,searchable,system_content,tool_input}.rs`, `crates/heimdall-core/src/models/message.rs` (`ToolUse.input` kept in Rust for exports; `SystemSegment.children`), `docs/ipc-contract.md` (`SystemSegment.children`). Also deleted `fixtures/windows/grep.exe.stackdump`, which a crashed MSYS `grep` had left there; it is not fixture data.
+- **Evidence:**
+  - `cargo test -p heimdall-core transcript` → 47 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over tests:
+    - All 20 full-parse cases from TranscriptParserTests, plus `parse_searchableText_indexesContent`.
+    - All 9 SystemContentParserTests.
+    - All 7 JSONBeautifierTests.
+  - System, summary, progress, file-history-snapshot and file-history-delta records are passed over without error; `<synthetic>` assistant messages are dropped (`parse_only_skipped_record_types_returns_nil`, `parse_synthetic_model_skipped`).
+  - The sidechain filter matches TranscriptParser.swift:34: sidechain records are dropped unless the context is a sub-agent transcript (tested both ways).
+  - Block ids are `<messageId>:<index>` and identical across two parses (`block_ids_are_message_id_and_index_and_stable`). Records with no uuid or message id use `record-<n>`, not a random UUID, so ids stay stable.
+  - All 25 transcripts in `fixtures/windows` (LF tree and CRLF copy, main and sub-agent) parse with `skipped == 0` (`every_windows_fixture_transcript_parses_without_skipped_lines`).
+- **Deviations:**
+  - JSON pretty-printing uses serde_json's `"key": value`, where Foundation wrote `"key" : value`; the JSONBeautifier assertions drop that space.
+  - Timestamps without fractional seconds also parse; Poirot's formatter required them.
+  - A message missing a timestamp no longer drags `startedAt` to the distant past.
+  - The searchable-text cap counts `char`s where Swift counted grapheme clusters.
+  - System tags are classified as `systemReminder` (`system-reminder`), `commandMessage` (`command-name`, `command-message`, `command-args`) or `other`.
+- **Follow-ups:** none.
+
+### M1-13 · Header and summary tiers · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/transcript/{header,summary}.rs`, `crates/heimdall-core/src/transcript/full.rs` (usage counted once per message id), `docs/port-plan.md` (C-24, C-25, D5)
+- **Evidence:**
+  - `cargo test -p heimdall-core` → 288 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 11 parseSummary cases in `summary.rs`. PoirotTests has no header-tier cases; 3 new tests cover field extraction, the sidechain and synthetic filters, and the 50-line limit.
+  - `summary_tokens_match_the_full_parse_for_every_fixture_transcript` compares `total_tokens` and the `TokenUsage` breakdown across every transcript under `fixtures/**/projects` (both sidechain modes). The first run failed on a real sub-agent transcript: the full parse counted a split message's usage twice (C-24). Both tiers now count once per message id; regression test `usage_counts_once_when_tool_results_split_a_message`.
+  - `summarize` streams records and keeps only counters, the first title and preview, the seen-id set and the capped search text; it never builds a `Vec<Message>`.
+  - The header tier reads through `jsonl::read_head` (8 KiB chunks, 50 JSON lines) and stops early once title, preview and start time are found.
+- **Deviations:**
+  - The header limit counts 50 JSON lines; Poirot counted every line, blank and malformed ones included.
+  - `first_prompt` and the sub-agent fields are left for the caller (M1-14), which knows them from the file's location.
+- **Follow-ups:** D5 (first-record vs last-record token usage) → user.

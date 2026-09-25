@@ -33,7 +33,7 @@ These answers override the planning brief wherever they conflict.
 
 ### 2.2 Follow-up decisions (answered 2026-09-25)
 
-The user accepted the recommendation for D1–D3 and resolved D4 by moving the folder. No decision is pending.
+The user accepted the recommendation for D1–D3 and resolved D4 by moving the folder. D5 is open (raised by M1-13).
 
 | ID | Decision | Answer | Why it mattered | Unblocked |
 |---|---|---|---|---|
@@ -41,6 +41,7 @@ The user accepted the recommendation for D1–D3 and resolved D4 by moving the f
 | D2 | Linux package and binary name | `heimdall-desktop` (display name stays "Heimdall") | `heimdall` is already taken by the Samsung firmware flasher: Arch `extra/heimdall`, Fedora `heimdall`, and Debian/Ubuntu `heimdall-flash`, which installs `/usr/bin/heimdall` (checked 2026-09-25). | M0-02, M1-01, M4-01 |
 | D3 | How to run the Swift reference for golden outputs | GitHub-hosted macOS runners (tasks M1-50 to M1-52); no local Mac needed | Poirot only builds on macOS. Without this, parity rests on PoirotTests-derived tests alone and the golden-parity tasks (M1-50 to M1-53) are dropped. | M1-50 |
 | D4 | Where the Heimdall folder lives | Moved out of the `hydra` repository to `C:\Users\pc\Desktop\tech\Heimdall`; not yet a git repository | It sat inside another project's repository (note N1). | M0-03 |
+| D5 | Per-message token usage: Poirot's first record, or the last (final) record | Open. Recommended: last record. | Session token totals are about 3× too low on real transcripts under Poirot's rule (C-25). Switching changes two carried-over test expectations (`parse_usage_deduplicatedPerGroup`, `parseSummary_sumsTokensPerGroup`) and makes totals differ from Poirot. | transcript/full.rs, transcript/summary.rs |
 
 ### 2.3 Plan-level decisions
 
@@ -98,6 +99,8 @@ Every cited path in this plan and the task files was checked against `$POIROT` a
 | C-21 | — | Poirot is English-only (`Localizable.xcstrings`, 401 strings), so localisation adds no parity work (row C15). |
 | C-22 | Four watcher call sites | 13 watcher start sites in 8 files: the screens for hooks, MCP servers, sub-agents, history, plans and TODOs each watch their own files, and the sub-agents screen creates `~/.claude/agents` just to watch it (found by M0-05; parity row G7). |
 | C-23 | — | History delete finds its line by an index embedded in the entry id and rewrites the whole file, so a line Claude Code appends in between is lost (`Services/HistoryLoader.swift:60-105`; found by M0-05). |
+| C-24 | — | Current Claude Code writes tool results between the records of one assistant message, so the full parse splits that message into several groups and counts its usage once per group, while the summary tier counts it once. The two tiers disagree in Poirot. Heimdall counts usage once per message id in both tiers (`TranscriptParser.swift:98-108`; found by M1-13 on the Windows fixtures). |
+| C-25 | — | Both tiers take a message's usage from its first record, but streamed records carry growing `output_tokens` and only the last one is final. On the Windows fixtures this counts 118,515 output tokens where the last records sum to 373,792. Heimdall keeps Poirot's rule until D5 is answered. |
 
 ### 3.2 Assumptions (unverified until the named task confirms them)
 
