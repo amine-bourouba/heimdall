@@ -1,0 +1,34 @@
+# cargo-deny policy (ADR 0010, control 10). Run: cargo deny check
+[graph]
+all-features = false
+
+[advisories]
+version = 2
+yanked = "deny"
+# Flag unmaintained crates we depend on directly; Tauri's deep tree is tracked upstream.
+unmaintained = "workspace"
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+allow = [
+  "MIT", "MIT-0", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "ISC",
+  "Zlib", "Unicode-3.0", "Unicode-DFS-2016", "MPL-2.0", "CC0-1.0", "BSL-1.0", "0BSD", "CDLA-Permissive-2.0",
+]
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+# Workspace path dependencies (heimdall-core) are not wildcards from a registry.
+allow-wildcard-paths = true
+deny = [
+  # No file-system or shell access from the webview (ADR 0010, control 4).
+  # tauri-plugin-dialog depends on it internally; no capability grants its fs: permissions (M2-27 checks).
+  { crate = "tauri-plugin-fs", wrappers = ["tauri-plugin-dialog"] },
+  { crate = "tauri-plugin-shell" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

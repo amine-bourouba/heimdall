@@ -1,0 +1,36 @@
+[package]
+name = "heimdall-desktop"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Heimdall desktop app shell (Tauri 2)."
+
+[lib]
+name = "heimdall_desktop_lib"
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+heimdall-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+specta.workspace = true
+tauri = { version = "2.11.6", features = ["tray-icon"] }
+tauri-plugin-opener = "2.5.5"
+tauri-plugin-autostart = "2.5.1"
+tauri-plugin-clipboard-manager = "2.3.3"
+tauri-plugin-dialog = "2.7.3"
+tauri-plugin-store = "2.4.5"
+tauri-plugin-updater = "2.12.0"
+tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
+specta-typescript = "=0.0.12"
+notify = "8.2.0"
+notify-debouncer-full = "0.7.0"
+
+[dev-dependencies]
+tempfile = "3.27.0"

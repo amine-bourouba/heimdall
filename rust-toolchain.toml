@@ -1,0 +1,5 @@
+[toolchain]
+# At or above 1.77.2 for CVE-2024-24576 (argument escaping of Windows batch files).
+channel = "1.98.1"
+components = ["clippy", "rustfmt"]
+profile = "minimal"

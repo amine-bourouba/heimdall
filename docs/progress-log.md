@@ -226,3 +226,31 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Port from `HEIMDALL_DEV_PORT` (default 1420), `strictPort: true`; Tailwind v4 plugin wired.
   - Deviation: one `tsconfig.json` covers the app and config files, so there is no `tsconfig.node.json`.
 - **Follow-ups:** M2-06 must import `src/styles/main.css` in `src/main.ts` → Vue shell.
+
+### M1-01 · Create the Cargo workspace, crate manifests and supply-chain policy · 2026-09-25
+
+- **Agent:** dependency-manager (executed by the coordinating agent)   **Reviewers:** pending (architect-reviewer, security-auditor)
+- **Status:** done
+- **Files touched:** `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `deny.toml`, `crates/heimdall-core/Cargo.toml`, `crates/heimdall-core/src/lib.rs` (empty placeholder for M1-05), `src-tauri/Cargo.toml`
+- **Evidence:**
+  - `cargo metadata --format-version 1` succeeds; `cargo check -p heimdall-core` passes.
+  - `cargo tree -p heimdall-core -e normal | grep -c tauri` → 0.
+  - Dependencies as listed in the task; tauri-specta and specta pinned to `=2.0.0-rc.25`, specta-typescript to `=0.0.12`.
+  - `rust-toolchain.toml` pins 1.98.1 (≥ 1.77.2).
+  - `cargo deny check` (cargo-deny 0.20.2) → advisories ok, bans ok, licenses ok, sources ok. Getting there: `rust-version` raised from 1.85 to 1.98 so the MSRV-aware resolver stops choosing old crates (this pulled `time` 0.3.55 and `quick-xml` 0.42, fixing RUSTSEC-2026-0009, -0194, -0195); `unmaintained = "workspace"` (the unmaintained `unic-*`, `paste` and `proc-macro-error` crates sit deep in Tauri's tree); `allow-wildcard-paths` for the local path dependency; `tauri-plugin-fs` allowed only as a dependency of `tauri-plugin-dialog`, and `tauri-plugin-shell` stays banned.
+  - Package and binary name `heimdall-desktop` (ADR 0011).
+- **Follow-ups:** none.
+
+### M1-03 · Scaffold the Tauri app crate with final identity, CSP and module stubs · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending (security-engineer, security-auditor, deployment-engineer)
+- **Status:** done on Windows; Linux and macOS launch checks wait for CI (M1-58)
+- **Files touched:** `src-tauri/src/main.rs`, `src-tauri/src/lib.rs`, `src-tauri/build.rs`, `src-tauri/tauri.conf.json`, `src-tauri/icons/**` (placeholder set from `tauri icon`, mobile folders removed), placeholders for every src-tauri module in ADR 0002
+- **Evidence:**
+  - `lib.rs` registers opener, dialog, clipboard-manager, store and autostart; setup calls `window`, `menu`, `watcher`, `tray` and `updater` init stubs; tauri-specta's builder supplies the invoke handler and events.
+  - `tauri.conf.json`: productName Heimdall, identifier `io.github.amine-bourouba.heimdall`, version from `../package.json`, main window 1280×820 (min 900×600), `csp` and `devCsp` equal to the ADR 0010 strings (compared by script), `freezePrototype: true`, asset protocol off, `withGlobalTauri: false`.
+  - `cargo clippy --workspace -- -D warnings` → exit 0; `cargo build -p heimdall-desktop` links.
+  - `npx tauri dev` on Windows 11: process `heimdall-desktop` running with window title "Heimdall", responding; then stopped.
+  - Production CSP has no `unsafe-*`; no fs or shell plugin in `Cargo.toml`.
+- **Environment notes:** this machine has no MSVC build tools, so it builds with Rust's GNU toolchain plus a portable MinGW (`%LOCALAPPDATA%\heimdall-dev\mingw64`, no admin). The MinGW linker warns "multiple non-default manifests"; the app still runs. Release builds use MSVC in CI.
+- **Follow-ups:** install the Visual Studio Build Tools (C++ workload) for MSVC parity locally → user.
