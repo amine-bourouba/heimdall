@@ -1,0 +1,29 @@
+# Rust
+target/
+**/*.rs.bk
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+
+# Tauri
+src-tauri/gen/
+src-tauri/target/
+
+# Tests and reports
+coverage/
+test-results/
+playwright-report/
+blob-report/
+lcov.info
+
+# Editors and OS
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Never commit updater keys
+*.key
+*.key.pub

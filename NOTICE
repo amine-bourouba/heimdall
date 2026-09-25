@@ -1,0 +1,16 @@
+Heimdall
+Copyright (c) 2026 amine-bourouba
+
+Heimdall is a cross-platform port of Poirot, a macOS companion app for Claude Code.
+
+Poirot
+  Source:    https://github.com/a7t-ai/poirot
+  Commit:    a29dd6ee0e0133ef26bd067c164c66b160e13d86
+  Copyright: (c) 2026 Leonardo Cardoso
+  License:   MIT
+
+Heimdall reimplements Poirot's behaviour in Rust and Vue. Poirot's MIT notice is
+reproduced in the LICENSE file and must be kept in all copies or substantial
+portions of the software.
+
+Heimdall is not affiliated with or endorsed by Anthropic.
