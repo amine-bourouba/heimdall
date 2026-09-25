@@ -407,3 +407,37 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - The header limit counts 50 JSON lines; Poirot counted every line, blank and malformed ones included.
   - `first_prompt` and the sub-agent fields are left for the caller (M1-14), which knows them from the file's location.
 - **Follow-ups:** D5 (first-record vs last-record token usage) → user.
+
+### M1-14 · Project discovery, sessions index, sub-agents and project path resolution · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:**
+  - `crates/heimdall-core/src/projects/{mod,discovery,sessions_index,subagents,project_path}.rs`.
+  - `crates/heimdall-core/src/models/session.rs`: new field `Session.cwds`.
+  - `crates/heimdall-core/src/transcript/summary.rs`: now counts the `cwd` of every record.
+- **Evidence:**
+  - `cargo test -p heimdall-core` → 309 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 17 SessionLoaderTests. Discovery takes an injected folder probe, so the decoding case (`-Users-dev-projects-my-app` → `dev-projects-my-app`) gives the same answer on every OS.
+  - Sessions index:
+    - It is used when it has entries.
+    - Entries whose file is missing are skipped (`index_entries_whose_file_is_missing_are_skipped`).
+    - The project path comes from `entries[0].projectPath`, the top-level `projectPath` or the top-level `originalPath`.
+  - Sub-agents are read from `<session>/subagents/agent-*.jsonl`, excluding `agent-acompact-*`. `agentType` and `description` come from `.meta.json`, and `parentSessionId` is set.
+  - Path order:
+    1. The `cwd` whose encoding matches the folder name, case-insensitively; the most frequent wins if several match.
+    2. The most frequent `cwd`.
+    3. The sessions-index path.
+    4. `decode_project_dir_name`.
+    - `pathSource` reports which one won.
+    - The fixture's `C--Users-fixture-Desktop-tech` resolves to `C:\Users\fixture\Desktop\tech`, even though its most frequent `cwd` is a subfolder (455 records vs 27 + 20).
+  - Orphaned `<uuid>.orphaned-…` transcripts are ignored. The `C--…` and `c--…` folders stay separate projects.
+  - fixtures/windows:
+    - Every project with transcripts reports `transcriptCwd`, with a drive-letter path whose encoding is its folder name, and 0 skipped lines (`windows_fixture_projects_resolve_from_transcript_cwd`).
+    - The exception is `c--Users-fixture-Desktop-tech-proj-2`, which holds only memory files, has no `cwd` to read and so reports `decoded`. The criterion as written ("every project") cannot hold for it.
+  - `grep -rn "replace('-', \"/\")\|replace(\"-\", \"/\")" crates/heimdall-core/src` → no matches.
+- **Deviations:**
+  - Projects are sorted by folder name; Poirot used directory order.
+  - Index entries are not pre-sorted by `created`, because sessions are sorted by start time at the end anyway.
+  - `cwd` counts are gathered during the summary pass, so no transcript is read twice.
+- **Follow-ups:** none.
