@@ -596,3 +596,17 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
     - A missing file is created (two spaces, trailing newline) only when the caller allows it.
     - A top level that is not an object cannot be edited.
 - **Follow-ups:** the settings, MCP and file writers (M3-40 to M3-42) build on `JsonDoc`.
+
+### M1-23 · Frontmatter parser · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/config/read/frontmatter.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core frontmatter` → 14 passed; `cargo clippy -p heimdall-core --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 12 FrontmatterParserTests, including `>` and `|` block scalars, a block followed by a key, a block at the end, and a colon inside a value.
+  - CRLF: `crlf_files_parse_like_lf_files` gives the same metadata as the LF version.
+- **Deviations:**
+  - Poirot split lines on `\r` as well as `\n`, so a CRLF file ended a block scalar after its first continuation line; lines here split on `\n` with `\r` trimmed.
+  - Metadata is a sorted map.
+- **Follow-ups:** none.
