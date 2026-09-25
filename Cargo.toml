@@ -11,7 +11,7 @@ rust-version = "1.98"
 [workspace.dependencies]
 serde = { version = "1.0.229", features = ["derive"] }
 # preserve_order keeps Claude Code's key order when Heimdall rewrites its files (ADR 0009).
-serde_json = { version = "1.0.151", features = ["preserve_order"] }
+serde_json = { version = "1.0.151", features = ["preserve_order", "float_roundtrip"] }
 thiserror = "2.0.21"
 # specta and tauri-specta are still release candidates: pin exactly (ADR 0004, risk R-10).
 specta = { version = "=2.0.0-rc.25", features = ["derive", "serde_json", "chrono"] }

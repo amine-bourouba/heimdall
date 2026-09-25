@@ -571,3 +571,28 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Usage counts once per message id, from its last record (D5 applied to analytics; C-26). A message that appears in two transcripts (a resumed session) is counted once. `a_message_split_over_records_counts_its_last_usage_once` shows what Poirot would have reported. The carried-over tests have one record per message, so their numbers are unchanged.
   - Session files are matched case-insensitively, as Swift's `UUID(uuidString:)` did.
 - **Follow-ups:** none.
+
+### M1-22 · Safe JSON write primitive · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending (security-auditor, architect-reviewer)
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/config/write/{json_doc,atomic}.rs`, `Cargo.toml` (serde_json `float_roundtrip`)
+- **Evidence:**
+  - `cargo test -p heimdall-core config::write` → 11 passed; the full crate → 410 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - A corrupt target (`fixtures/synthetic/corrupt/claude.json`) returns `AppError::Parse` with the path. The file stays byte-identical, and no `.heimdall.bak` or temp file appears.
+  - Round trip of `fixtures/windows/claude.json`:
+    - Unmodified, it renders byte for byte and `save` reports `unchanged`.
+    - Changing `numStartups` changes exactly that one line.
+    - This needed serde_json's `float_roundtrip` feature: the default parser rounded `1105.2999999999997` to a neighbouring float, which printed as `…995`.
+  - `<file>.heimdall.bak` (the ADR 0009 name) is written before the first mutating save and never replaced.
+  - Two-space, four-space, tab, compact, CRLF, BOM and no-trailing-newline files all render byte for byte and keep their style after an edit.
+  - Unix mode 0600 survives (a `cfg(unix)` test, which runs in Linux CI).
+  - Windows:
+    - A handle held without `FILE_SHARE_DELETE` makes the rename retry with backoff for 2 s, then try `ReplaceFileW` once, then return `AppError::Busy` with the path. The original stays intact and no temp file remains.
+    - A handle released after 150 ms lets the write through.
+  - The temp file sits in the target's folder and is removed on every failure; the `cfg(unix)` rename-over-a-folder test checks this.
+  - Also from ADR 0009:
+    - Rule 8: `save` refuses with `Busy` when the file changed since it was read.
+    - A missing file is created (two spaces, trailing newline) only when the caller allows it.
+    - A top level that is not an object cannot be edited.
+- **Follow-ups:** the settings, MCP and file writers (M3-40 to M3-42) build on `JsonDoc`.
