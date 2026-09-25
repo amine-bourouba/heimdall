@@ -645,3 +645,26 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Hook events are kept as text, so an event newer than Heimdall still appears; Poirot dropped unknown events.
   - A settings file that does not parse is a `Parse` error from `settings::load` and counts in `skipped` for hooks, instead of silently reading as empty.
 - **Follow-ups:** none.
+
+### M1-26 · MCP server (five sources) and plugin readers · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending (security-auditor)
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/config/read/{mcp,plugins}.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core` → 449 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 8 ClaudeConfigLoaderMCPTests, decoding into the M1-10 models (env and header values are `Secret`s).
+  - `five_sources_follow_poirots_precedence` covers all five sources:
+    - User servers load from `~/.claude.json`.
+    - A local `projects.<path>.mcpServers` entry overrides the user one of the same name.
+    - `.mcp.json` adds `team-tool` but does not override `github`.
+    - An enabled plugin's server appears as `plugin:context-mode:context-mode` ("Context Mode"); a disabled plugin's is hidden.
+    - `claude.ai Gmail` from the auth cache appears as a cloud integration with `needsAuth`.
+  - Tool permissions (`mcp__<server>__<tool>` in `settings.json`) group by server; a server without any entry is a wildcard.
+  - `serialised_servers_never_carry_secret_values` loads the synthetic fixtures (three sentinel secrets) and finds no `SENTINEL-SECRET` in the JSON; `envKeys` lists the names.
+  - Plugins list one entry per installed version, with `enabledPlugins` from the global settings.
+- **Deviations:**
+  - Local servers are found with `paths::same_path`. On Windows, Claude Code keys projects as `C:/Users/…` while paths elsewhere use `\` and either drive-letter case, and Poirot's exact string match would miss them (`windows_project_keys_match_whatever_the_separator`).
+  - Sources are the contract's five values (`local` and `project` kept apart); Poirot folded them into `user`.
+  - A config file that does not parse counts in `skipped`.
+- **Follow-ups:** none.
