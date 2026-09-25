@@ -1,0 +1,287 @@
+# IPC contract
+
+Status: **Draft, frozen by task M1-37.** After M1-37 lands, the generated file `src/ipc/bindings.ts` is authoritative and this document must change in the same pull request as any command or type. Contract changes need `architect-reviewer` and `security-auditor` review (ADR 0004, ADR 0010).
+
+Decisions behind this document: ADR 0004 (transport and type generation), ADR 0005 (errors), ADR 0006 (events), ADR 0010 (trust boundary).
+
+## 1. Transport
+
+- **Commands** carry every request and mutation. They are `async` or run disk work through `tauri::async_runtime::spawn_blocking`, so the event loop never blocks.
+- **Events** carry change signals from Rust to the webview. There are four: `data-changed`, `watcher-status`, `menu-action` and `navigate`.
+- **Channels** (`tauri::ipc::Channel`) are not used. Reach for one only when a measured load misses a budget in port-plan §9, and record the measurement.
+- **Versioning.** The UI and backend ship as one binary, so IPC has no version number. The preferences file does have one (`schemaVersion`, ADR 0007).
+
+## 2. Conventions
+
+- Rust types are the single source of truth. Every IPC type derives `serde::Serialize`/`Deserialize` and `specta::Type`, and uses `#[serde(rename_all = "camelCase")]`.
+- Tagged unions use `#[serde(tag = "kind", rename_all = "camelCase")]`.
+- Timestamps are ISO-8601 UTC strings. Durations are integer milliseconds. Token counts are integers.
+- Command names are `snake_case` in Rust. tauri-specta generates camelCase wrappers in `src/ipc/bindings.ts` (for example `commands.listProjects()`).
+- The webview imports IPC only through `src/ipc/client.ts`. ESLint forbids `@tauri-apps/api/core` elsewhere (task M1-04).
+- **No command accepts a filesystem path from the webview** (ADR 0010, rule 5). The webview sends ids; Rust resolves them under known roots.
+
+## 3. Errors and wrappers
+
+```ts
+type AppError =
+  | { kind: "notFound";     message: string; path: string | null }
+  | { kind: "io";           message: string; path: string | null }
+  | { kind: "parse";        message: string; path: string | null }
+  | { kind: "permission";   message: string; path: string | null }
+  | { kind: "busy";         message: string; path: string | null }   // Windows sharing violation after retries
+  | { kind: "invalidInput"; message: string; path: string | null }
+
+// Loaders skip unparsable lines or files and count them instead of failing (ADR 0005).
+type Loaded<T> = { value: T; skipped: number }
+
+// Every mutating command returns this. "cancelled" means the user declined a native confirmation or dialog.
+type WriteOutcome = "written" | "cancelled" | "unchanged"
+```
+
+Every command returns `Result<T, AppError>`. The generated wrapper surfaces this as `{ status: "ok", data } | { status: "error", error }`, and `src/ipc/client.ts` turns errors into a typed `IpcError`.
+
+## 4. Identifiers
+
+| Id | Form | Validation in Rust |
+|---|---|---|
+| `ProjectId` | The folder name under `~/.claude/projects/` (for example `c--Users-pc-src-app`) | No separator, not `.` or `..`, and must exist as a child of the projects folder |
+| `SessionId` | UUID for main sessions; `agent-<id>` for sub-agent transcripts | `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` or `^agent-[A-Za-z0-9_-]{1,128}$` |
+| `BlockId` | `<messageId>:<index>` | Must resolve in the cached full parse of the named session |
+| `HistoryEntryId` | Hash of the raw line plus its timestamp | Must match a line in the current file |
+| `VersionId` | `<backupFileName>` from a file-history record | Must appear in the session's file-history records |
+| `MemorySourceId` | `project:<ProjectId>` or `folder:<index>` into `Prefs.customMemoryFolders` | Must resolve to a known source |
+| `ConfigRef` | `{ kind: ConfigKind, project: ProjectContext \| null, slug: string }` | Slug has no separator; resolved under the scope's root only |
+
+```ts
+type ConfigKind = "command" | "skill" | "plan" | "outputStyle" | "agent"
+// null means global scope only. A project context adds that project's `.claude/` items.
+type ProjectContext = { kind: "project"; projectId: ProjectId } | { kind: "pickedFolder" }  // pickedFolder = Prefs.configProjectPath, set only by pick_config_project
+```
+
+## 5. Types (shape sketches)
+
+Field-level shapes follow the Swift models listed in each task. Where this sketch and a task disagree, raise it in review before M1-37 lands.
+
+```ts
+type TokenUsage = { input: number; output: number; cacheRead: number; cacheCreation: number }
+
+type ProjectSummary = {
+  id: ProjectId; name: string; path: string | null
+  pathSource: "transcriptCwd" | "sessionsIndex" | "decoded"   // ADR 0003
+  sessionCount: number; lastActivity: string | null; hasMemory: boolean
+}
+
+type SessionSummary = {
+  id: SessionId; projectId: ProjectId; title: string; preview: string | null
+  startedAt: string; endedAt: string | null; model: string | null
+  tokens: TokenUsage; turnCount: number
+  isSidechain: boolean; parentSessionId: SessionId | null; agentType: string | null; agentDescription: string | null
+  hasDebugLog: boolean; hasFileHistory: boolean; hasTodos: boolean
+}
+
+type ContextUsage = { current: number; peak: number; window: number; inputTokens: number; outputTokens: number
+                      cacheReadTokens: number; cacheCreationTokens: number; series: number[] }
+
+type SessionDetail = { summary: SessionSummary; messageCount: number; context: ContextUsage | null; toolNames: string[]; skipped: number }
+
+type Message = { id: string; role: "user" | "assistant"; timestamp: string | null; model: string | null
+                 usage: TokenUsage | null; blocks: ContentBlock[] }
+
+type ContentBlock =
+  | { kind: "text"; id: BlockId; text: string; system: SystemSegment[] | null }
+  | { kind: "thinking"; id: BlockId; text: string }
+  | { kind: "toolUse"; id: BlockId; toolUseId: string; name: string; inputPretty: string
+      command: string | null; filePath: string | null            // display only; launch commands take BlockId
+      edit: { oldString: string; newString: string } | null }
+  | { kind: "toolResult"; id: BlockId; toolUseId: string; content: string; isError: boolean }
+
+type SystemSegment = { kind: "text" | "systemReminder" | "commandMessage" | "other"; tag: string | null; text: string }
+type MessagePage = { start: number; messages: Message[]; total: number }
+type RecentSession = { projectId: ProjectId; projectName: string; session: SessionSummary }
+
+type DiffLine = { kind: "context" | "add" | "remove"; oldLine: number | null; newLine: number | null; text: string }
+type DiffResult = { lines: DiffLine[]; truncated: boolean; maxLineNumber: number }   // truncated at 5000 lines
+
+type TodoItem = { content: string; activeForm: string; status: "pending" | "inProgress" | "completed" }
+type TodoList = { sessionId: SessionId; agentId: string | null; items: TodoItem[] }
+type TodoGroup = { projectId: ProjectId | null; projectName: string | null; lists: TodoList[] }
+
+type FileHistory = { files: { fileName: string; versions: { versionId: VersionId; version: number; backupTime: string }[] }[] }
+type FileVersionContent = { versionId: VersionId; content: string }
+
+type DebugLogEntry = { id: number; timestamp: string; level: "debug" | "warn" | "error"; message: string }
+type DebugLogPage = { entries: DebugLogEntry[]; offset: number; total: number }
+
+type SessionFacets = { sessionId: SessionId; underlyingGoal: string; goalCategories: Record<string, number>; outcome: string
+                       userSatisfactionCounts: Record<string, number>; claudeHelpfulness: string; sessionType: string
+                       frictionCounts: Record<string, number>; frictionDetail: string; primarySuccess: string; briefSummary: string }
+
+type HistoryEntry = { id: HistoryEntryId; display: string; pastedContents: Record<string, string>; timestamp: string; project: string }
+type HistoryPage = { entries: HistoryEntry[]; offset: number; total: number; skipped: number }
+
+type ConfigItemSummary = { ref: ConfigRef; name: string; description: string; scope: "global" | "project" | "builtIn"
+                           meta: Record<string, string> }                     // model, argument-hint, allowed-tools, color…
+type ConfigItemDetail = ConfigItemSummary & { body: string; displayPath: string }   // displayPath is for showing, never sent back
+
+type HookHandler = { type: "command" | "http"; command: string | null; url: string | null; timeout: number | null
+                     statusMessage: string | null; extraKeys: string[] }      // unknown keys stay in Rust; names shown only
+type HookEntry = { event: string; matcherGroupIndex: number; matcher: string | null; handlers: HookHandler[]; scope: "global" | "project" }
+
+type PluginInfo = { key: string; name: string; author: string; version: string | null; installedAt: string | null; enabled: boolean }
+type ModelsView = { catalog: { id: string; displayName: string; family: string }[]; discovered: string[]
+                    defaultModel: string | null; projectModel: string | null }
+
+type MemorySource = { id: MemorySourceId; label: string; kind: "project" | "folder"; fileCount: number }
+type MemoryFileSummary = { id: string; sourceId: MemorySourceId; name: string; filename: string; isMain: boolean }
+type MemoryFileDetail = MemoryFileSummary & { content: string; displayPath: string }
+
+type McpServer = { id: string; name: string; rawName: string; scope: "global" | "project"
+                   source: "user" | "local" | "project" | "plugin" | "cloudIntegration"
+                   type: string | null; command: string | null; args: string[]; url: string | null
+                   envKeys: string[]; headerKeys: string[]                   // values never cross IPC (ADR 0010)
+                   tools: string[]; isWildcard: boolean }
+type McpStatus = "connected" | "needsAuth" | "failed" | "unreachable" | "starting" | "unknown"
+type McpServerInput = { name: string; type: "stdio" | "http" | "sse"; command: string | null; args: string[]; url: string | null
+                        env: Record<string, SecretInput>; headers: Record<string, SecretInput> }
+type SecretInput = { kind: "keep" } | { kind: "set"; value: string } | { kind: "remove" }
+
+type SearchMode = "fuzzy" | "exact"
+type SearchHit = { title: string; subtitle: string | null; highlights: [number, number][]   // UTF-16 offsets into title
+                   action: SearchAction }
+type SearchAction =
+  | { kind: "openSession"; projectId: ProjectId; sessionId: SessionId }
+  | { kind: "openDebugLog"; projectId: ProjectId; sessionId: SessionId }
+  | { kind: "navigateTo"; screen: NavScreen }
+  | { kind: "openDetail"; screen: NavScreen; ref: ConfigRef | null; memoryFile: { sourceId: MemorySourceId; fileId: string } | null }
+type SearchResults = { groups: { category: SearchCategory; hits: SearchHit[] }[] }       // at most 5 hits per group
+type SearchCategory = "sessions" | "debugLogs" | "facets" | "fileChanges" | "todos" | "history" | "commands" | "skills" | "plans"
+                    | "memory" | "mcpServers" | "plugins" | "outputStyles" | "hooks" | "models" | "subAgents"
+
+type NavScreen = "sessions" | "todos" | "commands" | "skills" | "plans" | "memory" | "hooks" | "mcpServers" | "plugins"
+               | "outputStyles" | "models" | "subAgents" | "analytics" | "history"
+type NavTarget = { kind: "session"; projectId: ProjectId; sessionId: SessionId } | { kind: "screen"; screen: NavScreen }
+
+type StatsView = { stats: StatsCache; source: "cache" | "computed" }   // StatsCache mirrors Models/StatsCache.swift
+type TraySnapshot = { totalSessions: number; totalMessages: number; todayMessages: number; recent: RecentSession[] }  // ≤ 10
+
+type ExportOptions = { timestamps: boolean; toolResults: boolean; thinking: boolean; tokenUsage: boolean }
+type ExportDestination = "clipboard" | "file"
+type CsvKind = "dailyActivity" | "modelUsage" | "dailyTokens" | "hourlyActivity"
+type PngKind = "analytics" | "editDiff"
+
+type EditorTarget = { kind: "toolBlock"; projectId: ProjectId; sessionId: SessionId; blockId: BlockId; line: number | null }
+                  | { kind: "configItem"; ref: ConfigRef }
+                  | { kind: "memoryFile"; sourceId: MemorySourceId; fileId: string }
+                  | { kind: "mcpConfig"; serverName: string }                 // opens ~/.claude.json at the server's line
+type RevealTarget = { kind: "session"; projectId: ProjectId; sessionId: SessionId } | { kind: "configItem"; ref: ConfigRef } | { kind: "mcpConfigFile" }
+
+type AppInfo = { version: string; identifier: string; os: "windows" | "linux" | "macos"; arch: string; claudeHomeFound: boolean }
+type CliStatus = { cliPath: string | null; sessionsExist: boolean }
+type SidebarCounts = Record<"todos" | "history" | "commands" | "skills" | "plans" | "memory" | "mcpServers" | "models" | "hooks"
+                            | "subAgents" | "plugins" | "outputStyles", number>
+type UpdateStatus = { available: boolean; currentVersion: string; version: string | null; notes: string | null; notesUrl: string | null }
+type Prefs = { schemaVersion: number /* + the 18 keys in ADR 0007 */ }
+type PrefsPatch = Partial<Omit<Prefs, "schemaVersion" | "customMemoryFolders" | "configProjectPath">>  // folders and picked project change only through their commands
+```
+
+## 6. Commands
+
+"Window" says which capability file grants the command (ADR 0010). "Scope" is the product scope of the task that implements it.
+
+| File (`src-tauri/src/commands/`) | Command | Arguments | Returns | Window | Scope | Implemented by |
+|---|---|---|---|---|---|---|
+| app.rs | `get_app_info` | — | `AppInfo` | main | MVP | M1-40 |
+| app.rs | `get_sidebar_counts` | `project: ProjectContext \| null` | `SidebarCounts` | main | MVP | M1-40 |
+| app.rs | `detect_claude_cli` | — | `CliStatus` | main | MVP | M1-40 |
+| prefs.rs | `get_prefs` | — | `Prefs` | main, tray | MVP | M1-39 |
+| prefs.rs | `update_prefs` | `patch: PrefsPatch` | `Prefs` | main | MVP | M1-39 |
+| prefs.rs | `add_memory_folder` | — (Rust opens the folder picker) | `WriteOutcome` | main | MVP | M1-39 |
+| prefs.rs | `remove_memory_folder` | `sourceId: MemorySourceId` | `WriteOutcome` | main | MVP | M1-39 |
+| prefs.rs | `pick_config_project` | — (Rust opens the folder picker) | `WriteOutcome` | main | MVP | M1-39 |
+| sessions.rs | `list_projects` | — | `Loaded<ProjectSummary[]>` | main | MVP | M1-41 |
+| sessions.rs | `list_sessions` | `projectId, includeAgents: boolean` | `Loaded<SessionSummary[]>` | main | MVP | M1-41 |
+| sessions.rs | `get_session` | `projectId, sessionId` | `SessionDetail` | main | MVP | M1-41 |
+| sessions.rs | `get_session_messages` | `projectId, sessionId, start: number, count: number` | `MessagePage` | main | MVP | M1-41 |
+| sessions.rs | `list_recent_sessions` | `limit: number` | `RecentSession[]` | main | MVP | M1-41 |
+| sessions.rs | `delete_session` | `projectId, sessionId` | `WriteOutcome` | main | Later | M3-46 |
+| sessions.rs | `delete_project` | `projectId` | `WriteOutcome` | main | Later | M3-46 |
+| session_data.rs | `get_session_todos` | `sessionId` | `TodoList[]` | main | MVP | M1-42 |
+| session_data.rs | `list_all_todos` | — | `TodoGroup[]` | main | MVP | M1-42 |
+| session_data.rs | `get_file_history` | `projectId, sessionId` | `FileHistory` | main | MVP | M1-42 |
+| session_data.rs | `get_file_version` | `sessionId, versionId` | `FileVersionContent` | main | MVP | M1-42 |
+| session_data.rs | `diff_file_versions` | `sessionId, fromVersionId, toVersionId` | `DiffResult` | main | MVP | M1-42 |
+| session_data.rs | `diff_lines` | `oldText: string, newText: string` | `DiffResult` | main | MVP | M1-42 |
+| session_data.rs | `get_debug_log_page` | `sessionId, offset, limit, level: string \| null` | `DebugLogPage` | main | MVP | M1-42 |
+| session_data.rs | `get_session_facets` | `sessionId` | `SessionFacets \| null` | main | MVP | M1-42 |
+| history.rs | `list_history` | `offset, limit` | `HistoryPage` | main | MVP | M1-43 |
+| history.rs | `delete_history_entry` | `entryId` | `WriteOutcome` | main | Later | M3-46 |
+| history.rs | `clear_history_older_than` | `days: number` | `WriteOutcome` | main | Later | M3-46 |
+| config_read.rs | `list_config_items` | `kind: ConfigKind, project: ProjectContext \| null` | `Loaded<ConfigItemSummary[]>` | main | MVP | M1-44 |
+| config_read.rs | `get_config_item` | `ref: ConfigRef` | `ConfigItemDetail` | main | MVP | M1-44 |
+| config_read.rs | `list_hooks` | `project: ProjectContext \| null` | `Loaded<HookEntry[]>` | main | MVP | M1-44 |
+| config_read.rs | `list_plugins` | — | `PluginInfo[]` | main | MVP | M1-44 |
+| config_read.rs | `list_models` | `project: ProjectContext \| null` | `ModelsView` | main | MVP | M1-44 |
+| config_read.rs | `list_memory_sources` | — | `MemorySource[]` | main | MVP | M1-44 |
+| config_read.rs | `list_memory_files` | `sourceId` | `MemoryFileSummary[]` | main | MVP | M1-44 |
+| config_read.rs | `get_memory_file` | `sourceId, fileId` | `MemoryFileDetail` | main | MVP | M1-44 |
+| mcp.rs | `list_mcp_servers` | `project: ProjectContext \| null` | `Loaded<McpServer[]>` | main | MVP | M1-45 |
+| mcp.rs | `get_mcp_statuses` | `project: ProjectContext \| null` | `Record<string, McpStatus>` | main | MVP | M1-45 |
+| mcp.rs | `get_mcp_catalog` | — | `McpCatalogEntry[]` | main | MVP | M1-45 |
+| mcp.rs | `add_mcp_server` | `input: McpServerInput` | `WriteOutcome` | main | Later | M3-45 |
+| mcp.rs | `update_mcp_server` | `originalName: string, input: McpServerInput` | `WriteOutcome` | main | Later | M3-45 |
+| mcp.rs | `remove_mcp_server` | `name: string` | `WriteOutcome` | main | Later | M3-45 |
+| config_write.rs | `set_plugin_enabled` | `key: string, enabled: boolean` | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `remove_plugin` | `key: string` | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `set_default_model` | `model: string` | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `set_project_model` | `project: ProjectContext, model: string \| null` | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `save_hook` | `project: ProjectContext \| null, event: string, group: HookGroupInput, existingIndex: number \| null` | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `delete_hook` | `project: ProjectContext \| null, event: string, index: number` | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `import_hooks` | `project: ProjectContext \| null` (Rust opens the file picker) | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `export_hooks` | `project: ProjectContext \| null` (Rust opens the save dialog) | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `save_agent` | `input: AgentInput, originalSlug: string \| null` | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `import_agent` | — | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `export_agent` | `slug: string` | `WriteOutcome` | main | Later | M3-44 |
+| config_write.rs | `create_config_template` | `kind: ConfigKind, project: ProjectContext \| null` | `ConfigRef` | main | Later | M3-44 |
+| config_write.rs | `delete_config_item` | `ref: ConfigRef` | `WriteOutcome` | main | Later | M3-44 |
+| analytics.rs | `get_stats` | — | `StatsView` | main | Later | M3-30 |
+| tray.rs | `get_tray_snapshot` | `query: string \| null` | `TraySnapshot` | main, tray | Later | M3-30 |
+| tray.rs | `open_in_main_window` | `target: NavTarget` | `null` | tray | Later | M3-30 |
+| search.rs | `search` | `query: string, mode: SearchMode, project: ProjectContext \| null` | `SearchResults` | main | MVP | M1-46 |
+| export.rs | `export_session` | `projectId, sessionId, options: ExportOptions, destination: ExportDestination` | `WriteOutcome` | main | MVP | M3-09 |
+| export.rs | `export_edit_patch` | `projectId, sessionId, blockId` | `WriteOutcome` | main | MVP | M3-09 |
+| export.rs | `export_analytics_csv` | `kind: CsvKind` | `WriteOutcome` | main | Later | M3-36 |
+| export.rs | `save_png` | `kind: PngKind, bytes: number[]` | `WriteOutcome` | main | Later | M3-36 |
+| launch.rs | `open_external_url` | `url: string` | `null` | main | MVP | M2-11 |
+| launch.rs | `open_in_editor` | `target: EditorTarget` | `null` | main | Later | M3-53 |
+| launch.rs | `open_terminal` | `projectId, sessionId: SessionId \| null` | `null` | main | Later | M3-53 |
+| launch.rs | `reveal_in_file_manager` | `target: RevealTarget` | `null` | main | Later | M3-53 |
+| update.rs | `check_for_update` | — | `UpdateStatus` | main | MVP | M4-04 |
+| update.rs | `install_update` | — | `null` | main | MVP | M4-04 |
+
+`HookGroupInput` and `AgentInput` mirror `HookMatcherGroup` and `SubAgent` from the Swift models without ids; unknown hook-handler keys already on disk are preserved by Rust, not sent by the webview.
+
+Every mutating command that writes a hook command or URL, an MCP command, arguments or environment, or imports hooks shows a **native confirmation from Rust** with the exact values first (ADR 0010, rule 6). Declining returns `"cancelled"`.
+
+## 7. Events
+
+| Event | Payload | Emitted by | Consumers |
+|---|---|---|---|
+| `data-changed` | `DataChange[]` where `DataChange = { area: Area; key: string \| null }` | watcher (M1-47), prefs (M1-39) | stores via `onDataChanged` |
+| `watcher-status` | `{ mode: "recursive" \| "degraded" \| "failed"; detail: string \| null }` | watcher (M1-47) | app shell toast |
+| `menu-action` | `{ action: AppAction }` | macOS menu (M2-13) | `useAppActions` |
+| `navigate` | `{ target: NavTarget }` | `open_in_main_window` (M3-30) | router |
+
+```ts
+type Area = "projects" | "sessions" | "transcript" | "todos" | "history" | "debugLogs" | "facets" | "fileHistory" | "stats"
+          | "commands" | "skills" | "plans" | "outputStyles" | "agents" | "hooks" | "settings" | "mcp" | "plugins" | "memory"
+          | "prefs" | "all"                       // "all" = watcher overflow or rescan: reload whatever is on screen
+// key: ProjectId for "sessions", SessionId for "transcript" | "todos" | "debugLogs" | "facets" | "fileHistory", MemorySourceId for "memory"; otherwise null
+type AppAction = "about" | "checkUpdates" | "settings" | "help" | "shortcuts" | "search" | "back" | "forward" | "toolFilter"
+               | "fontIncrease" | "fontDecrease" | "fontReset"
+```
+
+Events never carry raw paths for the webview to re-request (ADR 0006).
+
+## 8. Window access
+
+Two capability files exist (task M1-48). The main window gets every command marked `main` above, event listening, and `clipboard-manager:allow-write-text` and `clipboard-manager:allow-write-image`. The tray window gets only `get_tray_snapshot`, `open_in_main_window` and `get_prefs`. No window gets any `fs:`, `shell:` or `opener:allow-open-path` permission. Command exposure is scoped through `AppManifest::commands` in `build.rs` (task M1-49).

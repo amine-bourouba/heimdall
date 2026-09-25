@@ -1,0 +1,148 @@
+# Progress log
+
+Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62, M4-14) copy statuses from here into the parity matrix.
+
+## Rules
+
+1. Add one entry at the **bottom** when a task finishes (or is blocked). Never edit or delete another entry; correct a mistake with a new entry that references the old one.
+2. Use the template exactly. Keep it factual: what changed, how each acceptance criterion was proven, what is left.
+3. Evidence is a link or a command with its result: a CI run URL, a test command and its pass count, a screenshot path, a manual check with OS and version.
+4. Record anything a task asks you to record here (for example the tauri-specta version in M1-37, the `CLAUDE_CONFIG_DIR` finding in M1-06, the first coverage figure in M1-56).
+5. If you find a problem outside your task, list it under Follow-ups with a proposed owner workstream; do not fix it in your task.
+
+## Template
+
+```markdown
+### <TASK-ID> · <task title> · <YYYY-MM-DD>
+
+- **Agent:** <subagent type>   **Reviewers:** <who signed off>
+- **Status:** done | blocked | partially done
+- **Files touched:** `path`, `path`
+- **Evidence:**
+  - AC1: <how it was proven>
+  - AC2: <…>
+- **Per-OS notes:** Windows … · Linux … · macOS …   (omit if not applicable)
+- **Follow-ups:** <item> → <owner workstream>   (or "none")
+```
+
+## Entries
+
+### PLAN · Planning package produced · 2026-09-25
+
+- **Agent:** planning agent   **Reviewers:** pending (user)
+- **Status:** done
+- **Files touched:** `docs/port-plan.md`, `docs/parity-matrix.md`, `docs/ipc-contract.md`, `docs/progress-log.md`, `docs/adr/0001`–`0011`, `docs/tasks/README.md`, `docs/tasks/M0-01` … `M4-16` (174 files), `docs/tasks/check_backlog.py`
+- **Evidence:**
+  - Brief citations spot-checked against `$POIROT` at `a29dd6e`; 21 corrections recorded in port-plan §3.1.
+  - `python docs/tasks/check_backlog.py --poirot C:\Users\pc\Desktop\tech\poirot` → 174 tasks checked, 0 errors.
+  - Linux name collision checked on packages.debian.org, archlinux.org and packages.fedoraproject.org (ADR 0011).
+  - No `.rs`, `.vue`, `.ts` or `.swift` file created or modified.
+- **Follow-ups:** user answers D1–D4 (port-plan §2.2) → Docs (M0-02) and Release (M0-03)
+
+### M0-02 · Record the final app identifier and Linux package name · 2026-09-25
+
+- **Agent:** planning agent, acting as technical-writer   **Reviewers:** pending (architect-reviewer)
+- **Status:** done
+- **Files touched:** `docs/adr/0011-app-identifier-and-release-repo.md`, `docs/adr/0001-repo-layout-and-swift-reference.md`, `docs/adr/0007-preferences-storage-and-migration.md`, `docs/port-plan.md`, `docs/tasks/M0-01-rules-file.md`, `docs/tasks/M0-02-record-identity-decisions.md`, `docs/tasks/M0-03-repo-bootstrap.md`, `docs/tasks/M2-04-icons-motion.md`
+- **Evidence:**
+  - User answer, 2026-09-25: follow the recommendations for D1–D3; the folder was moved out of `hydra` (D4).
+  - AC1: ADR 0011 status reads Accepted with identifier `io.github.amine-bourouba.heimdall` and package/binary name `heimdall-desktop`.
+  - AC2: the identifier uses only `A-Z a-z 0-9 . -` and does not end in `.app`.
+  - AC3: `heimdall-desktop` is absent from the Debian/Ubuntu, Arch and Fedora name searches recorded in ADR 0011, each of which lists every package containing "heimdall".
+  - AC4: `grep -rn -E "<APP_ID>|<LINUX_PKG>" docs/adr docs/port-plan.md` returns nothing.
+  - D4: the project now lives at `C:\Users\pc\Desktop\tech\Heimdall`; `git rev-parse --show-toplevel` there reports "not a git repository", so it is outside `hydra`.
+  - Task graph: M0-02 no longer depends on M0-01, and M0-01 now writes the real identifier directly instead of a placeholder. M2-04 gained an explicit M0-01 dependency because it reads the rules file. `check_backlog.py` → 174 tasks checked, 0 errors.
+- **Follow-ups:** M0-03 runs `git init` in the new location → Release; M0-01 is the next task to start → Docs
+
+### M0-03 · Initialise the Heimdall repository and its ignore/attribute rules · 2026-09-25
+
+- **Agent:** build-engineer (executed by the coordinating agent)   **Reviewers:** pending (architect-reviewer)
+- **Status:** done
+- **Files touched:** `.gitignore`, `.gitattributes`, `.editorconfig` (plus `git init -b main`)
+- **Evidence:**
+  - AC1: `git rev-parse --show-toplevel` → `C:/Users/pc/Desktop/tech/Heimdall`.
+  - AC2: `.gitattributes` has `* text=auto eol=lf` and `fixtures/** -text`; `git check-attr text -- fixtures/windows/x.jsonl` → `unset`, `src/main.ts` → `auto`.
+  - AC3: `.gitignore` covers `target/`, `node_modules/`, `dist/`, `src-tauri/gen/`, `coverage/`, `test-results/`, `playwright-report/` (and `*.key` so updater keys are never committed).
+- **Follow-ups:** none. No commit made yet: commits wait for the user's go-ahead.
+
+### M0-01 · Write Heimdall's AI_INSTRUCTIONS.md and CLAUDE.md · 2026-09-25
+
+- **Agent:** documentation-engineer (executed by the coordinating agent)   **Reviewers:** pending (architect-reviewer)
+- **Status:** done
+- **Files touched:** `AI_INSTRUCTIONS.md`, `CLAUDE.md`
+- **Evidence:**
+  - AC1: `CLAUDE.md` is 3 lines and only points to `AI_INSTRUCTIONS.md`.
+  - AC2: sections present: Overview, Stack, Layer rules, Icons, Design tokens, Security, Commands, Parallel development (worktrees), Swift reference, Feature development workflow, New Feature Checklist, Git & PRs.
+  - AC3: the New Feature Checklist is adapted (Ctrl/Cmd+K, watcher areas, Playwright baselines).
+  - AC4: Git & PRs copied verbatim from `$POIROT/AI_INSTRUCTIONS.md`.
+  - AC5: the Swift-rules grep matches only line 91, inside the Swift reference section.
+- **Follow-ups:** none.
+
+### M0-04 · Add LICENSE, NOTICE and a scoped README · 2026-09-25
+
+- **Agent:** technical-writer (executed by the coordinating agent)   **Reviewers:** pending (code-reviewer)
+- **Status:** done
+- **Files touched:** `LICENSE`, `NOTICE`, `README.md`
+- **Evidence:**
+  - AC1: LICENSE is MIT with `Copyright (c) 2026 amine-bourouba (Heimdall)` and `Copyright (c) 2026 Leonardo Cardoso (Poirot, …)`; the permission text is byte-identical to Poirot's (`diff` of the body is empty).
+  - AC2: NOTICE names https://github.com/a7t-ai/poirot at `a29dd6ee0e0133ef26bd067c164c66b160e13d86`.
+  - AC3: `grep -n -i "usage limit" README.md` returns nothing.
+  - AC4: every README feature maps to MVP parity rows (B2–B18, B23–B37, C8–C12).
+- **Follow-ups:** none.
+
+### M0-05 · Exhaustive inventory of every ~/.claude path Poirot reads or writes · 2026-09-25
+
+- **Agent:** legacy-modernizer (executed by the coordinating agent)   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `docs/spec/claude-home-inventory.md`; planning corrections in `docs/parity-matrix.md` (new row G7), `docs/port-plan.md` (C-22, C-23), `docs/adr/0006-change-propagation-and-caching.md`
+- **Evidence:**
+  - AC1: §6 cross-references every parity row in sections E, F and G, including the new G7.
+  - AC2: 110 Swift citations; an automated check confirmed every cited line exists at `a29dd6e`.
+  - AC3: §5 lists every `homeDirectoryForCurrentUser`/`NSHomeDirectory` hit.
+  - AC4: §7 lists the discrepancies, including `originalPath` versus `projectPath` and the unused `cwd`.
+  - New findings: 13 watcher start sites in 8 files (brief said 4); history deletes remove lines by index (D-5).
+- **Follow-ups:** none.
+
+### M0-06 · Map every PoirotTests case to its Heimdall destination · 2026-09-25
+
+- **Agent:** legacy-modernizer (executed by the coordinating agent)   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `docs/spec/test-carryover.md`; task inputs updated for M1-10, M2-02, M2-07, M2-14, M3-02, M3-11, M3-31, M3-43 (they now name the Swift tests routed to them)
+- **Evidence:**
+  - AC1: `grep -rho "@Test" $POIROT/PoirotTests | wc -l` = 637; the map has 637 rows.
+  - AC2: every destination is an output of some task (checked by script).
+  - AC3: drops limited to ClaudeCodeProviderTests, UpdateCheckerTests, `UsageWindowTests.timeUntilReset` (Usage Limits leftover), mocks, and the stale `ScreenshotTests_Usage` skip. HighlightedTextTests has no AttributedString assertions, so all four move to `search/matcher.rs`.
+  - AC4: AnalyticsCSVExporterTests maps to Rust with the P-18 reason.
+- **Follow-ups:** none.
+
+### M0-07 · Behaviour spec for universal search · 2026-09-25
+
+- **Agent:** legacy-modernizer   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `docs/spec/search-overlay.md`
+- **Evidence:** all 16 categories with sources, fields and scoping; fuzzy and exact scoring with worked examples verified against HighlightedTextTests; empty-query state; both quick actions; all SearchAction variants; key bindings; 200 ms debounce; custom-folder gap. Every Swift citation resolves (automated check, 23 citations).
+- **Follow-ups:** Poirot has 6 SearchAction variants, the contract has 4; the two quick actions need IPC variants when they ship (S17, S18, Later) → Rust data core.
+
+### M0-08 · Behaviour spec for the session browser and conversation view · 2026-09-25
+
+- **Agent:** legacy-modernizer   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `docs/spec/session-views.md`
+- **Evidence:** one section per Swift view; every threshold with its source line (page size 20, 80/50-line truncation, 5000-line diff cap, 4 s/10 s toasts, debug-log page 200, and about 25 more); the full toolbar table; buildable skeleton layouts. 109 Swift citations all resolve.
+- **Follow-ups:** "Expand All" updates only tool blocks in Poirot; thinking and system blocks ignore it. Decide whether to copy the asymmetry (spec open question 5) → Feature screens (M2-20).
+
+### M0-09 · Behaviour spec for the configuration screens, forms and MCP wizard · 2026-09-25
+
+- **Agent:** legacy-modernizer   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `docs/spec/config-screens.md`
+- **Evidence:** a section per screen with read-only versus mutating actions; the full MCP wizard (3 steps, 14 catalog entries, validation, preview); the "Do not port" section with the 4 required items verified plus 6 more (multi-handler hook truncation on edit is the most severe). 163 Swift citations all resolve.
+- **Follow-ups:** Swift folds user, local and project MCP sources into one `.user`; the contract keeps five. Keep the contract (richer) and note it in M1-26/M1-45 → Rust data core.
+
+### M0-10 · Behaviour spec for analytics, exports and the context ring · 2026-09-25
+
+- **Agent:** legacy-modernizer   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `docs/spec/analytics.md`
+- **Evidence:** exact range and reference-date formulas; every derived series and formatter; six charts; eight stat cards; the Monday-first heatmap algorithm; four CSV formats (always all-time); the PNG snapshot; the 200k/1M context-window rule; staleness rules. 65 Swift citations all resolve.
+- **Follow-ups:** 9 open questions about Poirot's own inconsistencies (for example the "(UTC)" hour label on local-time buckets) → Feature screens (M3-31 to M3-34).
