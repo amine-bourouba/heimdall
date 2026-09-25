@@ -523,3 +523,28 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
 - **Deviations:**
   - The model reads missing keys as defaults (M1-09), so a file with no `session_id` is keyed by its file name instead of being dropped.
 - **Follow-ups:** none.
+
+### M1-19 · File history from snapshot and delta records · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/data/file_history.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core file_history` → 8 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 5 FileHistoryLoaderTests. `sameFile` is now `paths::same_file`, tested with the same four cases.
+  - Both `file-history-snapshot` and `file-history-delta` records are read. Backups with no file name, version 0 or no time are dropped.
+  - File matching:
+    - It uses `paths::same_file`.
+    - In `windows_paths_merge_with_relative_tracked_names`, the snapshot key `C:\Users\me\proj\src\Main.rs` and the delta path `src\main.rs` merge on Windows (case-insensitive) but stay apart on Linux.
+    - A repeated backup counts once.
+  - On the Windows fixture, every version of sessions `54a79a0b…` and `ab8bf07e…` resolves to a backup file on disk, with 0 skipped lines.
+  - Transcript lines are read into a small typed record, so the rest of each line is skipped rather than built into JSON values.
+- **Deviations:**
+  - Every version of a merged file carries the file's final (longest) name; Poirot kept the name each version was first seen under.
+  - Transcript lookup visits project folders in name order.
+  - Session and backup names must be plain file names.
+- **Fixture privacy fix (same day):**
+  - Tracked file paths in the Windows capture contained hyphen-encoded project folders (`c--Users-fixture-Desktop-tech-<real name>`) that the scrubber had not pseudonymised.
+  - The scrubber now applies the folder pseudonyms inside paths (new test case), and the 126 occurrences in the fixture were rewritten to the existing `proj-10` and `proj-11` pseudonyms.
+  - The history was rewritten before any push, so no commit contains them.
+- **Follow-ups:** none.
