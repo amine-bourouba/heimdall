@@ -293,3 +293,78 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `Records` iterates a `BufReader`; `grep read_to_string crates/heimdall-core/src` finds nothing.
   - `read_head(path, max, qualifies)` reads in 8 KiB chunks and stops after N qualifying lines.
 - **Follow-ups:** none.
+
+### M1-08 · Serde models for messages, sessions and projects · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/models/{message,session,project,token_usage,context_usage,session_group}.rs`
+- **Evidence:**
+  - Test counts: message 19, session 33, project 4, token_usage 10, context_usage 4, session_group 8. There is one Rust test per Swift test in test-carryover.md for these files; session tests that had been merged were split back out to match one to one.
+  - IPC structs use `rename_all = "camelCase"` and derive `specta::Type`. `ContentBlock` is tagged by `kind` (`text`, `thinking`, `toolUse`, `toolResult`).
+  - The model sentinel is `message::SYNTHETIC_MODEL`.
+  - Disk types use `#[serde(default)]` and ignore unknown fields.
+- **Follow-ups:** none.
+
+### M1-09 · Serde models for stats, history, todos, facets, debug log and file history · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/models/{stats_cache,history_entry,session_todo,session_facets,debug_log_entry,file_version}.rs`
+- **Evidence:**
+  - Test counts: stats_cache 12, history_entry 5, session_todo 8, session_facets 12, debug_log_entry 7, file_version 1.
+  - `SessionFacets` reads snake_case keys and serialises camelCase (tested).
+  - `TodoStatus` accepts `in_progress`, `pending` and `completed`. `list_from_json` skips items with unknown statuses without failing the file (tested).
+  - The `costUSD` key is kept exactly.
+- **Follow-ups:** none.
+
+### M1-10 · Config models, catalogs and the redacting Secret type · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending (architect-reviewer, security-auditor)
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/models/config/{scope,mcp,hook,sub_agent,command,skill,output_style,plan,memory_file,plugin,settings}.rs`, `crates/heimdall-core/src/models/catalog/{claude_models,mcp_catalog}.rs`, `crates/heimdall-core/src/models/secret.rs`, `docs/ipc-contract.md` (added `McpCatalogEntry`, `McpEnvKey`). Lint fixes in `models/session_group.rs` and `jsonl.rs`, which `cargo clippy --all-targets` flagged.
+- **Evidence:**
+  - Carried-over tests pass: `cargo test -p heimdall-core` → 210 passed.
+    - MCPServerCatalogTests: 14 tests in `mcp_catalog`.
+    - Catalog cases from SettingsWriterMCPTests: 4 tests in `mcp_catalog`.
+    - MCPServerStatusTests: 7 tests in `mcp`.
+    - PlanTests: 8 tests in `plan`.
+    - MemoryFileTests: 12 tests in `memory_file`.
+    - SubAgentTests: 7 tests in `sub_agent`.
+    - ClaudeModelCatalogTests: 7 tests in `claude_models`.
+    - Moved elsewhere, as test-carryover.md records: fuzzyMatch cases to M1-29, the plan delete case to M3-42, and SF Symbol cases to M3-14.
+  - `Secret`: `Debug` and `Display` print `[redacted]`, and it has no `Serialize`. `McpServer` serialises `envKeys` and `headerKeys`, and skips the value maps.
+  - Test `serialised_server_carries_env_key_names_but_never_values` builds a server from `env: {"API_KEY": "sk-123"}` and asserts that the JSON has no `sk-123`.
+  - `HookHandler` keeps unknown keys in `extra` and sends only `extraKeys` over IPC (a test asserts that an http header value never reaches JSON). `handler_round_trips_every_key` covers `from_json` → `to_json`. `McpServerDefinition` keeps `type`, `url` and `headers`.
+  - Catalogs match Swift entry for entry:
+    - MCP catalog: 15 entries in Poirot's order, with ids, env keys and defaults as in Swift. The count is asserted.
+    - Model catalog: 5 curated models, with `DEFAULT_MODEL_NAME` "Opus 5" and the same `friendly_name` algorithm.
+  - `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+- **Deviations:**
+  - Icons stay Poirot's SF Symbol names (sub-agents, MCP catalog and its categories); M2-04's icon map converts them to Lucide.
+  - `McpServer.status` is not serialised, because the contract sends status separately as `McpStatus`.
+  - `McpServerSource` has the contract's five values, not Swift's three.
+  - `HookEvent.icon` is not ported to Rust, because no DTO carries it; the hooks UI owns it (M2-04 map).
+- **Follow-ups:** none.
+
+### M1-11 · Typed preferences, editor and terminal enums · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/models/prefs.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core prefs` → 15 passed; `cargo clippy -p heimdall-core --all-targets -- -D warnings` → exit 0.
+  - All 18 keys plus `schemaVersion` have the types and defaults in ADR 0007 (`defaults_follow_adr_0007` counts 19 keys). `claudeCodePath` defaults to null, which means a PATH search.
+  - `#[serde(default)]` on the struct:
+    - `missing_keys_take_defaults_and_unknown_keys_are_ignored` checks both.
+    - `Prefs::from_stored` goes further: a value that no longer parses falls back for that key only, so a downgrade cannot wipe `customMemoryFolders` (`a_bad_value_falls_back_for_that_key_only`).
+  - `PreferredEditor` is vscode, cursor, xcode or zed; `options(os)` drops Xcode off macOS.
+  - `PreferredTerminal` has the ADR 0003 sets:
+    - macOS: Poirot's six.
+    - Windows: Windows Terminal, PowerShell, cmd.
+    - Linux: GNOME Terminal, Konsole, kitty, Alacritty, system.
+    - Defaults are tested per OS on any host.
+  - Carried-over tests: all 6 PreferredEditorTests and all 4 PreferredTerminalTests (checked against the macOS set).
+  - `ColorThemeId` has the 20 ids from PoirotTheme.swift.
+- **Deviations:** VS Code is stored as `vscode` (ADR 0007), not Poirot's raw value `code`. The raw-value test asserts `vscode`; the CLI command is still `code`.
+- **Follow-ups:** `update_prefs` validation (fontScale range and step, per-OS terminal and editor options) and the schema migration hook → M1-39.

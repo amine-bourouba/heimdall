@@ -95,7 +95,8 @@ type ContentBlock =
       edit: { oldString: string; newString: string } | null }
   | { kind: "toolResult"; id: BlockId; toolUseId: string; content: string; isError: boolean }
 
-type SystemSegment = { kind: "text" | "systemReminder" | "commandMessage" | "other"; tag: string | null; text: string }
+type SystemSegment = { kind: "text" | "systemReminder" | "commandMessage" | "other"; tag: string | null; text: string
+                       children: SystemSegment[] | null }   // one level: fields of a tag whose content holds tags
 type MessagePage = { start: number; messages: Message[]; total: number }
 type RecentSession = { projectId: ProjectId; projectName: string; session: SessionSummary }
 
@@ -144,6 +145,10 @@ type McpStatus = "connected" | "needsAuth" | "failed" | "unreachable" | "startin
 type McpServerInput = { name: string; type: "stdio" | "http" | "sse"; command: string | null; args: string[]; url: string | null
                         env: Record<string, SecretInput>; headers: Record<string, SecretInput> }
 type SecretInput = { kind: "keep" } | { kind: "set"; value: string } | { kind: "remove" }
+type McpCatalogEntry = { id: string; name: string; description: string; icon: string   // icon: Poirot SF Symbol name, mapped by AppIcon (M2-04)
+                         category: "developer" | "productivity" | "data" | "filesystem"; command: string; args: string[]
+                         envKeys: McpEnvKey[] }
+type McpEnvKey = { id: string; label: string; description: string; placeholder: string; isRequired: boolean; isSensitive: boolean }
 
 type SearchMode = "fuzzy" | "exact"
 type SearchHit = { title: string; subtitle: string | null; highlights: [number, number][]   // UTF-16 offsets into title

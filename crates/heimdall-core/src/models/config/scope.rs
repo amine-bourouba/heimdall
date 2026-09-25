@@ -1,3 +1,11 @@
-//! Config scope (Models/Config/ConfigScope.swift).
-//!
-//! Placeholder created by M1-05 (port-plan §5.4); owned by M1-10.
+//! Config scope (Models/Config/ConfigScope.swift): `~/.claude/` or `<project>/.claude/`.
+
+use serde::{Deserialize, Serialize};
+use specta::Type;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ConfigScope {
+    Global,
+    Project,
+}

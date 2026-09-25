@@ -1,3 +1,20 @@
 //! Skills (Models/Config/ClaudeSkill.swift).
-//!
-//! Placeholder created by M1-05 (port-plan §5.4); owned by M1-10.
+
+use serde::Serialize;
+use specta::Type;
+
+use super::scope::ConfigScope;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeSkill {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub model: Option<String>,
+    pub allowed_tools: Option<String>,
+    pub body: String,
+    /// Display only; never sent back by the webview (ADR 0010).
+    pub file_path: String,
+    pub scope: ConfigScope,
+}
