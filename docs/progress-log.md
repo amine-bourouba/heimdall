@@ -254,3 +254,42 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Production CSP has no `unsafe-*`; no fs or shell plugin in `Cargo.toml`.
 - **Environment notes:** this machine has no MSVC build tools, so it builds with Rust's GNU toolchain plus a portable MinGW (`%LOCALAPPDATA%\heimdall-dev\mingw64`, no admin). The MinGW linker warns "multiple non-default manifests"; the app still runs. Release builds use MSVC in CI.
 - **Follow-ups:** install the Visual Studio Build Tools (C++ workload) for MSVC parity locally → user.
+
+### M1-05 · Declare every heimdall-core module and implement AppError · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending (architect-reviewer)
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/lib.rs`, `crates/heimdall-core/src/error.rs`, and placeholders for every other module path in the task's Outputs
+- **Evidence:**
+  - `cargo test -p heimdall-core error::` → 4 passed. One test checks each of the six variants against `{"kind": …, "message": "m", "path": null}`; the others cover `with_path`, `from_io` (Windows sharing violations 32/33 → `busy`) and the `Loaded`/`WriteOutcome` shapes.
+  - `AppError` derives `thiserror::Error`, `Serialize` and `specta::Type`; `Loaded<T>` has `value` and `skipped`.
+  - `lib.rs` has `#![deny(clippy::print_stdout, clippy::print_stderr)]`.
+  - `RUSTDOCFLAGS="-D warnings" cargo doc -p heimdall-core --no-deps` → exit 0.
+- **Follow-ups:** none.
+
+### M1-06 · Claude home resolution, path normalisation and comparison keys · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/paths.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core paths::` → 7 passed.
+  - `ClaudeHome::for_user_home` and `ClaudeHome::new(root)` take explicit roots; only `from_env` reads the environment, and tests never touch the real home.
+  - `CLAUDE_CONFIG_DIR`: verified against Claude Code 2.1.282 on this machine. With the variable set to an absolute folder, the CLI reads and writes there instead of `~/.claude`. A relative value is not honoured, so `from_env` accepts absolute values only (test `claude_home_resolution_honours_an_absolute_config_dir_only`).
+  - Normalisation tests cover `C:\Users\a\x`, `c:/Users/a/x`, `\?\C:\Users\a\x`, mixed and doubled separators, trailing separators, `/Users/a/x/`, and UNC forms.
+  - Comparison keys fold case for Windows and macOS and keep it for Linux. Every function takes `TargetOs`, so all variants run on any host.
+  - `same_file` matches on segment boundaries, including `src/a.rs` against `C:\proj\src\a.rs`.
+  - `is_unc` detects `\server\share` and `//server/share` but not `\?\C:\`.
+  - `decode_project_dir_name` takes an injected `exists` function and is documented as the last-resort fallback.
+- **Follow-ups:** none.
+
+### M1-07 · Streaming JSONL reader with CRLF and truncation tolerance · 2026-09-25
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/jsonl.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core jsonl::` → 6 passed. The tests cover LF, CRLF, mixed line endings, a UTF-8 BOM, blank lines, an invalid line mid-file and a truncated last line, with the skipped counts asserted.
+  - `Records` iterates a `BufReader`; `grep read_to_string crates/heimdall-core/src` finds nothing.
+  - `read_head(path, max, qualifies)` reads in 8 KiB chunks and stops after N qualifying lines.
+- **Follow-ups:** none.
