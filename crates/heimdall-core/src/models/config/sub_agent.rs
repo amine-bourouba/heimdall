@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+use super::scope::ConfigRef;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum AgentScope {
@@ -80,6 +82,8 @@ pub struct SubAgent {
     pub file_path: Option<String>,
     pub memory: Option<AgentMemory>,
     pub scope: AgentScope,
+    /// `None` for built-in agents, which have no file.
+    pub config_ref: Option<ConfigRef>,
 }
 
 impl SubAgent {
@@ -111,6 +115,7 @@ impl SubAgent {
             file_path: None,
             memory: None,
             scope: AgentScope::BuiltIn,
+            config_ref: None,
         };
         vec![
             agent("explore", "Explore", "magnifyingglass", "Fast agent for codebase exploration — find files, search code, answer structural questions",

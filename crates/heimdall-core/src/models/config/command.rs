@@ -3,7 +3,7 @@
 use serde::Serialize;
 use specta::Type;
 
-use super::scope::ConfigScope;
+use super::scope::{ConfigRef, ConfigScope};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -19,4 +19,5 @@ pub struct ClaudeCommand {
     /// Display only; never sent back by the webview (ADR 0010).
     pub file_path: String,
     pub scope: ConfigScope,
+    pub config_ref: ConfigRef,
 }

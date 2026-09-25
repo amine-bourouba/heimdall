@@ -610,3 +610,22 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Poirot split lines on `\r` as well as `\n`, so a CRLF file ended a block scalar after its first continuation line; lines here split on `\n` with `\r` trimmed.
   - Metadata is a sorted map.
 - **Follow-ups:** none.
+
+### M1-24 · Loaders for commands, skills, plans, output styles and agents · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:**
+  - `crates/heimdall-core/src/config/read/{mod,commands,skills,plans,output_styles,agents}.rs`.
+  - `crates/heimdall-core/src/models/config/scope.rs`: `ConfigKind`, `ProjectContext` and `ConfigRef`, in the contract's shapes.
+  - `crates/heimdall-core/src/models/config/{command,skill,output_style,plan,sub_agent}.rs`: a `config_ref` field.
+- **Evidence:**
+  - `cargo test -p heimdall-core` → 431 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Tests on `fixtures/synthetic` cover global and project scope for commands (`/review`, `/deploy`), skills (`pdf-tools`, `db-migrate`) and output styles (`concise`, `terse`). Plans and agents are global-only, as in Poirot.
+  - Output styles skip `README.md`. `refactor-auth-module` becomes "Refactor Auth Module". The four built-in agents come first, then custom `reviewer` with its tools, colour and model.
+  - Each item carries a `ConfigRef` (kind, `ProjectContext` for project items, slug). `config::read::item_path` is the only way back to a file: it accepts a plain-file-name slug only and resolves it under the kind's folder (`refs_resolve_only_inside_their_folder`). Item `file_path` stays display-only.
+  - Items are sorted case-insensitively by name. Files that are not UTF-8 are counted in `skipped`.
+- **Deviations:**
+  - An agent `memory` value Poirot does not know (the fixture's `project`) is left unset, as Poirot's enum did.
+  - `skills/synced/<id>/<name>/` is not read, as in Poirot (parity E12).
+- **Follow-ups:** Claude Code's synced-skills layout (fixtures/windows MANIFEST fact 4) is outside parity; record it as a Later candidate if the user wants those skills listed → product decision.

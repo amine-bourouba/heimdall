@@ -5,6 +5,8 @@ use std::path::PathBuf;
 use serde::Serialize;
 use specta::Type;
 
+use super::scope::ConfigRef;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Plan {
@@ -14,6 +16,7 @@ pub struct Plan {
     pub content: String,
     #[serde(skip)]
     pub file: PathBuf,
+    pub config_ref: ConfigRef,
 }
 
 impl Plan {
@@ -38,7 +41,8 @@ mod tests {
     use std::hash::{Hash, Hasher};
 
     fn plan(id: &str, content: &str, file: &str) -> Plan {
-        Plan { id: id.into(), name: Plan::humanize(id), content: content.into(), file: file.into() }
+        Plan { id: id.into(), name: Plan::humanize(id), content: content.into(), file: file.into(),
+               config_ref: ConfigRef { kind: crate::models::config::scope::ConfigKind::Plan, project: None, slug: id.into() } }
     }
     fn hash(p: &Plan) -> u64 {
         let mut h = DefaultHasher::new();
