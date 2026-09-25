@@ -1,0 +1,12 @@
+[
+  {
+    "content": "Fix the auth bug in login.py",
+    "status": "completed",
+    "activeForm": "Fixing the auth bug"
+  },
+  {
+    "content": "Add a regression test",
+    "status": "in_progress",
+    "activeForm": "Adding a regression test"
+  }
+]

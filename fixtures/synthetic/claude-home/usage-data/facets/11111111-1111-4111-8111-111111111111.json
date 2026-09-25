@@ -1,0 +1,19 @@
+{
+  "session_id": "11111111-1111-4111-8111-111111111111",
+  "underlying_goal": "Fix an authentication bug",
+  "goal_categories": {
+    "fix_bugs": 1
+  },
+  "outcome": "success",
+  "user_satisfaction_counts": {
+    "likely_satisfied": 1
+  },
+  "claude_helpfulness": "very_helpful",
+  "session_type": "bug_fix",
+  "friction_counts": {
+    "tool_failures": 1
+  },
+  "friction_detail": "Edit tool failed once before the fix succeeded",
+  "primary_success": "single_file_change",
+  "brief_summary": "Fixed the login authentication bug in login.py and verified with tests."
+}

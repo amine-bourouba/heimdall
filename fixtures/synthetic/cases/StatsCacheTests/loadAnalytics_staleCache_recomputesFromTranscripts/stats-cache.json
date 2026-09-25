@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "lastComputedDate": "2026-03-15",
+  "dailyActivity": [
+    {
+      "date": "2026-03-15",
+      "messageCount": 1,
+      "sessionCount": 1,
+      "toolCallCount": 0
+    }
+  ],
+  "dailyModelTokens": [
+    {
+      "date": "2026-03-15",
+      "tokensByModel": {
+        "claude-opus-4-6": 999
+      }
+    }
+  ],
+  "modelUsage": {},
+  "totalSessions": 1,
+  "totalMessages": 1,
+  "longestSession": {
+    "sessionId": "s",
+    "duration": 1000,
+    "messageCount": 1,
+    "timestamp": "2026-03-15T00:00:00.000Z"
+  },
+  "firstSessionDate": "2026-03-15T00:00:00.000Z",
+  "hourCounts": {},
+  "totalSpeculationTimeSavedMs": 0
+}

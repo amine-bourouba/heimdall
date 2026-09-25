@@ -1,0 +1,1 @@
+{"type":"assistant","uuid":"25375a2b-d60b-5754-add0-bda74206b1f5","timestamp":"2026-01-28T10:01:00.000Z","isSidechain":false,"message":{"id":"msg_123","role":"assistant","model":"claude-opus-4-6","content":[{"type":"tool_use","id":"toolu_num","name":"Bash","input":{"command":"ls","timeout":5000,"dangerouslyDisableSandbox":true}}],"usage":{"input_tokens":100,"output_tokens":50}}}

@@ -1,0 +1,10 @@
+{"display": "Add a debounce to the universal search so typing feels responsive", "pastedContents": {}, "timestamp": 1789905000000, "project": "/Users/fixture/Dev/poirot"}
+{"display": "Fix the sidebar icon alignment — they should be top-aligned with the label text", "pastedContents": {}, "timestamp": 1789902900000, "project": "/Users/fixture/Dev/poirot"}
+{"display": "Run the screenshot tests and regenerate all snapshots that show the sidebar", "pastedContents": {}, "timestamp": 1789898400000, "project": "/Users/fixture/Dev/poirot"}
+{"display": "Refactor the session loader to support pagination with lazy loading", "pastedContents": {}, "timestamp": 1789894800000, "project": "/Users/fixture/Dev/reellette-ios"}
+{"display": "Create a new MCP server config for the Perplexity search integration", "pastedContents": {}, "timestamp": 1789887600000, "project": "/Users/fixture/Dev/ignio-web"}
+{"display": "Write unit tests for the TranscriptParser covering edge cases with malformed JSONL", "pastedContents": {}, "timestamp": 1789876800000, "project": "/Users/fixture/Dev/poirot"}
+{"display": "Implement the cost breakdown chart with per-model token pricing", "pastedContents": {}, "timestamp": 1789855200000, "project": "/Users/fixture/Dev/poirot"}
+{"display": "Add dark mode support to the analytics export view", "pastedContents": {}, "timestamp": 1789826400000, "project": "/Users/fixture/Dev/poirot"}
+{"display": "Set up the CI pipeline with GitHub Actions for automated testing on every PR", "pastedContents": {}, "timestamp": 1789797600000, "project": "/Users/fixture/Dev/swift-openapi"}
+{"display": "Debug the file watcher — it stops firing events after the app is backgrounded for more than 5 minutes", "pastedContents": {}, "timestamp": 1789754400000, "project": "/Users/fixture/Dev/poirot"}

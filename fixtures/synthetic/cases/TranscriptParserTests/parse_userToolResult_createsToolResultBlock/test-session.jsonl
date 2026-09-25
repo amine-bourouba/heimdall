@@ -1,0 +1,1 @@
+{"type":"user","uuid":"ab8e187c-2cc7-5b56-95a5-c2b7c59ddf42","timestamp":"2026-01-28T10:00:00.000Z","isSidechain":false,"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_abc","content":"File created successfully"}]}}

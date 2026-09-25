@@ -1,0 +1,2 @@
+{"type":"file-history-snapshot","messageId":"s1","snapshot":{"trackedFileBackups":{"/Users/fixture/proj/src/a.swift":{"backupFileName":"aaa@v2","version":2,"backupTime":"2026-08-26T12:11:06.199Z"}}}}
+{"type":"file-history-delta","messageId":"d1","trackingPath":"src/a.swift","backup":{"backupFileName":"aaa@v1","version":1,"backupTime":"2026-08-26T12:00:00.000Z"}}

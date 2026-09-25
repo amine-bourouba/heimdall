@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_TOKEN": "SENTINEL-SECRET-1"
+      }
+    },
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.io",
+      "headers": {
+        "Authorization": "Bearer SENTINEL-SECRET-2"
+      }
+    }
+  },
+  "projects": {
+    "/Users/fixture/src/app": {
+      "mcpServers": {
+        "local-db": {
+          "type": "stdio",
+          "command": "node",
+          "args": [
+            "db-server.js"
+          ],
+          "env": {
+            "DB_PATH": "/tmp/dev.db",
+            "DB_PASSWORD": "SENTINEL-SECRET-3"
+          }
+        }
+      }
+    }
+  }
+}

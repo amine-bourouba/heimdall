@@ -1,0 +1,17 @@
+{
+  "model": "claude-sonnet-4-6",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "scripts/post-bash-audit.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

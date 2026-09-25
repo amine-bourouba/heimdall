@@ -1,0 +1,5 @@
+2026-09-10T09:00:00.100Z [DEBUG] Loading MCP servers
+2026-09-10T09:00:00.400Z [WARN] Deprecated config option 'legacyAuth'
+2026-09-10T09:00:12.900Z [ERROR] Connection to mcp.perplexity.ai failed
+  at connect (client.js:42)
+  retrying in 5s

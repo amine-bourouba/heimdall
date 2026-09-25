@@ -1,0 +1,2 @@
+def login(user):
+    return authenticate(user)

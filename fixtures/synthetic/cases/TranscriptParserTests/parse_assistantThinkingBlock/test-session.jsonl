@@ -1,0 +1,1 @@
+{"type":"assistant","uuid":"92d4f0aa-349d-5874-b9fa-770c75fd602c","timestamp":"2026-01-28T10:01:00.000Z","isSidechain":false,"message":{"id":"msg_123","role":"assistant","model":"claude-opus-4-6","content":[{"type":"thinking","thinking":"Let me think about this"}],"usage":{"input_tokens":100,"output_tokens":50}}}

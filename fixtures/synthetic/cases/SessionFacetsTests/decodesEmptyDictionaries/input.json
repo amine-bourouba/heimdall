@@ -1,0 +1,13 @@
+{
+  "underlying_goal": "Quick question",
+  "goal_categories": {},
+  "outcome": "success",
+  "user_satisfaction_counts": {},
+  "claude_helpfulness": "very_helpful",
+  "session_type": "single_task",
+  "friction_counts": {},
+  "friction_detail": "",
+  "primary_success": "none",
+  "brief_summary": "Answered a question.",
+  "session_id": "def-456"
+}

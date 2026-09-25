@@ -1,0 +1,54 @@
+{
+  "model": "claude-opus-4-6",
+  "permissions": {
+    "allow": [
+      "mcp__github__search_repositories",
+      "mcp__github__get_file",
+      "Read",
+      "Grep"
+    ],
+    "deny": [
+      "mcp__filesystem__delete_file"
+    ]
+  },
+  "enabledPlugins": {
+    "code-review-bundle@acme": true,
+    "legacy-tools@acme": false
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "scripts/lint-before-edit.sh",
+            "timeout": 30
+          },
+          {
+            "type": "http",
+            "url": "https://hooks.example.com/pre-tool-use",
+            "timeout": 10,
+            "statusMessage": "Notifying the audit service"
+          },
+          {
+            "type": "websocket",
+            "url": "wss://unknown-handler.example.com",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": null,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "scripts/session-start.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+{"type":"user","uuid":"6d385b23-ac33-5bca-9407-2ad4a626ce26","timestamp":"2026-01-28T10:00:00.000Z","isSidechain":false,"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_2","content":[{"type":"text","text":"Line 1"},{"type":"tool_reference","ref":"something"},{"type":"text","text":"Line 2"}]}]}}

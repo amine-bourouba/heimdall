@@ -146,3 +146,60 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
 - **Files touched:** `docs/spec/analytics.md`
 - **Evidence:** exact range and reference-date formulas; every derived series and formatter; six charts; eight stat cards; the Monday-first heatmap algorithm; four CSV formats (always all-time); the PNG snapshot; the 200k/1M context-window rule; staleness rules. 65 Swift citations all resolve.
 - **Follow-ups:** 9 open questions about Poirot's own inconsistencies (for example the "(UTC)" hour label on local-time buckets) → Feature screens (M3-31 to M3-34).
+
+### M0-13 · Write the ~/.claude scrubbing tool · 2026-09-25
+
+- **Agent:** test-automator (executed by the coordinating agent)   **Reviewers:** pending (qa-expert, security-auditor)
+- **Status:** done
+- **Files touched:** `scripts/scrub-claude-home.mjs`, `scripts/scrub-claude-home.test.mjs`
+- **Evidence:** `node --test scripts/scrub-claude-home.test.mjs` → 10 pass, 0 fail: CRLF kept byte for byte; secrets replaced; home replaced in Windows, macOS, Linux and hyphen-encoded forms; same-length filler with valid JSON; credentials never copied; username, email and client names absent from the output.
+- **Beyond the task:** project path segments below the home (for example client folder names) become stable pseudonyms `proj-N` across paths, folder names and config keys; folders whose project path cannot be determined are reported for manual review. Git branch names become filler.
+- **Follow-ups:** none.
+
+### M0-14 · Capture a scrubbed real Windows ~/.claude tree · 2026-09-25
+
+- **Agent:** test-automator (executed by the coordinating agent)   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `fixtures/windows/claude-home/**` (118 files), `fixtures/windows/claude.json`, `fixtures/windows/crlf/**`, `fixtures/windows/MANIFEST.md`
+- **Evidence:**
+  - AC1: MANIFEST records Claude Code 2.1.282, 2026-09-25, Windows build 10.0.26200.9445, counts, and LF endings.
+  - AC2: transcripts are LF, so `crlf/` holds a CRLF copy of one 30-line transcript (content identical apart from line ends).
+  - AC3: `cwd` values such as `C:\Users\fixture\Desktop\tech\proj-11` are present.
+  - AC4: largest file 1 MB (capped); a grep for the real username, email and 13 real project names found nothing.
+  - Real-data findings recorded in MANIFEST and fed into M1-14 and ADR 0003: mixed `C:`/`c:` drive case, `cwd` moving into subfolders, orphaned transcripts, synced skills, no `sessions-index.json`, persisted tool outputs. Assumption A-18 answered (LF).
+- **Follow-ups:** none.
+
+### M0-15 · Capture a scrubbed real Linux ~/.claude tree · 2026-09-25
+
+- **Agent:** test-automator   **Reviewers:** —
+- **Status:** blocked
+- **Evidence:** WSL is installed (Ubuntu), but it cannot start: `HCS_E_SERVICE_NOT_AVAILABLE` (the Virtual Machine Platform feature is off, which needs admin rights and a reboot). No Linux machine is available.
+- **Follow-ups:** the user enables WSL (`wsl --install --no-distribution` as admin, reboot), installs Claude Code in Ubuntu and runs a session; then run the scrub tool there → Testing. This blocks M1-50, M1-54, M1-57 and the M1 gate.
+
+### M0-11 · Extract PoirotTests inline fixtures into a shared synthetic ~/.claude tree · 2026-09-25
+
+- **Agent:** test-automator   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `fixtures/README.md`, `fixtures/synthetic/**` (249 files: `cases/` 154 test-case folders, `claude-home/` 24 files, `claude.json`, `project-repo/`, `corrupt/`, `README.md`, `check_fixtures.py`)
+- **Evidence:**
+  - AC1: the README maps all 164 carried-over Services tests plus 35 decoding tests to existing paths or `inline` (checked by script against test-carryover.md).
+  - AC2: `claude-home/` holds one valid instance of every inventory format.
+  - AC3: `python fixtures/synthetic/check_fixtures.py` → all checks passed; an independent parse of `claude-home/` and `claude.json` found 0 bad records.
+  - Deviation: 5 intentionally invalid per-test inputs stay inside their own `cases/` folder (listed in the README and the check script) instead of `corrupt/`.
+- **Follow-ups:** none.
+
+### M0-12 · Convert ScreenshotData.swift into a deterministic fixture tree · 2026-09-25
+
+- **Agent:** test-automator   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `fixtures/screenshot/**` (31 files)
+- **Evidence:** the README maps all 60 ScreenshotData declarations; fixed reference date 2026-09-20T12:00:00Z; independent parse of 364 records found 0 bad; no home path other than `/Users/fixture`.
+- **Follow-ups:** some mock values cannot come from disk (toasts, standalone tool blocks, illustrative token totals larger than the transcript sums); the README lists them → Testing (M2-24 uses component-level fixtures for those).
+
+### M0-16 · Define and run the upstream Poirot sync check · 2026-09-25
+
+- **Agent:** legacy-modernizer (executed by the coordinating agent)   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `docs/spec/upstream-sync.md`
+- **Evidence:** first run 2026-09-25 through a throwaway clone (so `$POIROT` stays untouched): upstream head is `a29dd6e`, 0 new commits.
+- **Follow-ups:** next run 2026-10-25 → Legacy parity extraction.

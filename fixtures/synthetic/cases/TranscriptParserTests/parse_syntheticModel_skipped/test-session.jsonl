@@ -1,0 +1,2 @@
+{"type":"assistant","uuid":"1e24b6d1-4507-5357-88bd-3d391ac57dac","timestamp":"2026-01-28T10:01:00.000Z","isSidechain":false,"message":{"id":"msg_123","role":"assistant","model":"<synthetic>","content":[{"type":"text","text":"Synthetic message"}],"usage":{"input_tokens":100,"output_tokens":50}}}
+{"type":"user","uuid":"0497fa88-79ea-5244-bef5-24d542384da4","timestamp":"2026-01-28T10:00:00.000Z","isSidechain":false,"message":{"role":"user","content":"Real user message"}}

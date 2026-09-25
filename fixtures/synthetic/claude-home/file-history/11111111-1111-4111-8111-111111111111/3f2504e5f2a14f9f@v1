@@ -1,0 +1,2 @@
+def login(user):
+    pass

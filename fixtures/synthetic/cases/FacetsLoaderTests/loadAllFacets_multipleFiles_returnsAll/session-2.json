@@ -1,0 +1,15 @@
+{
+  "underlying_goal": "Goal 2",
+  "goal_categories": {
+    "testing": 1
+  },
+  "outcome": "success",
+  "user_satisfaction_counts": {},
+  "claude_helpfulness": "very_helpful",
+  "session_type": "single_task",
+  "friction_counts": {},
+  "friction_detail": "",
+  "primary_success": "none",
+  "brief_summary": "Test summary",
+  "session_id": "session-2"
+}

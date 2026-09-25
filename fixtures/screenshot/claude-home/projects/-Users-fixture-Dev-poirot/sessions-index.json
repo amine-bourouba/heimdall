@@ -1,0 +1,55 @@
+{
+  "entries": [
+    {
+      "created": "2026-09-20T11:15:00.000Z",
+      "firstPrompt": "The sidebar doesn't show session counts next to each project. Add a badge with the session count, and make it match the ",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/poirot",
+      "sessionId": "conv-001"
+    },
+    {
+      "created": "2026-09-20T10:00:00.000Z",
+      "firstPrompt": "Add a keyboard shortcut Cmd+T to toggle the tool filter bar in the session detail view",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/poirot",
+      "sessionId": "tool-001"
+    },
+    {
+      "created": "2026-09-20T07:00:00.000Z",
+      "firstPrompt": "Session loading is slow when there are 100+ sessions per project. Can we optimize it?",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/poirot",
+      "sessionId": "think-001"
+    },
+    {
+      "created": "2026-09-20T11:25:00.000Z",
+      "firstPrompt": "Refactor the TranscriptParser to use async/await instead of completion handlers",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/poirot",
+      "sessionId": "diff-001"
+    },
+    {
+      "created": "2026-09-20T11:30:00.000Z",
+      "firstPrompt": "Create a FileWatcher service that monitors ~/.claude/projects/ for new session files and triggers a refresh",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/poirot",
+      "sessionId": "write-001"
+    },
+    {
+      "created": "2026-09-20T11:10:00.000Z",
+      "firstPrompt": "Add a toast notification system that shows success/error/info messages with auto-dismiss",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/poirot",
+      "sessionId": "alltools-001"
+    },
+    {
+      "created": "2026-09-20T11:50:00.000Z",
+      "firstPrompt": "Fix the build error in TranscriptParser.swift.\n\n<system-reminder>\nThe user is working on branch feature/lazy-loading.\nLa",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/poirot",
+      "sessionId": "sysctx-001"
+    }
+  ],
+  "originalPath": "/Users/fixture/Dev/poirot",
+  "projectPath": "/Users/fixture/Dev/poirot"
+}

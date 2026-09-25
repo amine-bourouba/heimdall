@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "/Users/fixture/my-project": {
+      "mcpServers": {
+        "local-db": {
+          "type": "stdio",
+          "command": "node",
+          "args": [
+            "db-server.js"
+          ],
+          "env": {
+            "DB_PATH": "/tmp/dev.db"
+          }
+        }
+      }
+    }
+  }
+}

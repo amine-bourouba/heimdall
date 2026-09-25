@@ -1,0 +1,2 @@
+{"type":"user","uuid":"276f4f9c-ec37-5117-bd4d-84e52c890663","timestamp":"2026-01-28T09:00:00.000Z","isSidechain":false,"message":{"role":"user","content":"First"}}
+{"type":"assistant","uuid":"f8ba2213-c890-5d49-9152-4feafe435a7c","timestamp":"2026-01-28T10:00:00.000Z","isSidechain":false,"message":{"id":"msg_123","role":"assistant","model":"claude-opus-4-6","content":[{"type":"text","text":"Reply"}],"usage":{"input_tokens":100,"output_tokens":50}}}

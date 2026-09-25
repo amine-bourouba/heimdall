@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "created": "2026-09-20T11:45:00.000Z",
+      "firstPrompt": "Run the full test suite and show me the results",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/ignio-web",
+      "sessionId": "long-001"
+    }
+  ],
+  "originalPath": "/Users/fixture/Dev/ignio-web",
+  "projectPath": "/Users/fixture/Dev/ignio-web"
+}

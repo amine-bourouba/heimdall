@@ -1,0 +1,2 @@
+{"type":"file-history-snapshot","messageId":"s1","snapshot":{"trackedFileBackups":{}}}
+{"type":"file-history-delta","messageId":"d1","trackingPath":"index.html","backup":{"backupFileName":"abc@v1","version":1,"backupTime":"2026-08-27T18:54:00.854Z"}}

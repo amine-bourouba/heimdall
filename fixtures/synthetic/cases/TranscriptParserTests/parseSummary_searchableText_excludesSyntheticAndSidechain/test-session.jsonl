@@ -1,0 +1,3 @@
+{"type":"assistant","uuid":"3f4b6ee0-aed3-59fd-934a-32a370e8d448","timestamp":"2026-01-28T10:01:00.000Z","isSidechain":false,"message":{"id":"msg_123","role":"assistant","model":"<synthetic>","content":[{"type":"text","text":"SECRETSYNTH"}],"usage":{"input_tokens":100,"output_tokens":50}}}
+{"type":"user","uuid":"9bb49e17-42ec-52e6-b236-067fe69314b5","timestamp":"2026-01-28T10:00:00.000Z","isSidechain":true,"message":{"role":"user","content":"SECRETSIDE"}}
+{"type":"user","uuid":"e804f77f-03be-57ae-83da-8f69543f9499","timestamp":"2026-01-28T10:05:00.000Z","isSidechain":false,"message":{"role":"user","content":"realcontent"}}

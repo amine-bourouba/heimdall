@@ -1,0 +1,61 @@
+{
+  "permissions": {
+    "allow": [
+      "loremips umdo lo",
+      "loremips umdo lo",
+      "loremips umdolo rs",
+      "loremips umd ol",
+      "loremips um do",
+      "loremips umdolor sitam",
+      "loremips umdol or",
+      "loremips umdolo rs",
+      "loremips umdolorsit am",
+      "loremips umdolo rs",
+      "loremipsumdolorsitametconsecteturadipis cin gelits edd oeiusmodtemporincididuntutl abor e loremipsumdol orsit ame",
+      "loremipsumdolorsitametconsecteturadipis cin gel itseddoei usmo d temporincidid untut lab",
+      "loremipsumdolorsitametconsecteturadipis cin gel itsed doei u smodtemporinc ididu nt utlaboreloremipsumdolorsitam etc ons ecte turadip isci n gelitseddoeiu smodt em p orincididuntutlaborelore mi psumdol orsitametcons ecte t uradipiscinge litse dd oei usmodte mp orincididuntutlaboreloremipsumdolorsitametconsecteturad ipis c ingelitseddoe iusmo dt",
+      "loremipsumdolorsitametconsecteturadipis cin gel itseddoei usmo d temporincidid untut lab oreloremipsumdolorsitametcon sec tetu radi p iscingelitsed doeiu sm odtemporincididuntutlaborelo rem ips umdolors itam e tconsectetura dipis ci ngelitseddoeiusmodtemporinci did unt utla bore l oremipsumdolo rsita me"
+    ]
+  },
+  "model": "opus",
+  "statusLine": {
+    "type": "command",
+    "command": "loremipsum dolorsitametcons ectetu radip iscingelitseddoeiusmodtemporincididuntutlaboreloremipsumdolorsitametconsecteturadipiscingelitse"
+  },
+  "enabledPlugins": {
+    "ponytail@ponytail": true,
+    "voltagent-lang@voltagent-subagents": true,
+    "voltagent-infra@voltagent-subagents": true,
+    "voltagent-core-dev@voltagent-subagents": true,
+    "voltagent-qa-sec@voltagent-subagents": true,
+    "voltagent-data-ai@voltagent-subagents": true,
+    "voltagent-dev-exp@voltagent-subagents": true,
+    "voltagent-domains@voltagent-subagents": true,
+    "voltagent-biz@voltagent-subagents": true,
+    "voltagent-meta@voltagent-subagents": true,
+    "voltagent-research@voltagent-subagents": true
+  },
+  "extraKnownMarketplaces": {
+    "ponytail": {
+      "source": {
+        "source": "loremi",
+        "repo": "loremipsumdolorsitametc"
+      }
+    },
+    "voltagent-subagents": {
+      "source": {
+        "source": "loremi",
+        "repo": "loremipsumdolorsitametconsecteturadipis"
+      }
+    }
+  },
+  "effortLevel": "lore",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "lorem"
+    },
+    "claude-fable-5-1": {
+      "effortLevel": "lorem"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"isSidechain": false, "parentUuid": null, "uuid": "e947b652-25af-5fb0-a028-0acaac02a671", "timestamp": "2026-09-19T12:00:00.000Z", "sessionId": "pipeline-001", "cwd": "/Users/fixture/Dev/swift-openapi", "type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Generate OpenAPI spec from the Vapor routes and add Swagger UI middleware"}]}}

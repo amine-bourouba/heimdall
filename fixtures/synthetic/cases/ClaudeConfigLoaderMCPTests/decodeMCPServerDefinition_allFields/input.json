@@ -1,0 +1,15 @@
+{
+  "type": "stdio",
+  "command": "/usr/bin/python3",
+  "args": [
+    "-m",
+    "server"
+  ],
+  "env": {
+    "API_KEY": "secret"
+  },
+  "url": "http://fallback.local",
+  "headers": {
+    "X-Custom": "value"
+  }
+}

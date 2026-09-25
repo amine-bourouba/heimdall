@@ -1,0 +1,4 @@
+{
+  "version": "not-a-number",
+  "dailyActivity": "should-be-an-array"
+}

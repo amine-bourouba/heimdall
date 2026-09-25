@@ -1,0 +1,4 @@
+{
+  "agentType": "test-runner",
+  "description": "Runs the auth test suite and reports results"
+}

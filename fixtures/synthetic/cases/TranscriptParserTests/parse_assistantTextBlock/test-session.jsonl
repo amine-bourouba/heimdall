@@ -1,0 +1,1 @@
+{"type":"assistant","uuid":"102c483a-4fdf-5673-9573-3b544c824fe8","timestamp":"2026-01-28T10:01:00.000Z","isSidechain":false,"message":{"id":"msg_123","role":"assistant","model":"claude-opus-4-6","content":[{"type":"text","text":"Hello from assistant"}],"usage":{"input_tokens":100,"output_tokens":50}}}

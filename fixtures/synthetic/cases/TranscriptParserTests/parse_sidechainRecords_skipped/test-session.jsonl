@@ -1,0 +1,2 @@
+{"type":"user","uuid":"0160c83f-d322-5b25-b457-92746364250a","timestamp":"2026-01-28T10:00:00.000Z","isSidechain":true,"message":{"role":"user","content":"Hello"}}
+{"type":"user","uuid":"dade0f0b-d841-545e-867f-048e513dd481","timestamp":"2026-01-28T10:00:00.000Z","isSidechain":false,"message":{"role":"user","content":"World"}}

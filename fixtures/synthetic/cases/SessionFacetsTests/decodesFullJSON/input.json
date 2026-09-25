@@ -1,0 +1,21 @@
+{
+  "underlying_goal": "Refactor auth to JWT",
+  "goal_categories": {
+    "refactoring": 2,
+    "security": 1
+  },
+  "outcome": "success",
+  "user_satisfaction_counts": {
+    "likely_satisfied": 1
+  },
+  "claude_helpfulness": "very_helpful",
+  "session_type": "feature_implementation",
+  "friction_counts": {
+    "tool_failures": 1,
+    "misunderstandings": 0
+  },
+  "friction_detail": "One tool call timed out",
+  "primary_success": "multi_file_changes",
+  "brief_summary": "Migrated session auth from cookies to JWT.",
+  "session_id": "abc-123"
+}

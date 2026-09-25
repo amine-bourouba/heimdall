@@ -1,0 +1,2 @@
+{"type":"user","uuid":"d0c0d758-08c0-5b1d-ae12-e873bb7ab034","timestamp":"2026-01-19T10:00:00.000Z","isSidechain":false,"message":{"role":"user","content":"Hello"}}
+{"type":"assistant","uuid":"4ed6020e-36c6-5f62-adc6-09839284f6f5","timestamp":"2026-01-28T10:01:00.000Z","isSidechain":false,"message":{"id":"msg_test","role":"assistant","model":"claude-opus-4-6","content":[{"type":"text","text":"Hi there"}],"usage":{"input_tokens":100,"output_tokens":50}}}

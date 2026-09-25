@@ -1,0 +1,3 @@
+{"type":"user","uuid":"dddddddd-0000-4000-8000-000000000001","timestamp":"2026-09-10T09:00:00.000Z","isSidechain":false,"message":{"role":"user","content":"first line is valid"}}
+{"type":"assistant","uuid":"dddddddd-0000-4000-8000-000000000002","timestamp":"2026-09-10T09:00:01.000Z" "message":{"role":"assistant"
+{"type":"user","uuid":"dddddddd-0000-4000-8000-000000000003","timestamp":"2026-09-10T09:00:02.000Z","isSidechain":false,"message":{"role":"user","content":"trunc

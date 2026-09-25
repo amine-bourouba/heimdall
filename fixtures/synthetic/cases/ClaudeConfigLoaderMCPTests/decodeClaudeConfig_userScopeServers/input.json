@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ]
+    },
+    "perplexity": {
+      "type": "http",
+      "url": "https://mcp.perplexity.ai",
+      "headers": {
+        "Authorization": "Bearer token"
+      }
+    }
+  }
+}

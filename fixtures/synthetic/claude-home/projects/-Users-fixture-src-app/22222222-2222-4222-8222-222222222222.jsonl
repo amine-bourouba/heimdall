@@ -1,0 +1,2 @@
+{"type":"user","uuid":"bbbbbbbb-0000-4000-8000-000000000001","timestamp":"2026-09-10T09:05:00.000Z","isSidechain":true,"cwd":"/Users/fixture/src/app","message":{"role":"user","content":"(agent) audit the login module for other issues"}}
+{"type":"assistant","uuid":"bbbbbbbb-0000-4000-8000-000000000002","timestamp":"2026-09-10T09:05:02.000Z","isSidechain":true,"cwd":"/Users/fixture/src/app","message":{"id":"msg_side_01","role":"assistant","model":"claude-opus-4-6","content":[{"type":"text","text":"No further issues found."}],"usage":{"input_tokens":30,"output_tokens":10}}}

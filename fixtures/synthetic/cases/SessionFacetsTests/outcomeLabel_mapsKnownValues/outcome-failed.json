@@ -1,0 +1,13 @@
+{
+  "underlying_goal": "Test goal",
+  "goal_categories": {},
+  "outcome": "failure",
+  "user_satisfaction_counts": {},
+  "claude_helpfulness": "very_helpful",
+  "session_type": "single_task",
+  "friction_counts": {},
+  "friction_detail": "",
+  "primary_success": "none",
+  "brief_summary": "Test summary",
+  "session_id": "outcome-failed"
+}

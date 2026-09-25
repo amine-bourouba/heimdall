@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "plugins": {
+    "ponytail@ponytail": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemp",
+        "version": "4.10.0",
+        "installedAt": "2026-09-24T11:59:00.101Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-lang@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutla",
+        "version": "1.0.4",
+        "installedAt": "2026-09-25T10:44:30.994Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-infra@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutlab",
+        "version": "1.0.1",
+        "installedAt": "2026-09-25T10:44:42.956Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-core-dev@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutlabore",
+        "version": "1.0.4",
+        "installedAt": "2026-09-25T10:45:25.882Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-qa-sec@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutlabo",
+        "version": "1.1.1",
+        "installedAt": "2026-09-25T10:45:38.997Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-data-ai@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutlabor",
+        "version": "1.0.2",
+        "installedAt": "2026-09-25T10:45:48.916Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-dev-exp@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutlabor",
+        "version": "1.0.3",
+        "installedAt": "2026-09-25T10:46:00.152Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-domains@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutlabor",
+        "version": "1.0.4",
+        "installedAt": "2026-09-25T10:46:11.835Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-biz@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutl",
+        "version": "1.0.4",
+        "installedAt": "2026-09-25T10:46:24.008Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-meta@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutla",
+        "version": "1.0.5",
+        "installedAt": "2026-09-25T10:46:30.220Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ],
+    "voltagent-research@voltagent-subagents": [
+      {
+        "scope": "lore",
+        "installPath": "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutlabore",
+        "version": "1.0.4",
+        "installedAt": "2026-09-25T10:46:37.575Z",
+        "lastUpdated": "loremipsumdolorsitametco",
+        "gitCommitSha": "loremipsumdolorsitametconsecteturadipisc"
+      }
+    ]
+  }
+}

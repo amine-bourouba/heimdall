@@ -1,0 +1,27 @@
+{
+  "entries": [
+    {
+      "created": "2026-09-20T04:00:00.000Z",
+      "firstPrompt": "Add pull-to-refresh on the Discover feed using async/await and the new SwiftUI refreshable modifier",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/reellette-ios",
+      "sessionId": "server-001"
+    },
+    {
+      "created": "2026-09-20T00:00:00.000Z",
+      "firstPrompt": "Migrate the Catalog module from RxSwift to Combine + async/await",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/reellette-ios",
+      "sessionId": "migration-001"
+    },
+    {
+      "created": "2026-09-20T11:00:00.000Z",
+      "firstPrompt": "Audit the codebase for any accessibility issues — missing labels, small tap targets, missing VoiceOver hints",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/Dev/reellette-ios",
+      "sessionId": "task-001"
+    }
+  ],
+  "originalPath": "/Users/fixture/Dev/reellette-ios",
+  "projectPath": "/Users/fixture/Dev/reellette-ios"
+}

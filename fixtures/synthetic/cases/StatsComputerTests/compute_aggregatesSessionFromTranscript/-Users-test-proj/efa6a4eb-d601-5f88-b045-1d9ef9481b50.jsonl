@@ -1,0 +1,4 @@
+{"type":"user","timestamp":"2026-06-20T10:00:00.000Z","uuid":"u1","message":{"role":"user","content":"hi"}}
+{"type":"assistant","timestamp":"2026-06-20T10:00:05.000Z","message":{"id":"a1","model":"claude-opus-4-6","usage":{"input_tokens":10,"output_tokens":20,"cache_read_input_tokens":1000,"cache_creation_input_tokens":100,"server_tool_use":{"web_search_requests":2}},"content":[{"type":"tool_use","name":"Read"},{"type":"text","text":"ok"}]}}
+{"type":"assistant","timestamp":"2026-06-20T10:01:00.000Z","message":{"id":"a2","model":"claude-opus-4-6","usage":{"input_tokens":5,"output_tokens":8,"cache_read_input_tokens":2000,"cache_creation_input_tokens":50},"content":[{"type":"tool_use","name":"Bash"}]}}
+{"type":"assistant","timestamp":"2026-06-20T10:02:00.000Z","isSidechain":true,"message":{"id":"s1","model":"claude-opus-4-6","usage":{"input_tokens":999,"output_tokens":999},"content":[]}}

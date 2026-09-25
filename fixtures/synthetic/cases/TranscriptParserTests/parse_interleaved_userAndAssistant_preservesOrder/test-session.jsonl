@@ -1,0 +1,4 @@
+{"type":"user","uuid":"bb299812-6fb1-5a15-9b20-2d3dc6a4a59a","timestamp":"2026-01-28T10:00:00.000Z","isSidechain":false,"message":{"role":"user","content":"Q1"}}
+{"type":"assistant","uuid":"5cf69428-daee-5db8-965d-f51b8b7527d6","timestamp":"2026-01-28T10:01:00.000Z","isSidechain":false,"message":{"id":"msg_a1","role":"assistant","model":"claude-opus-4-6","content":[{"type":"text","text":"A1"}],"usage":{"input_tokens":100,"output_tokens":50}}}
+{"type":"user","uuid":"5a259571-1924-5f8c-8e0f-63e3b90c1221","timestamp":"2026-01-28T10:02:00.000Z","isSidechain":false,"message":{"role":"user","content":"Q2"}}
+{"type":"assistant","uuid":"ab2bbfcb-5a5f-5695-828f-915a30995354","timestamp":"2026-01-28T10:03:00.000Z","isSidechain":false,"message":{"id":"msg_a2","role":"assistant","model":"claude-opus-4-6","content":[{"type":"text","text":"A2"}],"usage":{"input_tokens":100,"output_tokens":50}}}
