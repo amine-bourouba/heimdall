@@ -129,8 +129,8 @@ type HookHandler = { type: "command" | "http"; command: string | null; url: stri
 type HookEntry = { event: string; matcherGroupIndex: number; matcher: string | null; handlers: HookHandler[]; scope: "global" | "project" }
 
 type PluginInfo = { key: string; name: string; author: string; version: string | null; installedAt: string | null; enabled: boolean }
-type ModelsView = { catalog: { id: string; displayName: string; family: string }[]; discovered: string[]
-                    defaultModel: string | null; projectModel: string | null }
+type ModelsView = { models: ClaudeModelInfo[]; defaultModel: string; projectModel: string | null }   // display names
+type ClaudeModelInfo = { displayName: string; description: string; strengths: string[] }             // description empty for discovered models
 
 type MemorySource = { id: MemorySourceId; label: string; kind: "project" | "folder"; fileCount: number }
 type MemoryFileSummary = { id: string; sourceId: MemorySourceId; name: string; filename: string; isMain: boolean }

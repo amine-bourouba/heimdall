@@ -668,3 +668,23 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Sources are the contract's five values (`local` and `project` kept apart); Poirot folded them into `user`.
   - A config file that does not parse counts in `skipped`.
 - **Follow-ups:** none.
+
+### M1-27 · Memory and models readers · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:**
+  - `crates/heimdall-core/src/config/read/{memory,models}.rs`.
+  - `docs/ipc-contract.md`: `ModelsView` now carries the catalog entries with their descriptions and strengths, plus default and project display names.
+  - `docs/port-plan.md`: C-27.
+  - `docs/tasks/M3-40-*.md`: a criterion for C-27.
+- **Evidence:**
+  - `cargo test -p heimdall-core -- config::read::memory config::read::models` → 11 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 7 MemoryLoaderTests (`MEMORY.md` first, then names, `.txt` ignored, `projectId`, custom folders with `custom:<path>` and the folder label, counts, missing folders). The logic part of ClaudeModelCatalogTests already passes in `models::catalog` (M1-10).
+  - Custom folders come in as a parameter (`sources(projects_dir, custom_folders)`, `load_folder`); core reads no preferences.
+  - `MemorySource` ids are `project:<ProjectId>` and `folder:<index>`, as in the contract. A project id that is not a plain file name is rejected.
+  - The Windows fixture's project memory folders list and load.
+- **Deviations:**
+  - The default model is the `model` in the global `settings.json`, shown as a display name. Poirot always showed "Opus 5" (C-27).
+  - Catalog display names written by Poirot (`Sonnet 5`) are recognised as they are; ids and aliases go through `friendly_name`.
+- **Follow-ups:** the model write must store an id or alias (C-27) → M3-40.

@@ -22,6 +22,7 @@ Plugin toggle/remove, MCP permission stripping, default and project model, and h
 - [ ] For every operation, a corrupt target yields `parse` and no bytes change.
 - [ ] A project-scope write with no resolvable project returns `invalidInput` (Poirot silently wrote the global file, SettingsWriter.swift:318-326).
 - [ ] Hook handlers keep unknown fields across save.
+- [ ] Setting the default or project model writes a model id or alias (for example `claude-opus-4-8` or `opus`), never a display name such as `Opus 4.8` (port-plan C-27).
 
 ## Dependencies
 
