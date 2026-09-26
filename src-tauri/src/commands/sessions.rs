@@ -22,7 +22,7 @@ use crate::state::{blocking, AppState};
 
 /// Resolves a `ProjectId` to its folder under `~/.claude/projects/`; rejects a malformed id
 /// before it ever becomes a path (ADR 0010) and one that does not exist as `notFound` (contract §4).
-fn project_dir(claude_home: &ClaudeHome, project_id: &str) -> Result<PathBuf> {
+pub(super) fn project_dir(claude_home: &ClaudeHome, project_id: &str) -> Result<PathBuf> {
     let name = plain_file_name(project_id)?;
     let dir = claude_home.projects_dir().join(name);
     if !dir.is_dir() {

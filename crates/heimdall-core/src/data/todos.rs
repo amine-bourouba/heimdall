@@ -2,11 +2,11 @@
 //! `<sessionId>-agent-<agentId>.json`, merged per session. Files are read in name order so the
 //! merge is the same on every OS.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use crate::error::{AppError, Loaded, Result};
-use crate::models::session_todo::TodoItem;
+use crate::models::session_todo::{TodoItem, TodoList};
 
 const AGENT_INFIX: &str = "-agent-";
 
@@ -42,6 +42,46 @@ pub fn load_all(todos_dir: &Path) -> Result<Loaded<BTreeMap<String, Vec<TodoItem
         skipped += loaded.skipped;
         if !loaded.value.is_empty() {
             grouped.entry(session_id_of(&stem).to_string()).or_default().extend(loaded.value);
+        }
+    }
+    Ok(Loaded::new(grouped, skipped))
+}
+
+/// The session's todos as one [`TodoList`] per file — the plain file (`agent_id: None`) and each
+/// `-agent-<id>` file kept apart, unlike [`load_for_session`], which merges them into one list
+/// (contract `TodoList`, `get_session_todos`).
+pub fn load_lists_for_session(todos_dir: &Path, session_id: &str) -> Result<Loaded<Vec<TodoList>>> {
+    let agent_prefix = format!("{session_id}{AGENT_INFIX}");
+    let mut lists = Vec::new();
+    let mut skipped = 0;
+    for (stem, path) in json_files(todos_dir)? {
+        let agent_id = if stem == session_id {
+            None
+        } else if let Some(id) = stem.strip_prefix(&agent_prefix) {
+            Some(id.to_string())
+        } else {
+            continue;
+        };
+        let loaded = read_file(&path);
+        skipped += loaded.skipped;
+        if !loaded.value.is_empty() {
+            lists.push(TodoList { session_id: session_id.to_string(), agent_id, items: loaded.value });
+        }
+    }
+    Ok(Loaded::new(lists, skipped))
+}
+
+/// Every session with at least one todo file, each as [`load_lists_for_session`] would produce it
+/// (contract `TodoGroup.lists`, `list_all_todos`).
+pub fn load_all_lists(todos_dir: &Path) -> Result<Loaded<BTreeMap<String, Vec<TodoList>>>> {
+    let ids: BTreeSet<String> = json_files(todos_dir)?.into_iter().map(|(stem, _)| session_id_of(&stem).to_string()).collect();
+    let mut grouped = BTreeMap::new();
+    let mut skipped = 0;
+    for id in ids {
+        let loaded = load_lists_for_session(todos_dir, &id)?;
+        skipped += loaded.skipped;
+        if !loaded.value.is_empty() {
+            grouped.insert(id, loaded.value);
         }
     }
     Ok(Loaded::new(grouped, skipped))
@@ -175,5 +215,45 @@ mod tests {
         let d = dir_with(&[("s.json", json)]);
         let loaded = load_for_session(d.path(), "s").unwrap();
         assert_eq!((contents(&loaded.value), loaded.skipped), (vec!["ok"], 1));
+    }
+
+    #[test]
+    fn load_lists_for_session_keeps_the_plain_file_and_each_agent_file_apart() {
+        let d = dir_with(&[
+            ("abc-1234.json", &todo("Main task", "pending")),
+            ("abc-1234-agent-a1.json", &todo("Agent task", "completed")),
+        ]);
+        let lists = load_lists_for_session(d.path(), "abc-1234").unwrap().value;
+        assert_eq!(lists.len(), 2);
+        let main = lists.iter().find(|l| l.agent_id.is_none()).unwrap();
+        let agent = lists.iter().find(|l| l.agent_id.is_some()).unwrap();
+        assert_eq!((contents(&main.items), main.session_id.as_str()), (vec!["Main task"], "abc-1234"));
+        assert_eq!((contents(&agent.items), agent.agent_id.as_deref()), (vec!["Agent task"], Some("a1")));
+    }
+
+    #[test]
+    fn load_lists_for_session_drops_an_empty_file_but_keeps_a_real_one() {
+        let d = dir_with(&[("abc-1234.json", "[]"), ("abc-1234-agent-a1.json", &todo("Task", "pending"))]);
+        let lists = load_lists_for_session(d.path(), "abc-1234").unwrap().value;
+        assert_eq!(lists.len(), 1);
+        assert_eq!(lists[0].agent_id.as_deref(), Some("a1"));
+    }
+
+    #[test]
+    fn load_all_lists_groups_by_parent_session_and_keeps_agents_apart() {
+        let d = dir_with(&[
+            ("s1.json", &todo("A", "pending")),
+            ("s1-agent-x.json", &todo("B", "completed")),
+            ("s2.json", &todo("C", "pending")),
+        ]);
+        let grouped = load_all_lists(d.path()).unwrap().value;
+        assert_eq!(grouped.keys().collect::<Vec<_>>(), ["s1", "s2"]);
+        assert_eq!(grouped["s1"].len(), 2);
+        assert_eq!(grouped["s2"].len(), 1);
+    }
+
+    #[test]
+    fn load_all_lists_non_existent_path_returns_empty() {
+        assert!(load_all_lists(Path::new(MISSING)).unwrap().value.is_empty());
     }
 }

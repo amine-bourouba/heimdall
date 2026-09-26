@@ -93,6 +93,24 @@ impl FileHistoryEntry {
     }
 }
 
+/// The contract shape (`get_file_history`): each entry's versions become the wire's slimmer
+/// `FileHistoryVersion` (`versionId` in place of the full `FileVersion`).
+pub fn file_history(entries: Vec<FileHistoryEntry>) -> FileHistory {
+    FileHistory {
+        files: entries
+            .into_iter()
+            .map(|e| FileHistoryFile {
+                file_name: e.file_name,
+                versions: e
+                    .versions
+                    .into_iter()
+                    .map(|v| FileHistoryVersion { version_id: v.backup_file_name, version: v.version, backup_time: v.backup_time })
+                    .collect(),
+            })
+            .collect(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -106,5 +124,18 @@ mod tests {
         let e = FileHistoryEntry::new("a.rs", vec![v(2, 5, "h@v2"), v(1, 9, "h@v1b"), v(1, 3, "h@v1a")]);
         assert_eq!(e.versions.iter().map(|x| x.backup_file_name.as_str()).collect::<Vec<_>>(), ["h@v1a", "h@v1b", "h@v2"]);
         assert_eq!((e.edit_count(), e.latest_version().unwrap().id.as_str()), (3, "s1-h@v2"));
+    }
+
+    #[test]
+    fn file_history_maps_backup_file_name_to_version_id() {
+        let entries = vec![FileHistoryEntry::new("a.rs", vec![v(1, 3, "h@v1")])];
+        let history = file_history(entries);
+        assert_eq!(history.files.len(), 1);
+        assert_eq!((history.files[0].file_name.as_str(), history.files[0].versions[0].version_id.as_str(), history.files[0].versions[0].version), ("a.rs", "h@v1", 1));
+    }
+
+    #[test]
+    fn file_history_of_no_entries_is_empty() {
+        assert!(file_history(Vec::new()).files.is_empty());
     }
 }
