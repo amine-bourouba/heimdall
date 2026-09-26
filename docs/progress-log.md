@@ -737,3 +737,23 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `todayMessages` is not in Poirot's `MenuBarState`, which showed only total sessions, total messages, total tokens and cost; the contract added it for the tray header. It is today's entry in `stats.dailyActivity`'s message count, 0 without one; `snapshot_in` takes an injected time zone so "today" is testable (same pattern as M1-20).
   - `TraySnapshot` leaves out total tokens and cost, which Poirot's header also showed; not in the contract, so left for a follow-up if the tray design wants them.
 - **Follow-ups:** none for this task; M3-30 wires `get_tray_snapshot` to this function with the live projects, stats and query.
+
+### M1-30 · Search providers for all 16 categories · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:**
+  - `crates/heimdall-core/src/search/{mod,providers}.rs`.
+  - `docs/ipc-contract.md` unchanged — the new types (`SearchHit`, `SearchAction`, `SearchCategory`, `SearchResults`, `NavScreen`, `MemoryFileLocator`) already matched the contract's shapes exactly; verified field by field while writing the module.
+- **Evidence:**
+  - `cargo test -p heimdall-core search::` → 32 passed; full crate → 523 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - One test per category, all on `fixtures/synthetic` (the fixture's own "auth bug in login.py" story gives every category a real hit to find): sessions, debug logs, facets (AI summaries), file changes, todos, history, commands, skills, plans, memory (content fallback), MCP servers, plugins, output styles, hooks, models (curated catalog only), sub-agents (built-in + custom).
+  - Caps: `groups_follow_the_fixed_category_order_and_cap_at_five` checks the 16-category order is always `SearchCategory::ALL`'s order and every group has at most 5 hits. `file_history_scan_is_capped_and_deterministic` checks the file-history folder scan stops at 50 even with 60 present, and is sorted (Poirot's own directory order is filesystem-native and not guaranteed).
+  - Highlights always come from matching the title directly against the query, never re-derived from whichever field produced the score (spec §2.4) — built into `highlights()`, used identically by every category.
+  - Ties keep provider append order (a stable sort), matching Swift's stable `sort`.
+  - Quick actions ("Toggle Menu Bar Icon", "Add MCP Server") are correctly left out, as the spec documents they wait on M3-58/M3-48.
+- **Deviations:**
+  - `Plan.content.prefix(200)` (Swift Characters/grapheme clusters) becomes 200 Unicode scalars.
+  - `subtitle` is typed `Option<String>` per the contract but every provider always populates it (possibly with an empty string), matching Poirot's non-optional field.
+  - File-history session folders are sorted before the 50-cap, for determinism across OSes.
+- **Follow-ups:** none; `search.rs` (M1-46) assembles `SearchInput` from the live loaders and calls `providers::search`.
