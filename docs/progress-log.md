@@ -788,3 +788,16 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - The exact URL scheme and percent-encoding are new (Poirot never used URL schemes for editors, only bundle-id app-opening and CLI shims) and are exactly what port-plan assumption **A-17** leaves open; M3-54 will confirm or correct them against the real editors.
   - macOS `open -a` app names are a judgment call pending the same confirmation: `Terminal`, `iTerm` (not "iTerm2"), `Warp`, `Ghostty`, `kitty` (lower-case), `Alacritty`.
 - **Follow-ups:** M3-54 (editor URL scheme verification, already tracked as A-17) may change `editor_url`'s scheme or encoding; `src-tauri/src/platform/*.rs` (M3-52) is the first real caller, spawning `Argv` and opening `Url`.
+
+### M1-33 · External URL allowlist · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending (security-auditor)
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/os_integration/links.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core os_integration::links` → 7 passed; full crate → 563 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Corpus test rejects `file:`, `javascript:`, `data:`, a custom scheme (`vscode:`), `ftp:`, `tel:`; rejects three backslash-smuggled UNC-host shapes; rejects embedded credentials (`user:pass@` and bare `user@`); rejects an over-long URL at the 2048-character cap and accepts one just under it; rejects an empty and an unparsable string.
+  - Accepts ordinary `http`, `https` and `mailto` links, including a case-varied scheme (`HTTPS://Example.COM`) and a `mailto:` address whose own `@` sign does not trip the credentials check (mailto has no authority component to hold one).
+  - The backslash check runs on the raw string, before `url::Url::parse`, because the WHATWG URL spec normalises `\` to `/` for `http`/`https` — parsing first would already have resolved a UNC-shaped string into an ordinary host, hiding exactly the mismatch this control exists to catch.
+- **Deviations:** the 2048-character length cap is Heimdall's own choice; ADR 0010 says "over-long" without a number.
+- **Follow-ups:** `open_external_url` (M2-11) and the update/toast call sites (M2-12, M4-04) call this before ever reaching the opener plugin.
