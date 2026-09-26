@@ -102,7 +102,7 @@ fn agent_summary(a: &SubAgent) -> ConfigItemSummary {
 /// id, `PickedFolder` must have an actual folder behind it (`pick_config_project`); anything else
 /// is `invalidInput` (M1-44 acceptance criterion), not `notFound`, since it is the scope
 /// descriptor itself that is malformed, not a specific item that happens to be missing.
-fn resolve_project_scope<R: tauri::Runtime>(app: &AppHandle<R>, state: &AppState, context: &ProjectContext) -> Result<PathBuf> {
+pub(super) fn resolve_project_scope<R: tauri::Runtime>(app: &AppHandle<R>, state: &AppState, context: &ProjectContext) -> Result<PathBuf> {
     match context {
         ProjectContext::PickedFolder => crate::prefs::load(app)?
             .config_project_path
