@@ -833,3 +833,20 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - **ponytail:** the DP table is `O(old.len() × new.len())` time and space — bounded by the 5000-line cap to at most ~100 MB, reached only by two capped files sharing no line at all, never by a real edit. Upgrade path: Myers' linear-space (divide-and-conquer) algorithm, if this ever proves to matter.
   - `truncated`/`maxLineNumber` are new fields the contract adds; Poirot silently truncated with no flag and left the gutter-width computation to the view.
 - **Follow-ups:** none.
+
+### M1-36 · Session Markdown and patch export · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/export/{session_markdown,patch}.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core export::` → 16 passed; full crate → 605 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Poirot has no `SessionExporterTests` at all (checked: no such file exists), so every test here is new coverage written directly against `Services/Export/SessionExporter.swift`, run against a real, varied session from `fixtures/screenshot` (`conv-001.jsonl`: text, thinking, a Bash call, an Edit call with real diff data, tool results).
+  - Each of the four toggles (`timestamps`, `toolResults`, `thinking`, `tokenUsage`) is tested on and off against that real session. Bash and Edit tool blocks render their own shapes (a fenced `bash` block; a `` ```diff `` block from the edit's own old/new strings); a non-Bash, non-Edit tool lists its file path once and its remaining input key-sorted (a BTreeMap, where Poirot's raw Swift dictionary had no defined order at all — a deliberate improvement, not a literal port). `tool_block_to_markdown` (used elsewhere by name, e.g. a "copy tool block" action) shares the same rendering.
+  - `to_patch` builds hunks with the exact imperative walk `SessionExporter.buildHunks` used, index for index, including its "no changes found → one hunk of pure context" fallback. `the_patch_applies_cleanly_with_git_apply` and a second case with both an added and a removed line actually shell out to `git apply --check` in a throwaway repo and check its exit code, per the acceptance criterion.
+  - Fixed while writing the patch test: a file's own trailing newline is not a content line. Diffing the raw strings (as a naive `split('\n')`, matching Poirot's own `components(separatedBy:)`, would) added a spurious trailing context line both sides "agree" on, which was enough for `git apply` to reject the hunk's line count against the real file on disk. `to_patch` strips one trailing newline from each side before diffing; `session_markdown.rs`'s own diff rendering (which Poirot's `LineDiffTests` already covers byte-for-byte) is untouched.
+- **Deviations:**
+  - The header's long date (Poirot: locale- and timezone-dependent `DateFormatter(.long, .short)`, with no fixed rendering even in Swift) becomes a fixed English format ("September 26, 2026 at 2:30 PM") in an injected time zone, the same pattern M1-20/M1-21 used for testability.
+  - A message with no timestamp (Heimdall's `Option<DateTime<Utc>>`, versus Poirot's always-present `Date` defaulting to `.distantPast`) leaves the `*HH:MM:SS*` line out rather than printing a fake time.
+  - Tool input truncation (500 characters) and tool-result truncation (2000 characters) count Unicode scalars; Poirot counted Characters (grapheme clusters), the same difference already noted for other 200/500-character truncations in this port.
+- **Follow-ups:** none.
