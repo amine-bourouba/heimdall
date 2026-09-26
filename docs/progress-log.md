@@ -816,3 +816,20 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `todos/<sessionId>-agent-<id>.json` classifies to the *parent* session's id (`data::todos::session_id_of`), matching how the loader already merges agent files under one session's todo list.
   - `projects/<name>` (the bare project folder) classifies to `projects` with a null key, per the contract's own key table, even though a per-project key would also have been a defensible reading.
 - **Follow-ups:** the watcher (M1-47) calls `classify` per changed path and is the one place custom memory folders and a project's own `.claude/` config get their events — ADR 0006 does not list either as a watched root, so those stay outside `classify`'s scope by design.
+
+### M1-35 · Line diff port · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/diff.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core diff::` → 17 passed; full crate → 589 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 13 LineDiffTests. `sequentialIds` had no wire-format equivalent (`DiffLine` carries no id; the contract drops it, and the frontend can key rows by array index) and was ported as an order/length check instead.
+  - Inputs over 5000 lines are truncated on each side independently and `truncated: true` is set (`inputs_over_the_cap_are_truncated_and_flagged`); `maxLineNumber` is the largest line number on either side (`max_line_number_is_the_largest_line_seen_on_either_side`).
+  - `a_replacement_reports_the_removal_before_the_insertion` locks in the tie-break Poirot's own reconstruction loop used (a pending removal is checked before a pending insertion at the same position), reproduced here by the DP backtrack's own tie rule.
+  - `kind_names_match_the_contract` confirms `context`/`add`/`remove` — the contract's names, not Poirot's `context`/`added`/`removed`.
+- **Deviations:**
+  - Swift used its standard library's `CollectionDifference` (a Myers diff); this ports the same *behaviour* (a minimal line-level diff) from a textbook LCS dynamic program instead, since Rust's standard library has no equivalent. Verified by hand-tracing the DP table against every carried-over test, including the two ambiguous-tie cases (`insertionInMiddle`, `deletionInMiddle`); a genuinely adversarial input could in principle produce a different, equally minimal diff than Swift's.
+  - **ponytail:** the DP table is `O(old.len() × new.len())` time and space — bounded by the 5000-line cap to at most ~100 MB, reached only by two capped files sharing no line at all, never by a real edit. Upgrade path: Myers' linear-space (divide-and-conquer) algorithm, if this ever proves to matter.
+  - `truncated`/`maxLineNumber` are new fields the contract adds; Poirot silently truncated with no flag and left the gutter-width computation to the view.
+- **Follow-ups:** none.
