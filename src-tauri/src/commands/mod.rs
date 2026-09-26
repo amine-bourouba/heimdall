@@ -201,4 +201,24 @@ mod tests {
             CONTRACT_COMMAND_NAMES.iter().copied().filter(|name| !text.contains(&format!("\"{name}\""))).collect();
         assert!(missing.is_empty(), "commands missing from the generated bindings: {missing:?}");
     }
+
+    /// `build.rs` cannot depend on this crate's own compiled output (it runs *to produce* that
+    /// output), so its `COMMANDS` list is a separate literal copy, not a shared `const` — this
+    /// test is what actually keeps the two from drifting apart (M1-49's acceptance criterion).
+    #[test]
+    fn build_rs_lists_exactly_the_contract_commands() {
+        let build_rs = include_str!("../../build.rs");
+        let list_text = build_rs
+            .split("const COMMANDS: &[&str] = &[")
+            .nth(1)
+            .expect("build.rs must declare COMMANDS")
+            .split("];")
+            .next()
+            .expect("COMMANDS list must be closed with `];`");
+        let mut from_build_rs: Vec<&str> = list_text.lines().filter_map(|line| line.trim().trim_end_matches(',').strip_prefix('"')).filter_map(|s| s.strip_suffix('"')).collect();
+        from_build_rs.sort_unstable();
+        let mut expected: Vec<&str> = CONTRACT_COMMAND_NAMES.to_vec();
+        expected.sort_unstable();
+        assert_eq!(from_build_rs, expected);
+    }
 }
