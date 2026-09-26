@@ -801,3 +801,18 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - The backslash check runs on the raw string, before `url::Url::parse`, because the WHATWG URL spec normalises `\` to `/` for `http`/`https` — parsing first would already have resolved a UNC-shaped string into an ordinary host, hiding exactly the mismatch this control exists to catch.
 - **Deviations:** the 2048-character length cap is Heimdall's own choice; ADR 0010 says "over-long" without a number.
 - **Follow-ups:** `open_external_url` (M2-11) and the update/toast call sites (M2-12, M4-04) call this before ever reaching the opener plugin.
+
+### M1-34 · Changed-path to data-area classifier · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/classify.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core classify` → 10 passed; full crate → 571 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - A table test covers every area `classify` can produce (20 of the contract's 21 — `prefs` is emitted by `prefs.rs`, M1-39, never from a path) from both a Windows-shaped and a Unix-shaped Claude home, plus: `settings.json` classifying as both `settings` and `hooks`; `~/.claude.json` classifying as `mcp` even though it sits outside the home root; `skills/synced/` and a session's `tool-results/` folder correctly producing nothing; unrelated paths (including a sibling folder that only shares a name prefix, `.claude-extra`) producing nothing; Windows and macOS comparing the root case-insensitively while keeping the matched remainder's own case; and each `Area` variant's exact contract spelling (`debugLogs`, `fileHistory`, `mcp`, …).
+  - ADR 0006 states the *mechanism* (one classifier, per-path) but not the literal path-to-area table; this task had to design that table from the Claude home layout established across M1-06 through M1-28, which is why it is documented in full above rather than cited to a Swift line.
+- **Deviations / design decisions (none are a Swift port; ADR 0006 has no Poirot equivalent):**
+  - A changed path can classify to more than one area. Only two do: the bare `~/.claude` root (`all`, a rare, drastic event) and `settings.json` (`settings` and `hooks`, since one file holds both and each has its own store to notify).
+  - `todos/<sessionId>-agent-<id>.json` classifies to the *parent* session's id (`data::todos::session_id_of`), matching how the loader already merges agent files under one session's todo list.
+  - `projects/<name>` (the bare project folder) classifies to `projects` with a null key, per the contract's own key table, even though a per-project key would also have been a defensible reading.
+- **Follow-ups:** the watcher (M1-47) calls `classify` per changed path and is the one place custom memory folders and a project's own `.claude/` config get their events — ADR 0006 does not list either as a watched root, so those stay outside `classify`'s scope by design.
