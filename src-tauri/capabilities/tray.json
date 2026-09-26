@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "tray-capability",
+  "description": "The tray window's whole surface, per docs/ipc-contract.md §8: only the three commands the tray UI itself calls. Nothing else — no event, clipboard, window or plugin permission of any kind (the tray window never listens for `data-changed`; ADR 0006's watcher targets the main window's stores).",
+  "windows": ["tray"],
+  "permissions": ["allow-get-tray-snapshot", "allow-open-in-main-window", "allow-get-prefs"]
+}
