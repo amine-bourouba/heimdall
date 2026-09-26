@@ -757,3 +757,16 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `subtitle` is typed `Option<String>` per the contract but every provider always populates it (possibly with an empty string), matching Poirot's non-optional field.
   - File-history session folders are sorted before the 50-cap, for determinism across OSes.
 - **Follow-ups:** none; `search.rs` (M1-46) assembles `SearchInput` from the live loaders and calls `providers::search`.
+
+### M1-31 · Cross-platform PATH search for claude and editor CLIs · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/os_integration/cli_locate.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core cli_locate` → 12 passed; full crate → 535 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - No Swift test existed for this (Poirot only ever probed four hardcoded macOS paths); this is new Rust-only coverage.
+  - `find_on_path`/`find_claude_cli`/`find_editor_cli` take `PATH`, `PATHEXT`, `home` and an `exists` check as plain values, so every OS's layout is tested from any host (Windows PATHEXT resolution, VS Code's `code.cmd` shim, Linux and macOS fallback directories, empty `PATH` segments, PATH taking precedence over every fallback directory).
+  - Fallback directories match the ADR 0003 table exactly (`fallback_dirs_match_the_adr_0003_table`): Windows `%APPDATA%\npm`; Linux `~/.local/bin`, `~/.npm-global/bin`; macOS `/opt/homebrew/bin`, `/usr/local/bin`, `~/.local/bin`. Editor CLIs get no fallback directories, only `PATH`.
+- **Deviations:** none; this replaces Poirot's four hardcoded macOS-only paths outright, so there is no literal behaviour to preserve beyond the ADR's stated fallback list.
+- **Follow-ups:** `os_integration::launch` (M1-32) will call `find_editor_cli` when a URL scheme fails; `app.rs` (M1-40) will call `find_claude_cli` for `CliStatus`.
