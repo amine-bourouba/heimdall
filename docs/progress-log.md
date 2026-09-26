@@ -770,3 +770,21 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Fallback directories match the ADR 0003 table exactly (`fallback_dirs_match_the_adr_0003_table`): Windows `%APPDATA%\npm`; Linux `~/.local/bin`, `~/.npm-global/bin`; macOS `/opt/homebrew/bin`, `/usr/local/bin`, `~/.local/bin`. Editor CLIs get no fallback directories, only `PATH`.
 - **Deviations:** none; this replaces Poirot's four hardcoded macOS-only paths outright, so there is no literal behaviour to preserve beyond the ADR's stated fallback list.
 - **Follow-ups:** `os_integration::launch` (M1-32) will call `find_editor_cli` when a URL scheme fails; `app.rs` (M1-40) will call `find_claude_cli` for `CliStatus`.
+
+### M1-32 · Validated argv builders for terminals and editors · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending (security-engineer, security-auditor)
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/os_integration/launch.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core os_integration::launch` → 21 passed; full crate → 556 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - No builder returns a shell string: `Launch` is `Argv { program, args, cwd }` or `Url(String)`; every terminal and editor test matches on the `Argv`'s fields directly, never a joined string.
+  - `validate_launch_path`/`validate_cwd` reject a relative path, a leading `-`, a UNC path, and a target the caller's own filesystem check says is the wrong kind (file vs directory); every builder calls one of them internally, so an unsafe input never reaches argv construction.
+  - Session ids: `valid_session_id` accepts the contract's UUID and `agent-` forms and rejects uppercase hex, a bare `agent-`, a space inside the suffix, and a 129-character suffix; `resume_command_text` refuses to build `claude --resume <id>` from anything else.
+  - Cross-OS table tests: all three Windows terminals, all five Linux terminals, and all six macOS terminals (`open -a <App> <cwd>`) match the ADR 0003 table exactly; a terminal not offered on the given OS is rejected. `windows_terminal_never_lets_a_semicolon_split_the_command` and `dangerous_characters_survive_as_one_intact_argv_element_on_every_os` push a cwd containing spaces and `;&|%^"` through every OS's terminals and check it arrives as one untouched argv element.
+  - Editors: `vscode://file/…`, `cursor://file/…` and `zed://file/…` build with percent-encoding and a normalised Windows drive path (`vscode://file/C:/Users/…`); Xcode has no URL scheme, matching Poirot. `editor_cli_argv` reproduces each editor's Poirot argv shape (`--goto` for vscode/cursor, bare `path:line` for zed, `--line <n> <path>` for xed) and refuses to name a `.cmd` file as the program.
+- **Deviations:**
+  - Poirot's AppleScript "run this command" path is dropped outright (port-plan C-5; it had no callers). No command is ever injected into a terminal; the resume command goes to the clipboard instead.
+  - The exact URL scheme and percent-encoding are new (Poirot never used URL schemes for editors, only bundle-id app-opening and CLI shims) and are exactly what port-plan assumption **A-17** leaves open; M3-54 will confirm or correct them against the real editors.
+  - macOS `open -a` app names are a judgment call pending the same confirmation: `Terminal`, `iTerm` (not "iTerm2"), `Warp`, `Ghostty`, `kitty` (lower-case), `Alacritty`.
+- **Follow-ups:** M3-54 (editor URL scheme verification, already tracked as A-17) may change `editor_url`'s scheme or encoding; `src-tauri/src/platform/*.rs` (M3-52) is the first real caller, spawning `Argv` and opening `Url`.
