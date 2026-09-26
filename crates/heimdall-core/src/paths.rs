@@ -59,7 +59,7 @@ impl ClaudeHome {
     /// "configuration home" and rejects a relative value (strings in its binary; progress log M1-06).
     /// With the override, `.claude.json` is assumed to live inside that folder (assumption A-2).
     pub fn from_env() -> Result<Self> {
-        Self::resolve(std::env::var_os("CLAUDE_CONFIG_DIR").map(PathBuf::from), dirs::home_dir())
+        Self::resolve(std::env::var_os("CLAUDE_CONFIG_DIR").map(PathBuf::from), user_home())
     }
 
     fn resolve(config_dir: Option<PathBuf>, user_home: Option<PathBuf>) -> Result<Self> {
@@ -123,6 +123,13 @@ impl ClaudeHome {
     pub fn mcp_auth_cache_file(&self) -> PathBuf {
         self.root.join("mcp-needs-auth-cache.json")
     }
+}
+
+/// The current user's home folder, however this OS finds it — the one place `dirs::home_dir` is
+/// called, so every other caller in the workspace (including src-tauri) goes through this instead
+/// of adding its own dependency on the `dirs` crate.
+pub fn user_home() -> Option<PathBuf> {
+    dirs::home_dir()
 }
 
 /// Canonical string form for comparison: `/` separators, no `\\?\` prefix, no repeated or trailing
