@@ -968,3 +968,15 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `get_file_history` validates `projectId` (via `sessions::project_dir`, now `pub(super)`) before calling `file_history::load`, even though that loader resolves the transcript by searching every project folder for `sessionId` regardless of the `projectId` given — it never actually needed `projectId` to find the right file. Kept the validation anyway (an unknown `projectId` still returns `notFound`) since the contract names both as arguments and a caller passing a bogus project id deserves an error, not a silent success from the "wrong" project.
   - `todos::load_all_lists` calls `json_files` twice (once to collect the set of session ids, once per id inside `load_lists_for_session`) rather than restructuring the single-pass grouping `load_all` already uses — todos directories are small, and the simpler two-pass version reuses `load_lists_for_session` directly instead of duplicating its per-file agent-id logic.
 - **Follow-ups:** none.
+
+### M1-43 · History command · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `src-tauri/src/commands/history.rs`
+- **Evidence:**
+  - `list_history` is a one-line wrapper over `data::history::page` (M1-15), already fully tested against the real HistoryLoaderTests carry-over; this task's own job is just the command-layer plumbing (`AppState.claude_home`, `state::blocking`), following the same `list_history_inner(state: &AppState, …)` pattern as every prior session command.
+  - Three tests against `fixtures/synthetic`'s real `history.jsonl`: paging returns the same first entry and the same `total` whether asked for the whole file or a 1-entry page (`list_history_pages_the_real_fixture_file`); an offset past the end of the file is an empty page, not an error (`list_history_offset_past_the_end_is_an_empty_page_not_an_error`); a missing history file (a fresh `tempfile::tempdir`, no `history.jsonl` at all) is an empty page with `total: 0`, `skipped: 0` (`list_history_on_a_missing_file_is_an_empty_page`) — the acceptance criterion's named "empty history file" case.
+  - `cargo check -p heimdall-desktop`/`cargo clippy --workspace --all-targets -- -D warnings` exit 0 (this file's tests could not be executed locally, per the `STATUS_ENTRYPOINT_NOT_FOUND` constraint documented since M1-37 — no new logic landed in heimdall-core this task, so there is nothing to verify by direct execution the way M1-41/M1-42 could for their own new heimdall-core functions). `cargo test -p heimdall-core` stays green (619 passed, untouched by this task). `node scripts/check-bindings.mjs` → up to date.
+- **Deviations:** none — the smallest task in this session's run so far, exactly matching its Goal.
+- **Follow-ups:** `delete_history_entry`/`clear_history_older_than` stay `not implemented` until M3-46.
