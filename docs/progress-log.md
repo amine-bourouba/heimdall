@@ -722,3 +722,18 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - Exact mode highlights every non-overlapping occurrence; fuzzy highlights each matched character, as the spec's §2.4 describes.
 - **Deviations:** characters are compared per Unicode scalar after lower-casing each one, so ranges map to the original text. Poirot compared grapheme clusters; the two differ only inside multi-scalar emoji and combining sequences.
 - **Follow-ups:** none.
+
+### M1-21 · Tray snapshot aggregation · 2026-09-26
+
+- **Agent:** rust-engineer (executed by the coordinating agent)   **Reviewers:** pending
+- **Status:** done
+- **Files touched:** `crates/heimdall-core/src/data/tray.rs`
+- **Evidence:**
+  - `cargo test -p heimdall-core data::tray` → 12 passed; full crate → 502 passed; `cargo clippy --workspace --all-targets -- -D warnings` → exit 0.
+  - Carried-over: all 7 MenuBarStateTests (defaults, sort by most recent, capped at 10, project info carried, empty projects, blank and whitespace queries return everything unfiltered).
+  - Recent sessions are sorted by `startedAt` descending, capped at 10, then optionally fuzzy-filtered on title or project name with `search::matcher` (`filter_matches_project_name_or_session_title`). The filter only narrows that capped top 10, as Poirot's `filteredSessions` does over `recentSessions`: an 11th, older session matching the query is not pulled back in (`filter_only_narrows_the_capped_top_ten`).
+  - `TraySnapshot` and `RecentSession` match the contract shapes exactly (`projectId`, `projectName`, `session`, plus `totalSessions`, `totalMessages`, `todayMessages`, `recent`).
+- **Deviations:**
+  - `todayMessages` is not in Poirot's `MenuBarState`, which showed only total sessions, total messages, total tokens and cost; the contract added it for the tray header. It is today's entry in `stats.dailyActivity`'s message count, 0 without one; `snapshot_in` takes an injected time zone so "today" is testable (same pattern as M1-20).
+  - `TraySnapshot` leaves out total tokens and cost, which Poirot's header also showed; not in the contract, so left for a follow-up if the tray design wants them.
+- **Follow-ups:** none for this task; M3-30 wires `get_tray_snapshot` to this function with the live projects, stats and query.
