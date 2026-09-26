@@ -39,6 +39,39 @@ pub fn parse(path: &Path, ctx: ParseContext) -> Result<Loaded<Option<Session>>> 
     Ok(Loaded::new(session, records.skipped()))
 }
 
+/// Parses only enough of the transcript to materialise at least `min_messages` messages, without
+/// reading past what a page needs — `get_session_messages`'s (M1-41) fast path for a session
+/// whose full parse is not cached yet, so its first page renders before a huge transcript's whole
+/// file has been read. Returns whether the read actually reached the end of the file: when it
+/// did, the result is already a complete, cacheable parse; when it did not, `messages.len()` is
+/// only a lower bound and the caller falls back to [`parse`] for an exact count.
+///
+/// Re-reads from the start of the file and doubles its own bound each time it comes up short
+/// (rare — almost every session fits in the first bound) rather than threading a resumable
+/// position through `parse_records`'s merge-across-records logic (a message can span several
+/// records, so "stop at record N" cannot simply resume at record N later without re-checking
+/// whether N's message continues past it).
+pub fn parse_bounded(path: &Path, ctx: ParseContext, min_messages: usize) -> Result<(Loaded<Option<Session>>, bool)> {
+    let mut bound = min_messages.saturating_mul(4).max(64);
+    loop {
+        let mut records = jsonl::open::<Value>(path)?;
+        let session = parse_records(records.by_ref().take(bound), ctx);
+        let reached_eof = records.next().is_none();
+        if let Some(e) = records.take_io_error() {
+            return Err(AppError::from_io(&e, path));
+        }
+        let enough = session.as_ref().is_some_and(|s| s.messages.len() >= min_messages);
+        if enough || reached_eof {
+            let mut session = session;
+            if let Some(s) = &mut session {
+                s.file = Some(path.to_path_buf());
+            }
+            return Ok((Loaded::new(session, records.skipped()), reached_eof));
+        }
+        bound *= 4;
+    }
+}
+
 pub fn parse_records(records: impl Iterator<Item = Value>, ctx: ParseContext) -> Option<Session> {
     let empty = Value::Object(serde_json::Map::new());
     let mut messages: Vec<Message> = Vec::new();
@@ -136,6 +169,13 @@ mod tests {
         parse_records(Records::<_, Value>::new(text.as_bytes()), CTX)
     }
 
+    fn write_transcript(lines: &[String]) -> (tempfile::TempDir, std::path::PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("t.jsonl");
+        std::fs::write(&path, lines.join("\n")).unwrap();
+        (dir, path)
+    }
+
     fn user(content: Value) -> String {
         user_with(content, "2026-01-28T10:00:00.000Z", false, None)
     }
@@ -151,6 +191,50 @@ mod tests {
                "message": {"id": msg_id, "role": "assistant", "model": model, "content": content,
                            "usage": {"input_tokens": tokens.0, "output_tokens": tokens.1}}}).to_string()
     }
+    /// `n` independent user/assistant turns, each with its own id — 2n messages total.
+    fn turns(n: usize) -> Vec<String> {
+        (0..n)
+            .flat_map(|i| {
+                [
+                    user_with(json!(format!("q{i}")), &format!("2026-01-28T10:{i:02}:00.000Z"), false, Some(&format!("u{i}"))),
+                    assistant_with(json!([{"type": "text", "text": format!("a{i}")}]), &format!("msg_{i}"), "claude-opus-4-6", &format!("2026-01-28T10:{i:02}:01.000Z"), (10, 5)),
+                ]
+            })
+            .collect()
+    }
+
+    #[test]
+    fn parse_bounded_stops_short_of_a_huge_transcript() {
+        let (_dir, path) = write_transcript(&turns(1000));
+        let (loaded, reached_eof) = parse_bounded(&path, CTX, 4).unwrap();
+        let messages = loaded.value.unwrap().messages;
+        assert!(!reached_eof);
+        assert!((4..2000).contains(&messages.len()), "got {} messages", messages.len());
+        // The window it did read is a correct, ordered prefix of the full parse.
+        let full = parse(&path, CTX).unwrap().value.unwrap().messages;
+        assert_eq!(messages, full[..messages.len()]);
+    }
+
+    #[test]
+    fn parse_bounded_reaches_eof_and_matches_the_full_parse_for_a_small_transcript() {
+        let (_dir, path) = write_transcript(&turns(3));
+        let (loaded, reached_eof) = parse_bounded(&path, CTX, 4).unwrap();
+        assert!(reached_eof);
+        assert_eq!(loaded.value, parse(&path, CTX).unwrap().value);
+    }
+
+    #[test]
+    fn parse_bounded_widens_its_read_when_the_first_bound_comes_up_short() {
+        // min_messages (2) starts a bound of 64 records; 70 skipped-type records push the real
+        // turns past that first bound, forcing a re-read at the next (wider) bound.
+        let mut lines: Vec<String> = (0..70).map(|_| r#"{"type":"progress"}"#.to_string()).collect();
+        lines.extend(turns(2));
+        let (_dir, path) = write_transcript(&lines);
+        let (loaded, reached_eof) = parse_bounded(&path, CTX, 2).unwrap();
+        assert!(reached_eof);
+        assert_eq!(loaded.value.unwrap().messages.len(), 4);
+    }
+
     fn first_block(s: &Option<Session>) -> &ContentBlock {
         &s.as_ref().unwrap().messages[0].blocks[0]
     }

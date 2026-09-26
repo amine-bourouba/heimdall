@@ -50,6 +50,13 @@ pub fn load(projects_dir: &Path, session_id: &str, os: TargetOs) -> Result<Loade
     }
 }
 
+/// Whether `~/.claude/file-history/<sessionId>/` holds any backup at all — cheap existence check
+/// for a sidebar/list badge, without reading or parsing a single one.
+pub fn has_any(file_history_dir: &Path, session_id: &str) -> bool {
+    let Ok(id) = plain_file_name(session_id) else { return false };
+    std::fs::read_dir(file_history_dir.join(id)).is_ok_and(|mut d| d.next().is_some())
+}
+
 /// `<project>/<sessionId>.jsonl` in whichever project folder holds it (folders in name order).
 pub fn find_transcript(projects_dir: &Path, session_id: &str) -> Result<Option<PathBuf>> {
     let file = format!("{}.jsonl", plain_file_name(session_id)?);

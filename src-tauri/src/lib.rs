@@ -13,6 +13,8 @@ mod watcher;
 mod window;
 
 pub fn run() {
+    use tauri::Manager;
+
     let specta = commands::builder();
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -23,6 +25,7 @@ pub fn run() {
         .invoke_handler(specta.invoke_handler())
         .setup(move |app| {
             specta.mount_events(app);
+            app.manage(state::AppState::new()?);
             window::init(app)?;
             menu::init(app)?;
             watcher::init(app)?;

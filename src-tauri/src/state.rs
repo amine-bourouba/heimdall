@@ -7,11 +7,6 @@
 //! `AppStateCacheTests`' three cases (store-and-retrieve, miss on an unknown id, clear-removes-all)
 //! are ported below as the hit/miss/clear-everything cases; the staleness and per-area invalidation
 //! cases have no Swift equivalent, since Heimdall's is a materially richer cache.
-//!
-//! Nothing outside this module and its own tests calls into it yet: `AppState` is not managed by
-//! the Tauri builder, and no command reads through `Cache` or `blocking`, until the tasks that add
-//! real command bodies (M1-39 onward) wire them in.
-#![allow(dead_code)]
 
 use std::any::Any;
 use std::collections::HashMap;
@@ -82,11 +77,13 @@ impl Cache {
     }
 
     /// Drops every entry tagged with `area` (called with each `DataChange` the watcher emits, M1-47).
+    #[allow(dead_code)] // no caller until the watcher (M1-47) lands
     pub fn invalidate_area(&self, area: Area) {
         self.entries.lock().expect("cache lock").retain(|_, e| e.area != area);
     }
 
     /// Drops every entry, regardless of area (a full rescan, or area `all`).
+    #[allow(dead_code)] // no caller until the watcher (M1-47) lands
     pub fn clear(&self) {
         self.entries.lock().expect("cache lock").clear();
     }

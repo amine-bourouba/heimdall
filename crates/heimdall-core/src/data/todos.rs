@@ -26,6 +26,13 @@ pub fn load_for_session(todos_dir: &Path, session_id: &str) -> Result<Loaded<Vec
     Ok(Loaded::new(todos, skipped))
 }
 
+/// Whether the session has any todo file at all (plain or agent-suffixed) — cheap existence check
+/// for a sidebar/list badge, without reading a single one.
+pub fn has_any(todos_dir: &Path, session_id: &str) -> bool {
+    let agent_prefix = format!("{session_id}{AGENT_INFIX}");
+    json_files(todos_dir).is_ok_and(|files| files.iter().any(|(stem, _)| stem == session_id || stem.starts_with(&agent_prefix)))
+}
+
 /// Every session's todos, keyed by session id; sessions whose files are all empty are left out.
 pub fn load_all(todos_dir: &Path) -> Result<Loaded<BTreeMap<String, Vec<TodoItem>>>> {
     let mut grouped: BTreeMap<String, Vec<TodoItem>> = BTreeMap::new();

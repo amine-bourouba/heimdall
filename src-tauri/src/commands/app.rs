@@ -12,9 +12,9 @@ use heimdall_core::models::config::scope::ProjectContext;
 use heimdall_core::paths::TargetOs;
 use heimdall_core::projects::discovery::load_project;
 use heimdall_core::{AppError, Result};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
-use crate::state::blocking;
+use crate::state::{blocking, AppState};
 
 /// Resolves a `ProjectContext` to the real project folder on disk (never `~/.claude/projects/<id>`,
 /// which only holds transcripts — commands, skills, hooks etc. live in the project's own
@@ -34,7 +34,8 @@ fn resolve_project_root(app: &AppHandle, claude_home: &heimdall_core::paths::Cla
 #[specta::specta]
 pub async fn get_app_info(app: AppHandle) -> Result<AppInfo> {
     blocking(move || {
-        let claude_home = crate::state::resolve_claude_home()?;
+        let state = app.state::<AppState>();
+        let claude_home = &state.claude_home;
         Ok(AppInfo {
             version: app.package_info().version.to_string(),
             identifier: app.config().identifier.clone(),
@@ -50,26 +51,28 @@ pub async fn get_app_info(app: AppHandle) -> Result<AppInfo> {
 #[specta::specta]
 pub async fn get_sidebar_counts(app: AppHandle, project: Option<ProjectContext>) -> Result<SidebarCounts> {
     blocking(move || {
-        let claude_home = crate::state::resolve_claude_home()?;
-        let root = resolve_project_root(&app, &claude_home, project.as_ref());
+        let state = app.state::<AppState>();
+        let claude_home = &state.claude_home;
+        let root = resolve_project_root(&app, claude_home, project.as_ref());
         let scope = match (root.as_deref(), project.as_ref()) {
             (Some(root), Some(context)) => Some(ProjectScope { root, context }),
             _ => None,
         };
-        sidebar_counts(&claude_home, scope)
+        sidebar_counts(claude_home, scope)
     })
     .await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn detect_claude_cli() -> Result<CliStatus> {
-    blocking(|| {
-        let claude_home = crate::state::resolve_claude_home()?;
+pub async fn detect_claude_cli(app: AppHandle) -> Result<CliStatus> {
+    blocking(move || {
+        let state = app.state::<AppState>();
+        let claude_home = &state.claude_home;
         let home_dir = heimdall_core::paths::user_home().ok_or_else(|| AppError::not_found("no home folder"))?;
         let path_var = std::env::var("PATH").unwrap_or_default();
         let pathext = std::env::var("PATHEXT").unwrap_or_default();
-        Ok(cli_status(&claude_home, &home_dir, &path_var, &pathext, TargetOs::current(), &|p| p.exists()))
+        Ok(cli_status(claude_home, &home_dir, &path_var, &pathext, TargetOs::current(), &|p| p.exists()))
     })
     .await
 }
