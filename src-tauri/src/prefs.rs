@@ -7,7 +7,7 @@
 use heimdall_core::models::prefs::{Prefs, PreferredEditor, PreferredTerminal, PrefsPatch};
 use heimdall_core::paths::TargetOs;
 use heimdall_core::{AppError, Result, WriteOutcome};
-use tauri::{AppHandle, Runtime};
+use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_store::StoreExt;
 
@@ -180,6 +180,7 @@ pub fn add_memory_folder<R: Runtime>(app: &AppHandle<R>, picked: Option<String>)
     }
     prefs.custom_memory_folders.push(folder);
     save(app, &prefs)?;
+    reregister_watched_folders(app, &prefs);
     Ok(WriteOutcome::Written)
 }
 
@@ -192,7 +193,18 @@ pub fn remove_memory_folder<R: Runtime>(app: &AppHandle<R>, source_id: &str) -> 
     }
     prefs.custom_memory_folders.remove(index);
     save(app, &prefs)?;
+    reregister_watched_folders(app, &prefs);
     Ok(WriteOutcome::Written)
+}
+
+/// Tells the watcher (M1-47) about the new folder list, if one is running — absent in tests that
+/// build an `AppState` without also calling `watcher::init`, and that is fine: this is the
+/// live-update path, not a correctness dependency (the folders are read fresh from `Prefs` by
+/// every command that needs them regardless).
+fn reregister_watched_folders<R: Runtime>(app: &AppHandle<R>, prefs: &Prefs) {
+    if let Some(watcher) = app.try_state::<crate::watcher::WatcherHandle>() {
+        watcher.set_custom_folders(&prefs.custom_memory_folders);
+    }
 }
 
 /// `pick_config_project`: sets `configProjectPath` to the picked folder, or leaves it unchanged

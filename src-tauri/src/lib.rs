@@ -2,14 +2,14 @@
 //! Each module below is owned by one task; see docs/tasks/README.md.
 
 pub mod commands;
-mod events;
+pub mod events;
 mod menu;
 mod platform;
-mod prefs;
-mod state;
+pub mod prefs;
+pub mod state;
 mod tray;
 mod updater;
-mod watcher;
+pub mod watcher;
 mod window;
 
 pub fn run() {

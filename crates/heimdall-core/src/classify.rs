@@ -70,10 +70,15 @@ pub fn classify(path: &str, claude_home_root: &str, config_file: &str, os: Targe
         ["projects", _name] => vec![change(Area::Projects, None)],
         ["projects", name, "sessions-index.json"] => vec![change(Area::Sessions, Some((*name).to_string()))],
         ["projects", name, "memory", ..] => vec![change(Area::Memory, Some(format!("project:{name}")))],
-        ["projects", _name, file] if file.ends_with(".jsonl") => vec![change(Area::Transcript, file.strip_suffix(".jsonl").map(String::from))],
-        ["projects", _name, _session, "subagents", file] => {
+        // A session's transcript appearing or changing can add or rename a row in its project's
+        // own session list (M1-41's `list_sessions`), not just the transcript's own content — both
+        // areas change together, the same reasoning `settings.json` already gets two areas for.
+        ["projects", name, file] if file.ends_with(".jsonl") => {
+            vec![change(Area::Transcript, file.strip_suffix(".jsonl").map(String::from)), change(Area::Sessions, Some((*name).to_string()))]
+        }
+        ["projects", name, _session, "subagents", file] => {
             let key = file.strip_suffix(".jsonl").or_else(|| file.strip_suffix(".meta.json"));
-            key.map_or_else(Vec::new, |k| vec![change(Area::Transcript, Some(k.to_string()))])
+            key.map_or_else(Vec::new, |k| vec![change(Area::Transcript, Some(k.to_string())), change(Area::Sessions, Some((*name).to_string()))])
         }
         ["projects", _name, _session, "tool-results", ..] => Vec::new(), // persisted tool output; Heimdall does not read it
         ["todos", file] => vec![change(Area::Todos, Some(todos::session_id_of(file.trim_end_matches(".json")).to_string()))],
@@ -155,9 +160,12 @@ mod tests {
         let cases: &[(&str, Vec<DataChange>)] = &[
             (r"\projects\-Users-me-app", one(Area::Projects, None)),
             (r"\projects\-Users-me-app\sessions-index.json", one(Area::Sessions, Some("-Users-me-app"))),
-            (r"\projects\-Users-me-app\11111111-1111-4111-8111-111111111111.jsonl", one(Area::Transcript, Some("11111111-1111-4111-8111-111111111111"))),
-            (r"\projects\-Users-me-app\11111111-1111-4111-8111-111111111111\subagents\agent-a9b1c2d3.jsonl", one(Area::Transcript, Some("agent-a9b1c2d3"))),
-            (r"\projects\-Users-me-app\11111111-1111-4111-8111-111111111111\subagents\agent-a9b1c2d3.meta.json", one(Area::Transcript, Some("agent-a9b1c2d3"))),
+            (r"\projects\-Users-me-app\11111111-1111-4111-8111-111111111111.jsonl",
+                vec![change(Area::Transcript, Some("11111111-1111-4111-8111-111111111111".into())), change(Area::Sessions, Some("-Users-me-app".into()))]),
+            (r"\projects\-Users-me-app\11111111-1111-4111-8111-111111111111\subagents\agent-a9b1c2d3.jsonl",
+                vec![change(Area::Transcript, Some("agent-a9b1c2d3".into())), change(Area::Sessions, Some("-Users-me-app".into()))]),
+            (r"\projects\-Users-me-app\11111111-1111-4111-8111-111111111111\subagents\agent-a9b1c2d3.meta.json",
+                vec![change(Area::Transcript, Some("agent-a9b1c2d3".into())), change(Area::Sessions, Some("-Users-me-app".into()))]),
             (r"\projects\-Users-me-app\memory\MEMORY.md", one(Area::Memory, Some("project:-Users-me-app"))),
             (r"\todos\11111111-1111-4111-8111-111111111111-agent-a9b1c2d3.json", one(Area::Todos, Some("11111111-1111-4111-8111-111111111111"))),
             (r"\todos\11111111-1111-4111-8111-111111111111.json", one(Area::Todos, Some("11111111-1111-4111-8111-111111111111"))),
@@ -186,6 +194,17 @@ mod tests {
     fn the_claude_home_root_itself_classifies_as_all() {
         assert_eq!(win(WIN_HOME), one(Area::All, None));
         assert_eq!(unix(UNIX_HOME), one(Area::All, None));
+    }
+
+    // Correction found while building M1-47 (the watcher): a session transcript appearing,
+    // changing or being renamed over can add or rename a row in `list_sessions`, so it must
+    // invalidate `sessions` (keyed by the project id) as well as `transcript` (keyed by the
+    // session id) — a plain `.jsonl` path classifying to `transcript` alone would leave a stale
+    // session list cached after exactly the kind of change the watcher exists to catch.
+    #[test]
+    fn a_session_transcript_classifies_to_both_transcript_and_its_projects_sessions_area() {
+        let expected = vec![change(Area::Transcript, Some("11111111-1111-4111-8111-111111111111".into())), change(Area::Sessions, Some("-Users-me-app".into()))];
+        assert_eq!(win(r"C:\Users\me\.claude\projects\-Users-me-app\11111111-1111-4111-8111-111111111111.jsonl"), expected);
     }
 
     #[test]
