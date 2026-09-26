@@ -34,3 +34,6 @@ notify-debouncer-full = "0.7.0"
 
 [dev-dependencies]
 tempfile = "3.27.0"
+# Unions with the main `tauri` dependency's features (same crate, same version): enables
+# `tauri::test` (MockRuntime, mock_builder, mock_app) for `cargo test` only, never for a real build.
+tauri = { version = "2.11.6", features = ["test"] }
