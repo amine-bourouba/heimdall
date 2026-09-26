@@ -24,6 +24,24 @@ pub enum TodoStatus {
     Pending,
 }
 
+/// A session's (or one of its sub-agents') todo list (contract `TodoList`).
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TodoList {
+    pub session_id: String,
+    pub agent_id: Option<String>,
+    pub items: Vec<TodoItem>,
+}
+
+/// Every todo list for one project, for the all-todos screen (contract `TodoGroup`).
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TodoGroup {
+    pub project_id: Option<String>,
+    pub project_name: Option<String>,
+    pub lists: Vec<TodoList>,
+}
+
 impl TodoItem {
     /// Stable id from the content (Poirot used `content.hashValue`, which changes between runs):
     /// 64-bit FNV-1a, so the same content always gets the same id.

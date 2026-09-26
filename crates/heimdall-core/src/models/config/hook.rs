@@ -198,6 +198,29 @@ pub struct HookEntry {
     pub scope: ConfigScope,
 }
 
+/// One handler as submitted by the hook editor (contract `HookHandler` on the input side): unlike
+/// the read-side [`HookHandler`], there is no `extraKeys` — the webview never edits keys it does
+/// not model, so a save can only touch the fields it shows.
+#[derive(Debug, Clone, PartialEq, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct HookHandlerInput {
+    #[serde(rename = "type")]
+    pub handler_type: HookHandlerType,
+    pub command: Option<String>,
+    pub url: Option<String>,
+    pub timeout: Option<u64>,
+    pub status_message: Option<String>,
+}
+
+/// One matcher group as submitted by the hook editor (contract `HookGroupInput`): [`HookMatcherGroup`]
+/// without an id, since the webview never carries one.
+#[derive(Debug, Clone, PartialEq, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct HookGroupInput {
+    pub matcher: Option<String>,
+    pub handlers: Vec<HookHandlerInput>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

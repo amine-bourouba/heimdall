@@ -212,6 +212,30 @@ pub struct Prefs {
     pub custom_memory_folders: Vec<String>,
 }
 
+/// A partial update to [`Prefs`] (contract `PrefsPatch`): every field but `schemaVersion` and the
+/// two fields with their own commands (`customMemoryFolders`, `configProjectPath`), each optional
+/// so a patch only touches the keys it sets.
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct PrefsPatch {
+    pub show_menu_bar_icon: Option<bool>,
+    pub has_completed_onboarding: Option<bool>,
+    pub color_theme: Option<ColorThemeId>,
+    pub font_scale: Option<f64>,
+    pub session_layout: Option<Layout>,
+    pub config_layouts: Option<BTreeMap<String, Layout>>,
+    pub show_agent_sessions: Option<bool>,
+    pub text_editor: Option<PreferredEditor>,
+    pub preferred_terminal: Option<PreferredTerminal>,
+    pub open_terminal_on_bash: Option<bool>,
+    pub claude_code_path: Option<String>,
+    pub show_animations: Option<bool>,
+    pub wrap_code_lines: Option<bool>,
+    pub auto_expand_blocks: Option<bool>,
+    pub parse_markdown_in_results: Option<bool>,
+    pub global_search_mode: Option<SearchMode>,
+}
+
 impl Prefs {
     pub fn defaults_for(os: TargetOs) -> Self {
         Self {

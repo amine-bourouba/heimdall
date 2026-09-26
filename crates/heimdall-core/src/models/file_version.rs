@@ -23,6 +23,37 @@ impl PartialEq for FileVersion {
     }
 }
 
+/// One file's versions, grouped for the file-history screen (contract `FileHistory`).
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct FileHistory {
+    pub files: Vec<FileHistoryFile>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct FileHistoryFile {
+    pub file_name: String,
+    pub versions: Vec<FileHistoryVersion>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct FileHistoryVersion {
+    /// The contract `VersionId` (`FileVersion::backup_file_name`).
+    pub version_id: String,
+    pub version: u32,
+    pub backup_time: DateTime<Utc>,
+}
+
+/// One version's content, fetched on demand (contract `FileVersionContent`).
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct FileVersionContent {
+    pub version_id: String,
+    pub content: String,
+}
+
 impl FileVersion {
     pub fn new(file_name: impl Into<String>, session_id: impl Into<String>, version: u32, backup_time: DateTime<Utc>,
                content_hash: impl Into<String>, backup_file_name: impl Into<String>) -> Self {

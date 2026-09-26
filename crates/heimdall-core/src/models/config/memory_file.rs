@@ -22,6 +22,32 @@ pub struct MemoryFile {
     pub source_label: Option<String>,
 }
 
+/// One row in a memory source's file list (contract `MemoryFileSummary`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct MemoryFileSummary {
+    pub id: String,
+    pub source_id: String,
+    pub name: String,
+    pub filename: String,
+    pub is_main: bool,
+}
+
+/// A summary plus its content, opened on demand (contract `MemoryFileDetail`); fields stay flat,
+/// matching the contract's intersection type.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct MemoryFileDetail {
+    pub id: String,
+    pub source_id: String,
+    pub name: String,
+    pub filename: String,
+    pub is_main: bool,
+    pub content: String,
+    /// For showing where the file lives; never sent back (ADR 0010).
+    pub display_path: String,
+}
+
 impl MemoryFile {
     pub fn is_custom_source(&self) -> bool {
         self.project_id.starts_with(CUSTOM_SOURCE_PREFIX)

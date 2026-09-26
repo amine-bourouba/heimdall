@@ -3,7 +3,7 @@
 //! The types below are the search half of the IPC contract (docs/ipc-contract.md §5); `search.rs`
 //! (M1-46) is the only place that will call `providers::search` from a Tauri command.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::models::config::scope::ConfigRef;
@@ -44,7 +44,7 @@ impl SearchCategory {
 }
 
 /// The 14 navigable screens (`NavigationItem.allItems`), used by `navigateTo` and `openDetail`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum NavScreen {
     Sessions,
@@ -61,6 +61,15 @@ pub enum NavScreen {
     SubAgents,
     Analytics,
     History,
+}
+
+/// Where `open_in_main_window` should send the main window (contract `NavTarget`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum NavTarget {
+    #[serde(rename_all = "camelCase")]
+    Session { project_id: String, session_id: String },
+    Screen { screen: NavScreen },
 }
 
 /// Locates one memory file for `openDetail`: the source (a project's memory folder; search never

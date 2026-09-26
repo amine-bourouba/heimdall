@@ -7,6 +7,21 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+/// Whether `get_stats` served the on-disk cache or recomputed it fresh (contract `StatsView`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum StatsSource {
+    Cache,
+    Computed,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct StatsView {
+    pub stats: StatsCache,
+    pub source: StatsSource,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase", default)]
 pub struct StatsCache {

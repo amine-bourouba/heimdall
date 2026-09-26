@@ -45,6 +45,12 @@ impl AppError {
         Self::InvalidInput { message: message.into(), path: None }
     }
 
+    /// A command whose owning task has not landed yet (M1-37 scaffolding); every real task
+    /// replaces the body that returns this before it ships.
+    pub fn not_implemented(command: &str) -> Self {
+        Self::invalid_input(format!("not implemented: {command}"))
+    }
+
     /// Attach the path the error is about. Paths are shown to the user; they are never secrets.
     pub fn with_path(mut self, p: impl AsRef<std::path::Path>) -> Self {
         let value = Some(p.as_ref().display().to_string());

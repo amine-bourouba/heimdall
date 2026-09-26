@@ -9,10 +9,41 @@
 
 use std::path::{Path, PathBuf};
 
+use serde::Deserialize;
+use specta::Type;
+
 use crate::error::{AppError, Result};
+use crate::models::config::scope::ConfigRef;
 use crate::models::prefs::{PreferredEditor, PreferredTerminal};
 use crate::paths::{self, TargetOs};
 use crate::projects::discovery::is_uuid;
+
+/// What `open_in_editor` should open (contract `EditorTarget`): every variant names an id the
+/// command resolves itself, never a path from the webview (ADR 0010, rule 5).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum EditorTarget {
+    #[serde(rename_all = "camelCase")]
+    ToolBlock { project_id: String, session_id: String, block_id: String, line: Option<u32> },
+    #[serde(rename_all = "camelCase")]
+    ConfigItem { config_ref: ConfigRef },
+    #[serde(rename_all = "camelCase")]
+    MemoryFile { source_id: String, file_id: String },
+    /// Opens `~/.claude.json` at the named server's line.
+    #[serde(rename_all = "camelCase")]
+    McpConfig { server_name: String },
+}
+
+/// What `reveal_in_file_manager` should reveal (contract `RevealTarget`).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum RevealTarget {
+    #[serde(rename_all = "camelCase")]
+    Session { project_id: String, session_id: String },
+    #[serde(rename_all = "camelCase")]
+    ConfigItem { config_ref: ConfigRef },
+    McpConfigFile,
+}
 
 /// A program and its arguments, never a shell string; `cwd` is a working directory to launch in,
 /// not an argv element.

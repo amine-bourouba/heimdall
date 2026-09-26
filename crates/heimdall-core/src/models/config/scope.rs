@@ -41,3 +41,43 @@ pub struct ConfigRef {
     pub project: Option<ProjectContext>,
     pub slug: String,
 }
+
+/// Where a config item lives, for display (contract `ConfigItemSummary.scope`); distinct from
+/// [`ConfigScope`], which built-ins (agents with no file) have no place in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ConfigItemScope {
+    Global,
+    Project,
+    BuiltIn,
+}
+
+/// One row in a config list (contract `ConfigItemSummary`): commands, skills, plans, output
+/// styles and sub-agents all reduce to this same shape for listing.
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfigItemSummary {
+    #[serde(rename = "ref")]
+    pub config_ref: ConfigRef,
+    pub name: String,
+    pub description: String,
+    pub scope: ConfigItemScope,
+    /// Extra display fields (model, argument-hint, allowed-tools, color…), item-kind-specific.
+    pub meta: std::collections::BTreeMap<String, String>,
+}
+
+/// A summary plus its body, opened on demand (contract `ConfigItemDetail`). Fields are kept flat
+/// (not nested under `summary`), matching how the contract's intersection type reads on the wire.
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfigItemDetail {
+    #[serde(rename = "ref")]
+    pub config_ref: ConfigRef,
+    pub name: String,
+    pub description: String,
+    pub scope: ConfigItemScope,
+    pub meta: std::collections::BTreeMap<String, String>,
+    pub body: String,
+    /// For showing where the item lives; never sent back (ADR 0010).
+    pub display_path: String,
+}

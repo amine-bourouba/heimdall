@@ -6,6 +6,7 @@
 // Diagnostics travel as AppError values, never as prints (ADR 0005, port-plan P-17).
 #![deny(clippy::print_stdout, clippy::print_stderr)]
 
+pub mod app_shell;
 pub mod error;
 pub mod classify;
 pub mod config;

@@ -1,7 +1,7 @@
 //! Heimdall desktop shell: plugins, command wiring and startup (ADR 0002).
 //! Each module below is owned by one task; see docs/tasks/README.md.
 
-mod commands;
+pub mod commands;
 mod events;
 mod menu;
 mod platform;

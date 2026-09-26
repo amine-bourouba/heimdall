@@ -11,13 +11,13 @@
 //! root itself, a rare, drastic event; the watcher's own overflow handling (M1-47) is the usual
 //! source of `all`.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::data::todos;
 use crate::paths::{self, TargetOs};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Area {
     Projects,
@@ -43,7 +43,7 @@ pub enum Area {
     All,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct DataChange {
     pub area: Area,

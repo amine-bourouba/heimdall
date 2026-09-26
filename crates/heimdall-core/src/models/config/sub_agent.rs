@@ -129,6 +129,21 @@ impl SubAgent {
     }
 }
 
+/// A sub-agent as submitted by the editor (contract `AgentInput`): [`SubAgent`] without its id,
+/// file path, scope or config ref, none of which the webview may set directly.
+#[derive(Debug, Clone, PartialEq, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentInput {
+    pub name: String,
+    pub icon: String,
+    pub description: String,
+    pub tools: Vec<String>,
+    pub model: Option<String>,
+    pub color: Option<AgentColor>,
+    pub prompt: Option<String>,
+    pub memory: Option<AgentMemory>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

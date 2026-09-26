@@ -31,6 +31,15 @@ pub struct Message {
     pub blocks: Vec<ContentBlock>,
 }
 
+/// One page of a session's messages (contract `MessagePage`, `get_session_messages`).
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct MessagePage {
+    pub start: u32,
+    pub messages: Vec<Message>,
+    pub total: u32,
+}
+
 /// One content block. Block ids are `<messageId>:<index>`, stable across re-parses.
 #[derive(Debug, Clone, PartialEq, Serialize, Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]

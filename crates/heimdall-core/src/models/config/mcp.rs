@@ -162,6 +162,39 @@ impl McpServer {
     }
 }
 
+/// A secret field's edit (contract `SecretInput`): existing values never round-trip through the
+/// webview (ADR 0010), so an unchanged field is `"keep"`, not its old value.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum SecretInput {
+    Keep,
+    /// The raw typed value; wrapped in a [`Secret`] only once the write command stores it.
+    Set { value: String },
+    Remove,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum McpServerInputTransport {
+    Stdio,
+    Http,
+    Sse,
+}
+
+/// A server as submitted by the add/edit form (contract `McpServerInput`).
+#[derive(Debug, Clone, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct McpServerInput {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub transport: McpServerInputTransport,
+    pub command: Option<String>,
+    pub args: Vec<String>,
+    pub url: Option<String>,
+    pub env: BTreeMap<String, SecretInput>,
+    pub headers: BTreeMap<String, SecretInput>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
