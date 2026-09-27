@@ -187,7 +187,7 @@ fn tool_block_lines(tool: &ToolUse) -> Vec<String> {
         if key == "file_path" || key == "path" {
             continue;
         }
-        lines.push(format!("**{key}:** `{}`", truncate_chars(value, INPUT_TRUNCATE)));
+        lines.push(format!("**{key}:** `{}`", truncate_chars(value, INPUT_TRUNCATE, "...")));
     }
     lines
 }
@@ -197,14 +197,16 @@ fn tool_result_lines(result: &ToolResult) -> Vec<String> {
     vec![
         format!("**{label}:**"),
         "```".into(),
-        truncate_chars(&result.content, RESULT_TRUNCATE),
+        // SessionExporter.swift's two truncation call sites use different suffixes: tool input
+        // just "...", a tool result "\n... (truncated)" — not a typo to unify.
+        truncate_chars(&result.content, RESULT_TRUNCATE, "\n... (truncated)"),
         "```".into(),
     ]
 }
 
-fn truncate_chars(s: &str, max: usize) -> String {
+fn truncate_chars(s: &str, max: usize, suffix: &str) -> String {
     if s.chars().count() > max {
-        format!("{}...", s.chars().take(max).collect::<String>())
+        format!("{}{suffix}", s.chars().take(max).collect::<String>())
     } else {
         s.to_string()
     }
@@ -395,10 +397,27 @@ mod tests {
     #[test]
     fn long_values_are_truncated() {
         assert_eq!(
-            truncate_chars(&"a".repeat(600), INPUT_TRUNCATE),
+            truncate_chars(&"a".repeat(600), INPUT_TRUNCATE, "..."),
             format!("{}...", "a".repeat(500))
         );
-        assert_eq!(truncate_chars("short", INPUT_TRUNCATE), "short");
+        assert_eq!(truncate_chars("short", INPUT_TRUNCATE, "..."), "short");
+    }
+
+    // Ported from PoirotTests/Services/Export/SessionExporterTests.swift: tool input truncation
+    // suffixes with bare "...", a tool result's own suffix is "\n... (truncated)" — different, on
+    // purpose (SessionExporter.swift's two separate truncation call sites), caught by M1-53's real
+    // golden-parity run against fixtures/golden/screenshot's long-001 fixture.
+    #[test]
+    fn tool_result_truncation_suffix_differs_from_tool_input() {
+        let long = "a".repeat(RESULT_TRUNCATE + 100);
+        let result = ToolResult {
+            id: "r".into(),
+            tool_use_id: "t".into(),
+            content: long.clone(),
+            is_error: false,
+        };
+        let markdown = tool_result_lines(&result).join("\n");
+        assert!(markdown.contains(&format!("{}\n... (truncated)", &long[..RESULT_TRUNCATE])));
     }
 
     #[test]
