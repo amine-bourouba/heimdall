@@ -370,7 +370,7 @@ nonisolated private func topLevelSessionFiles(projectsPath: String) -> [SessionF
 /// Skipped entirely (not failed) when `GOLDEN_FIXTURES`/`GOLDEN_OUT` are unset, via the
 /// suite-level trait below — `init()` only ever runs for a test that trait already let through.
 @Suite("Golden Oracle", .enabled(if: Env.fixtures != nil && Env.out != nil))
-struct GoldenOracleTests {
+private struct GoldenOracleTests {
     let outRoot: String
     let sets: [FixtureSet]
 
