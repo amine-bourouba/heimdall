@@ -9,30 +9,46 @@ upstream commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`, ADR 0001) stays a re
 forever. This harness lives here instead, and gets *copied into* a throwaway checkout of upstream
 Poirot at the same pinned SHA.
 
-## The copy-in procedure (what M1-51's workflow does)
+**Confirmed working end-to-end**, not just written and hoped: `.github/workflows/golden-oracle.yml`
+has actually run this on a real `macos-latest` GitHub-hosted runner, compiled and executed all 13
+tests against all four fixture sets, and uploaded 145 real output files as an artifact. Everything
+below describes that real, exercised path — not a plan.
+
+## The copy-in procedure (what `golden-oracle.yml` does)
 
 1. Clone `https://github.com/a7t-ai/poirot` at `a29dd6ee0e0133ef26bd067c164c66b160e13d86` into a
-   throwaway directory (a fresh `actions/checkout` step or `git clone` into a temp path — never
-   `$POIROT` itself, and never committed anywhere).
-2. Copy `tools/golden-oracle/GoldenOracleTests.swift` from *this* repo into that checkout's test
-   target (e.g. `PoirotTests/GoldenOracleTests.swift`), so it compiles as a member of Poirot's own
-   test module and can call its `internal`-visibility types directly.
-3. Copy `fixtures/synthetic/`, `fixtures/screenshot/`, `fixtures/windows/`, `fixtures/linux/` from
-   this repo into a scratch directory — this becomes `$GOLDEN_FIXTURES`.
-4. Run, on a macOS runner (a Mac is required — `SessionExporter.swift` imports `AppKit`, and the
-   fixture-home-directory trick this harness relies on is Foundation-on-Darwin-specific):
-   ```
-   GOLDEN_FIXTURES=/path/to/scratch/fixtures GOLDEN_OUT=/path/to/scratch/golden-out \
-     xcodebuild test -project Poirot.xcodeproj -scheme Poirot \
-     -only-testing:PoirotTests/GoldenOracleTests
-   ```
-   (or the equivalent `xcodebuild test-without-building` / `swift test` invocation the workflow
-   settles on — whichever Poirot's own existing CI already uses for `PoirotTests`).
-5. Copy `$GOLDEN_OUT/**` into `fixtures/golden/` in *this* repo (M1-52's job) and discard the
-   throwaway checkout entirely.
-6. Every test method throws `XCTSkip` if `GOLDEN_FIXTURES`/`GOLDEN_OUT` are unset, so running the
-   full `PoirotTests` suite without them (e.g. a Poirot contributor's own local run) never fails —
-   it just skips this one file's tests.
+   throwaway directory (`actions/checkout` with `repository:`/`ref:`/`path:` — never `$POIROT`
+   itself, and never committed anywhere).
+2. Copy `tools/golden-oracle/GoldenOracleTests.swift` from *this* repo into that checkout's
+   `PoirotTests/` directory. `project.yml`'s `PoirotTests` target globs that whole folder as its
+   `sources:`, so `xcodegen generate` (next step) picks the new file up automatically.
+3. `brew install xcodegen`, then `xcodegen generate` inside the throwaway checkout — this
+   regenerates `Poirot.xcodeproj` from `project.yml` so the newly-copied file is actually a member
+   of the `PoirotTests` target. The checked-in `.xcodeproj` (which Poirot's own `unit-tests.yml`
+   uses as-is) predates this file and would not reference it.
+4. `xcodebuild -scheme Poirot -destination 'platform=macOS' build-for-testing`, then a config file
+   (below) is written, then `-only-testing:PoirotTests/GoldenOracleTests test-without-building`.
+5. Upload `$GOLDEN_OUT` as the `golden-oracle-output` artifact. Copying that into `fixtures/golden/`
+   in *this* repo is M1-52's job — this workflow only produces and uploads it.
+6. `@Suite("Golden Oracle", .enabled(if: ...))` skips the whole suite, not fails it, when
+   `GOLDEN_FIXTURES`/`GOLDEN_OUT` aren't available — so running the full `PoirotTests` suite without
+   them (e.g. a Poirot contributor's own local run) never fails, it just skips this one file's tests.
+
+### Passing `GOLDEN_FIXTURES`/`GOLDEN_OUT` into the test process — a real gotcha
+
+The first working run only got there after discovering that **`xcodebuild test-without-building`
+does not reliably pass the invoking shell step's own environment through to the test process it
+spawns.** The workflow step's own logged `env:` block showed both variables set; the Swift process
+still saw `ProcessInfo.processInfo.environment["GOLDEN_FIXTURES"]` as `nil`, and every test was
+skipped as a result — confirmed directly from a real run's test log ("`Suite "Golden Oracle"
+skipped.`" for all 13 tests), not inferred.
+
+The fix: the workflow writes a small JSON file to a fixed path (`/tmp/heimdall-golden-oracle-config.json`)
+immediately before the `test-without-building` step, and `Env` in `GoldenOracleTests.swift` reads
+that file first, falling back to `ProcessInfo.processInfo.environment` only if it's missing (harmless,
+and lets a plain local `xcodebuild test` invocation with env vars set still work if it ever does
+pass them through). Anyone editing either half of this must keep the file path and its two keys
+(`GOLDEN_FIXTURES`, `GOLDEN_OUT`) in sync between the workflow and the Swift file.
 
 ## Why fixture trees stand in for a real home directory
 
@@ -49,12 +65,12 @@ Both are namespace `enum`s with no `init` at all; every function hardcodes
 either file (confirmed by reading both files directly, not assumed). Assumption A-9 asks whether
 `CFFIXED_USER_HOME` (a Foundation-on-Darwin environment variable some sandboxed test setups use to
 redirect `homeDirectoryForCurrentUser`) would work around this. **This harness does not attempt
-it** — proving it needs a real macOS process to observe whether `homeDirectoryForCurrentUser`
-actually moves, and this repo has no macOS or Swift toolchain available anywhere it can execute
-Swift code (confirmed: this task was written on a Windows machine with no Swift installed and no
-Mac available). If a future task wants config-loader parity, it should first spend five minutes on
-a real Mac confirming `CFFIXED_USER_HOME` actually works before building anything on top of it —
-this repo's own AC2 permission to skip is exactly for this situation.
+it** — this task was written and first verified on a Windows machine with no Swift toolchain, so
+proving A-9 wasn't attempted then. `golden-oracle.yml` now does run on a real `macos-latest` runner
+(confirmed working end-to-end, see below), so a future task *could* test `CFFIXED_USER_HOME` for
+real there — it just hasn't been done, since AC1's own required-output list never asks for
+config/MCP-server data in the first place (see the next paragraph). This repo's own AC2 permission
+to skip is exactly for this situation, not a claim that it's now unprovable.
 
 Concretely, this means `fixtures/golden/` will never contain a config/MCP-server/settings dump —
 and it doesn't need to: AC1's own list of required outputs (below) never mentions one.
@@ -145,6 +161,12 @@ Recorded here rather than guessed at silently, per this task's own acceptance cr
   across CI runs**; otherwise this one line will differ between two runs on machines with
   different settings even though nothing about the underlying data changed. Every other line of
   `export.md` is deterministic (plain formatting of already-canonical data).
+- **Every path/file-name component runs through `safeName`, which strips every character
+  `actions/upload-artifact` rejects** (`" \ / : < > | * ? \r \n`), not just the two path separators
+  it originally handled. Found by a real upload failure: a Windows-fixture file-history entry's
+  `fileName` was a full `C:\Users\fixture\...\MEMORY.md` path, not a bare name —
+  `FileHistoryLoader.canonicalFileName` keeps whichever observed form is longest, which for Windows
+  can be the entire absolute path, colon and all.
 - **Sorted keys, camelCase, UTC ISO-8601 dates (with fractional seconds) are enforced by never
   reusing a Poirot model's own `Codable` conformance for output.** Several on-disk models
   (`SessionFacets`, `SessionTodo.Status`) have snake_case `CodingKeys` for their *disk* format —
