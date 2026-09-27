@@ -30,7 +30,11 @@ pub fn load_for_session(todos_dir: &Path, session_id: &str) -> Result<Loaded<Vec
 /// for a sidebar/list badge, without reading a single one.
 pub fn has_any(todos_dir: &Path, session_id: &str) -> bool {
     let agent_prefix = format!("{session_id}{AGENT_INFIX}");
-    json_files(todos_dir).is_ok_and(|files| files.iter().any(|(stem, _)| stem == session_id || stem.starts_with(&agent_prefix)))
+    json_files(todos_dir).is_ok_and(|files| {
+        files
+            .iter()
+            .any(|(stem, _)| stem == session_id || stem.starts_with(&agent_prefix))
+    })
 }
 
 /// Every session's todos, keyed by session id; sessions whose files are all empty are left out.
@@ -41,7 +45,10 @@ pub fn load_all(todos_dir: &Path) -> Result<Loaded<BTreeMap<String, Vec<TodoItem
         let loaded = read_file(&path);
         skipped += loaded.skipped;
         if !loaded.value.is_empty() {
-            grouped.entry(session_id_of(&stem).to_string()).or_default().extend(loaded.value);
+            grouped
+                .entry(session_id_of(&stem).to_string())
+                .or_default()
+                .extend(loaded.value);
         }
     }
     Ok(Loaded::new(grouped, skipped))
@@ -65,7 +72,11 @@ pub fn load_lists_for_session(todos_dir: &Path, session_id: &str) -> Result<Load
         let loaded = read_file(&path);
         skipped += loaded.skipped;
         if !loaded.value.is_empty() {
-            lists.push(TodoList { session_id: session_id.to_string(), agent_id, items: loaded.value });
+            lists.push(TodoList {
+                session_id: session_id.to_string(),
+                agent_id,
+                items: loaded.value,
+            });
         }
     }
     Ok(Loaded::new(lists, skipped))
@@ -74,7 +85,10 @@ pub fn load_lists_for_session(todos_dir: &Path, session_id: &str) -> Result<Load
 /// Every session with at least one todo file, each as [`load_lists_for_session`] would produce it
 /// (contract `TodoGroup.lists`, `list_all_todos`).
 pub fn load_all_lists(todos_dir: &Path) -> Result<Loaded<BTreeMap<String, Vec<TodoList>>>> {
-    let ids: BTreeSet<String> = json_files(todos_dir)?.into_iter().map(|(stem, _)| session_id_of(&stem).to_string()).collect();
+    let ids: BTreeSet<String> = json_files(todos_dir)?
+        .into_iter()
+        .map(|(stem, _)| session_id_of(&stem).to_string())
+        .collect();
     let mut grouped = BTreeMap::new();
     let mut skipped = 0;
     for id in ids {
@@ -111,7 +125,9 @@ fn json_files(dir: &Path) -> Result<Vec<(String, PathBuf)>> {
 }
 
 fn read_file(path: &Path) -> Loaded<Vec<TodoItem>> {
-    let parsed = std::fs::read_to_string(path).ok().and_then(|text| TodoItem::list_from_json(&text).ok());
+    let parsed = std::fs::read_to_string(path)
+        .ok()
+        .and_then(|text| TodoItem::list_from_json(&text).ok());
     parsed.unwrap_or_else(|| Loaded::new(Vec::new(), 1))
 }
 
@@ -138,7 +154,12 @@ mod tests {
     // Ported from PoirotTests/Services/TodoLoaderTests.swift.
     #[test]
     fn load_todos_non_existent_path_returns_empty() {
-        assert!(load_for_session(Path::new(MISSING), "some-session-id").unwrap().value.is_empty());
+        assert!(
+            load_for_session(Path::new(MISSING), "some-session-id")
+                .unwrap()
+                .value
+                .is_empty()
+        );
     }
     #[test]
     fn load_todos_empty_directory_returns_empty() {
@@ -149,17 +170,29 @@ mod tests {
     fn load_todos_matches_agent_file() {
         let d = dir_with(&[("abc-1234-agent-def-5678.json", &todo("Build feature", "in_progress"))]);
         let t = load_for_session(d.path(), "abc-1234").unwrap().value;
-        assert_eq!((t.len(), t[0].content.as_str(), t[0].status), (1, "Build feature", TodoStatus::InProgress));
+        assert_eq!(
+            (t.len(), t[0].content.as_str(), t[0].status),
+            (1, "Build feature", TodoStatus::InProgress)
+        );
     }
     #[test]
     fn load_todos_matches_exact_session_id_file() {
         let d = dir_with(&[("abc-1234.json", &todo("Deploy", "pending"))]);
-        assert_eq!(contents(&load_for_session(d.path(), "abc-1234").unwrap().value), ["Deploy"]);
+        assert_eq!(
+            contents(&load_for_session(d.path(), "abc-1234").unwrap().value),
+            ["Deploy"]
+        );
     }
     #[test]
     fn load_todos_merges_multiple_agent_files() {
-        let d = dir_with(&[("abc-1234-agent-agent1.json", &todo("Task A", "completed")), ("abc-1234-agent-agent2.json", &todo("Task B", "pending"))]);
-        assert_eq!(contents(&load_for_session(d.path(), "abc-1234").unwrap().value), ["Task A", "Task B"]);
+        let d = dir_with(&[
+            ("abc-1234-agent-agent1.json", &todo("Task A", "completed")),
+            ("abc-1234-agent-agent2.json", &todo("Task B", "pending")),
+        ]);
+        assert_eq!(
+            contents(&load_for_session(d.path(), "abc-1234").unwrap().value),
+            ["Task A", "Task B"]
+        );
     }
     #[test]
     fn load_todos_does_not_match_unrelated_files() {
@@ -174,7 +207,10 @@ mod tests {
     }
     #[test]
     fn load_todos_skips_invalid_json() {
-        let d = dir_with(&[("abc-1234-agent-bad.json", "not valid json"), ("abc-1234-agent-good.json", &todo("Valid", "completed"))]);
+        let d = dir_with(&[
+            ("abc-1234-agent-bad.json", "not valid json"),
+            ("abc-1234-agent-good.json", &todo("Valid", "completed")),
+        ]);
         let loaded = load_for_session(d.path(), "abc-1234").unwrap();
         assert_eq!((contents(&loaded.value), loaded.skipped), (vec!["Valid"], 1));
     }
@@ -182,9 +218,17 @@ mod tests {
     fn load_todos_uuid_session_id_matches_agent_file() {
         let json = r#"[{"content": "Create diagnostic script", "status": "in_progress", "activeForm": "Creating script"},
                        {"content": "Check collection count", "status": "pending", "activeForm": "Checking count"}]"#;
-        let d = dir_with(&[("00163b58-3b30-49fa-af28-052f06724f50-agent-f57e3842-efed-43d9-a4c9-1e644a82141e.json", json)]);
-        let t = load_for_session(d.path(), "00163b58-3b30-49fa-af28-052f06724f50").unwrap().value;
-        assert_eq!((t.len(), t[0].content.as_str(), t[1].status), (2, "Create diagnostic script", TodoStatus::Pending));
+        let d = dir_with(&[(
+            "00163b58-3b30-49fa-af28-052f06724f50-agent-f57e3842-efed-43d9-a4c9-1e644a82141e.json",
+            json,
+        )]);
+        let t = load_for_session(d.path(), "00163b58-3b30-49fa-af28-052f06724f50")
+            .unwrap()
+            .value;
+        assert_eq!(
+            (t.len(), t[0].content.as_str(), t[1].status),
+            (2, "Create diagnostic script", TodoStatus::Pending)
+        );
     }
     #[test]
     fn load_all_todos_non_existent_path_returns_empty() {
@@ -192,21 +236,33 @@ mod tests {
     }
     #[test]
     fn load_all_todos_groups_by_session_id() {
-        let d = dir_with(&[("session-1.json", &todo("Task A", "completed")), ("session-2.json", &todo("Task B", "pending"))]);
+        let d = dir_with(&[
+            ("session-1.json", &todo("Task A", "completed")),
+            ("session-2.json", &todo("Task B", "pending")),
+        ]);
         let r = load_all(d.path()).unwrap().value;
         assert_eq!((r.len(), r["session-1"].len(), r["session-2"].len()), (2, 1, 1));
     }
     #[test]
     fn load_all_todos_merges_agent_files_under_same_session() {
-        let d = dir_with(&[("session-1-agent-a1.json", &todo("Task A", "completed")), ("session-1-agent-a2.json", &todo("Task B", "pending"))]);
+        let d = dir_with(&[
+            ("session-1-agent-a1.json", &todo("Task A", "completed")),
+            ("session-1-agent-a2.json", &todo("Task B", "pending")),
+        ]);
         let r = load_all(d.path()).unwrap().value;
         assert_eq!((r.len(), r["session-1"].len()), (1, 2));
     }
     #[test]
     fn load_all_todos_skips_empty_array_files() {
-        let d = dir_with(&[("session-empty.json", "[]"), ("session-real.json", &todo("Real task", "pending"))]);
+        let d = dir_with(&[
+            ("session-empty.json", "[]"),
+            ("session-real.json", &todo("Real task", "pending")),
+        ]);
         let r = load_all(d.path()).unwrap().value;
-        assert_eq!((r.len(), r.contains_key("session-empty"), r["session-real"].len()), (1, false, 1));
+        assert_eq!(
+            (r.len(), r.contains_key("session-empty"), r["session-real"].len()),
+            (1, false, 1)
+        );
     }
 
     #[test]
@@ -227,13 +283,22 @@ mod tests {
         assert_eq!(lists.len(), 2);
         let main = lists.iter().find(|l| l.agent_id.is_none()).unwrap();
         let agent = lists.iter().find(|l| l.agent_id.is_some()).unwrap();
-        assert_eq!((contents(&main.items), main.session_id.as_str()), (vec!["Main task"], "abc-1234"));
-        assert_eq!((contents(&agent.items), agent.agent_id.as_deref()), (vec!["Agent task"], Some("a1")));
+        assert_eq!(
+            (contents(&main.items), main.session_id.as_str()),
+            (vec!["Main task"], "abc-1234")
+        );
+        assert_eq!(
+            (contents(&agent.items), agent.agent_id.as_deref()),
+            (vec!["Agent task"], Some("a1"))
+        );
     }
 
     #[test]
     fn load_lists_for_session_drops_an_empty_file_but_keeps_a_real_one() {
-        let d = dir_with(&[("abc-1234.json", "[]"), ("abc-1234-agent-a1.json", &todo("Task", "pending"))]);
+        let d = dir_with(&[
+            ("abc-1234.json", "[]"),
+            ("abc-1234-agent-a1.json", &todo("Task", "pending")),
+        ]);
         let lists = load_lists_for_session(d.path(), "abc-1234").unwrap().value;
         assert_eq!(lists.len(), 1);
         assert_eq!(lists[0].agent_id.as_deref(), Some("a1"));

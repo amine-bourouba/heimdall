@@ -37,9 +37,22 @@ pub enum SearchCategory {
 
 impl SearchCategory {
     pub const ALL: [Self; 16] = [
-        Self::Sessions, Self::DebugLogs, Self::Facets, Self::FileChanges, Self::Todos, Self::History, Self::Commands,
-        Self::Skills, Self::Plans, Self::Memory, Self::McpServers, Self::Plugins, Self::OutputStyles, Self::Hooks,
-        Self::Models, Self::SubAgents,
+        Self::Sessions,
+        Self::DebugLogs,
+        Self::Facets,
+        Self::FileChanges,
+        Self::Todos,
+        Self::History,
+        Self::Commands,
+        Self::Skills,
+        Self::Plans,
+        Self::Memory,
+        Self::McpServers,
+        Self::Plugins,
+        Self::OutputStyles,
+        Self::Hooks,
+        Self::Models,
+        Self::SubAgents,
     ];
 }
 
@@ -68,8 +81,13 @@ pub enum NavScreen {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum NavTarget {
     #[serde(rename_all = "camelCase")]
-    Session { project_id: String, session_id: String },
-    Screen { screen: NavScreen },
+    Session {
+        project_id: String,
+        session_id: String,
+    },
+    Screen {
+        screen: NavScreen,
+    },
 }
 
 /// Locates one memory file for `openDetail`: the source (a project's memory folder; search never
@@ -85,10 +103,18 @@ pub struct MemoryFileLocator {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum SearchAction {
     #[serde(rename_all = "camelCase")]
-    OpenSession { project_id: String, session_id: String },
+    OpenSession {
+        project_id: String,
+        session_id: String,
+    },
     #[serde(rename_all = "camelCase")]
-    OpenDebugLog { project_id: String, session_id: String },
-    NavigateTo { screen: NavScreen },
+    OpenDebugLog {
+        project_id: String,
+        session_id: String,
+    },
+    NavigateTo {
+        screen: NavScreen,
+    },
     #[serde(rename_all = "camelCase")]
     OpenDetail {
         screen: NavScreen,
@@ -138,8 +164,15 @@ mod tests {
 
     #[test]
     fn open_detail_serialises_ref_without_the_rust_keyword_escape() {
-        let action = SearchAction::OpenDetail { screen: NavScreen::Plans, config_ref: None, memory_file: None };
+        let action = SearchAction::OpenDetail {
+            screen: NavScreen::Plans,
+            config_ref: None,
+            memory_file: None,
+        };
         let json = serde_json::to_value(action).unwrap();
-        assert_eq!((json["kind"].as_str(), json.get("ref")), (Some("openDetail"), Some(&serde_json::Value::Null)));
+        assert_eq!(
+            (json["kind"].as_str(), json.get("ref")),
+            (Some("openDetail"), Some(&serde_json::Value::Null))
+        );
     }
 }

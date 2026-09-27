@@ -49,7 +49,14 @@ pub struct McpEnvKey {
 impl McpEnvKey {
     /// Defaults as in Swift: required, not sensitive, empty placeholder.
     pub fn new(id: &str, label: &str, description: &str) -> Self {
-        Self { id: id.into(), label: label.into(), description: description.into(), placeholder: String::new(), is_required: true, is_sensitive: false }
+        Self {
+            id: id.into(),
+            label: label.into(),
+            description: description.into(),
+            placeholder: String::new(),
+            is_required: true,
+            is_sensitive: false,
+        }
     }
     fn placeholder(mut self, p: &str) -> Self {
         self.placeholder = p.into();
@@ -87,64 +94,208 @@ impl McpCatalogEntry {
 /// The 15 bundled entries, in Poirot's order.
 pub fn entries() -> Vec<McpCatalogEntry> {
     use McpCatalogCategory::*;
-    let npx = |id: &str, name: &str, description: &str, icon: &str, category, package: &str, env_keys| McpCatalogEntry {
-        id: id.into(),
-        name: name.into(),
-        description: description.into(),
-        icon: icon.into(),
-        category,
-        command: "npx".into(),
-        args: vec!["-y".into(), package.into()],
-        env_keys,
-    };
+    let npx =
+        |id: &str, name: &str, description: &str, icon: &str, category, package: &str, env_keys| McpCatalogEntry {
+            id: id.into(),
+            name: name.into(),
+            description: description.into(),
+            icon: icon.into(),
+            category,
+            command: "npx".into(),
+            args: vec!["-y".into(), package.into()],
+            env_keys,
+        };
     let key = McpEnvKey::new;
     vec![
-        npx("github", "GitHub", "Interact with GitHub repositories, issues, pull requests, and more.", "arrow.triangle.branch", Developer,
+        npx(
+            "github",
+            "GitHub",
+            "Interact with GitHub repositories, issues, pull requests, and more.",
+            "arrow.triangle.branch",
+            Developer,
             "@modelcontextprotocol/server-github",
-            vec![key("GITHUB_PERSONAL_ACCESS_TOKEN", "Personal Access Token", "GitHub PAT with repo access").placeholder("ghp_...").sensitive()]),
-        npx("playwright", "Playwright", "Browser automation for testing and web scraping.", "theatermasks", Developer,
-            "@anthropic-ai/mcp-server-playwright", vec![]),
-        npx("puppeteer", "Puppeteer", "Headless Chrome browser automation and screenshots.", "globe", Developer,
-            "@modelcontextprotocol/server-puppeteer", vec![]),
-        npx("sentry", "Sentry", "Access Sentry issues, events, and error tracking data.", "ladybug", Developer, "@sentry/mcp-server",
             vec![
-                key("SENTRY_AUTH_TOKEN", "Auth Token", "Sentry authentication token").placeholder("sntrys_...").sensitive(),
-                key("SENTRY_ORG", "Organization", "Sentry organization slug").placeholder("my-org").optional(),
-            ]),
-        npx("linear", "Linear", "Manage Linear issues, projects, and workflows.", "list.bullet.rectangle", Developer,
+                key(
+                    "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "Personal Access Token",
+                    "GitHub PAT with repo access",
+                )
+                .placeholder("ghp_...")
+                .sensitive(),
+            ],
+        ),
+        npx(
+            "playwright",
+            "Playwright",
+            "Browser automation for testing and web scraping.",
+            "theatermasks",
+            Developer,
+            "@anthropic-ai/mcp-server-playwright",
+            vec![],
+        ),
+        npx(
+            "puppeteer",
+            "Puppeteer",
+            "Headless Chrome browser automation and screenshots.",
+            "globe",
+            Developer,
+            "@modelcontextprotocol/server-puppeteer",
+            vec![],
+        ),
+        npx(
+            "sentry",
+            "Sentry",
+            "Access Sentry issues, events, and error tracking data.",
+            "ladybug",
+            Developer,
+            "@sentry/mcp-server",
+            vec![
+                key("SENTRY_AUTH_TOKEN", "Auth Token", "Sentry authentication token")
+                    .placeholder("sntrys_...")
+                    .sensitive(),
+                key("SENTRY_ORG", "Organization", "Sentry organization slug")
+                    .placeholder("my-org")
+                    .optional(),
+            ],
+        ),
+        npx(
+            "linear",
+            "Linear",
+            "Manage Linear issues, projects, and workflows.",
+            "list.bullet.rectangle",
+            Developer,
             "@anthropic-ai/mcp-server-linear",
-            vec![key("LINEAR_API_KEY", "API Key", "Linear personal API key").placeholder("lin_api_...").sensitive()]),
-        npx("slack", "Slack", "Read and send Slack messages, manage channels.", "number", Productivity, "@modelcontextprotocol/server-slack",
             vec![
-                key("SLACK_BOT_TOKEN", "Bot Token", "Slack bot OAuth token").placeholder("xoxb-...").sensitive(),
+                key("LINEAR_API_KEY", "API Key", "Linear personal API key")
+                    .placeholder("lin_api_...")
+                    .sensitive(),
+            ],
+        ),
+        npx(
+            "slack",
+            "Slack",
+            "Read and send Slack messages, manage channels.",
+            "number",
+            Productivity,
+            "@modelcontextprotocol/server-slack",
+            vec![
+                key("SLACK_BOT_TOKEN", "Bot Token", "Slack bot OAuth token")
+                    .placeholder("xoxb-...")
+                    .sensitive(),
                 key("SLACK_TEAM_ID", "Team ID", "Slack workspace team ID").placeholder("T0123456789"),
-            ]),
-        npx("notion", "Notion", "Search, read, and create Notion pages and databases.", "doc.richtext", Productivity,
+            ],
+        ),
+        npx(
+            "notion",
+            "Notion",
+            "Search, read, and create Notion pages and databases.",
+            "doc.richtext",
+            Productivity,
             "@notionhq/notion-mcp-server",
-            vec![key("OPENAPI_MCP_HEADERS", "Authorization Header", "Notion integration token as JSON header")
+            vec![
+                key(
+                    "OPENAPI_MCP_HEADERS",
+                    "Authorization Header",
+                    "Notion integration token as JSON header",
+                )
                 .placeholder(r#"{"Authorization": "Bearer ntn_..."}"#)
-                .sensitive()]),
-        npx("google-drive", "Google Drive", "Search and access Google Drive files.", "externaldrive.badge.icloud", Productivity,
+                .sensitive(),
+            ],
+        ),
+        npx(
+            "google-drive",
+            "Google Drive",
+            "Search and access Google Drive files.",
+            "externaldrive.badge.icloud",
+            Productivity,
             "@modelcontextprotocol/server-gdrive",
             vec![
-                key("GDRIVE_CLIENT_ID", "Client ID", "Google OAuth client ID").placeholder("123456789.apps.googleusercontent.com"),
+                key("GDRIVE_CLIENT_ID", "Client ID", "Google OAuth client ID")
+                    .placeholder("123456789.apps.googleusercontent.com"),
                 key("GDRIVE_CLIENT_SECRET", "Client Secret", "Google OAuth client secret").sensitive(),
-            ]),
-        npx("brave-search", "Brave Search", "Web and local search powered by Brave.", "magnifyingglass", Data,
-            "@modelcontextprotocol/server-brave-search", vec![key("BRAVE_API_KEY", "API Key", "Brave Search API key").sensitive()]),
-        npx("fetch", "Fetch", "Fetch and convert web content to markdown.", "arrow.down.doc", Data, "@anthropic-ai/mcp-server-fetch", vec![]),
-        npx("postgres", "PostgreSQL", "Query and inspect PostgreSQL databases.", "cylinder", Data, "@modelcontextprotocol/server-postgres",
-            vec![key("POSTGRES_CONNECTION_STRING", "Connection String", "PostgreSQL connection URI")
+            ],
+        ),
+        npx(
+            "brave-search",
+            "Brave Search",
+            "Web and local search powered by Brave.",
+            "magnifyingglass",
+            Data,
+            "@modelcontextprotocol/server-brave-search",
+            vec![key("BRAVE_API_KEY", "API Key", "Brave Search API key").sensitive()],
+        ),
+        npx(
+            "fetch",
+            "Fetch",
+            "Fetch and convert web content to markdown.",
+            "arrow.down.doc",
+            Data,
+            "@anthropic-ai/mcp-server-fetch",
+            vec![],
+        ),
+        npx(
+            "postgres",
+            "PostgreSQL",
+            "Query and inspect PostgreSQL databases.",
+            "cylinder",
+            Data,
+            "@modelcontextprotocol/server-postgres",
+            vec![
+                key(
+                    "POSTGRES_CONNECTION_STRING",
+                    "Connection String",
+                    "PostgreSQL connection URI",
+                )
                 .placeholder("postgresql://user:pass@localhost:5432/db")
-                .sensitive()]),
-        npx("sqlite", "SQLite", "Query and manage SQLite databases.", "tablecells", Data, "@modelcontextprotocol/server-sqlite",
-            vec![key("SQLITE_DB_PATH", "Database Path", "Path to the SQLite database file").placeholder("/path/to/database.db")]),
-        npx("filesystem", "Filesystem", "Secure read/write access to specified directories.", "folder.badge.gearshape", Filesystem,
+                .sensitive(),
+            ],
+        ),
+        npx(
+            "sqlite",
+            "SQLite",
+            "Query and manage SQLite databases.",
+            "tablecells",
+            Data,
+            "@modelcontextprotocol/server-sqlite",
+            vec![
+                key("SQLITE_DB_PATH", "Database Path", "Path to the SQLite database file")
+                    .placeholder("/path/to/database.db"),
+            ],
+        ),
+        npx(
+            "filesystem",
+            "Filesystem",
+            "Secure read/write access to specified directories.",
+            "folder.badge.gearshape",
+            Filesystem,
             "@modelcontextprotocol/server-filesystem",
-            vec![key("ALLOWED_DIRS", "Allowed Directories", "Comma-separated list of allowed directory paths").placeholder("/Users/me/projects,/tmp")]),
-        npx("memory", "Memory", "Persistent memory using a knowledge graph.", "brain", Filesystem, "@modelcontextprotocol/server-memory", vec![]),
-        npx("everart", "EverArt", "AI image generation via EverArt models.", "paintpalette", Data, "@modelcontextprotocol/server-everart",
-            vec![key("EVERART_API_KEY", "API Key", "EverArt API key").sensitive()]),
+            vec![
+                key(
+                    "ALLOWED_DIRS",
+                    "Allowed Directories",
+                    "Comma-separated list of allowed directory paths",
+                )
+                .placeholder("/Users/me/projects,/tmp"),
+            ],
+        ),
+        npx(
+            "memory",
+            "Memory",
+            "Persistent memory using a knowledge graph.",
+            "brain",
+            Filesystem,
+            "@modelcontextprotocol/server-memory",
+            vec![],
+        ),
+        npx(
+            "everart",
+            "EverArt",
+            "AI image generation via EverArt models.",
+            "paintpalette",
+            Data,
+            "@modelcontextprotocol/server-everart",
+            vec![key("EVERART_API_KEY", "API Key", "EverArt API key").sensitive()],
+        ),
     ]
 }
 
@@ -193,7 +344,11 @@ mod tests {
     }
     #[test]
     fn catalog_all_entries_have_required_fields() {
-        assert!(entries().iter().all(|e| !e.id.is_empty() && !e.name.is_empty() && !e.description.is_empty() && !e.icon.is_empty() && !e.command.is_empty()));
+        assert!(entries().iter().all(|e| !e.id.is_empty()
+            && !e.name.is_empty()
+            && !e.description.is_empty()
+            && !e.icon.is_empty()
+            && !e.command.is_empty()));
     }
     #[test]
     fn search_empty_query_returns_all() {
@@ -263,7 +418,10 @@ mod tests {
     }
     #[test]
     fn env_key_custom_values() {
-        let k = McpEnvKey::new("SECRET", "Secret", "A secret").placeholder("sk-...").optional().sensitive();
+        let k = McpEnvKey::new("SECRET", "Secret", "A secret")
+            .placeholder("sk-...")
+            .optional()
+            .sensitive();
         assert!(!k.is_required && k.is_sensitive);
         assert_eq!(k.placeholder, "sk-...");
     }

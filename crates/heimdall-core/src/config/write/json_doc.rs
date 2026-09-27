@@ -30,18 +30,32 @@ struct Style {
 impl Style {
     /// Two spaces and a trailing newline, like Claude Code's own files.
     fn new_file() -> Self {
-        Self { indent: Some(b"  ".to_vec()), crlf: false, trailing_newline: true, bom: false }
+        Self {
+            indent: Some(b"  ".to_vec()),
+            crlf: false,
+            trailing_newline: true,
+            bom: false,
+        }
     }
 
     fn detect(bytes: &[u8]) -> Self {
         let indent = bytes
             .split(|b| *b == b'\n')
             .skip(1)
-            .map(|line| line.iter().take_while(|b| **b == b' ' || **b == b'\t').copied().collect::<Vec<u8>>())
+            .map(|line| {
+                line.iter()
+                    .take_while(|b| **b == b' ' || **b == b'\t')
+                    .copied()
+                    .collect::<Vec<u8>>()
+            })
             .find(|ws| !ws.is_empty());
         let has_newline_inside = bytes.trim_ascii_end().contains(&b'\n');
         Self {
-            indent: if has_newline_inside { Some(indent.unwrap_or_else(|| b"  ".to_vec())) } else { None },
+            indent: if has_newline_inside {
+                Some(indent.unwrap_or_else(|| b"  ".to_vec()))
+            } else {
+                None
+            },
             crlf: bytes.windows(2).any(|w| w == b"\r\n"),
             trailing_newline: bytes.ends_with(b"\n"),
             bom: bytes.starts_with(BOM),
@@ -66,13 +80,22 @@ impl JsonDoc {
         match std::fs::read(path) {
             Ok(bytes) => {
                 let body = bytes.strip_prefix(BOM).unwrap_or(&bytes);
-                let value: Value = serde_json::from_slice(body)
-                    .map_err(|e| AppError::parse(format!("not valid JSON, so it was left untouched: {e}")).with_path(path))?;
-                Ok(Self { path: path.to_path_buf(), value, style: Style::detect(&bytes), original: Some(bytes) })
+                let value: Value = serde_json::from_slice(body).map_err(|e| {
+                    AppError::parse(format!("not valid JSON, so it was left untouched: {e}")).with_path(path)
+                })?;
+                Ok(Self {
+                    path: path.to_path_buf(),
+                    value,
+                    style: Style::detect(&bytes),
+                    original: Some(bytes),
+                })
             }
-            Err(e) if e.kind() == ErrorKind::NotFound && create_if_missing => {
-                Ok(Self { path: path.to_path_buf(), value: Value::Object(Map::new()), style: Style::new_file(), original: None })
-            }
+            Err(e) if e.kind() == ErrorKind::NotFound && create_if_missing => Ok(Self {
+                path: path.to_path_buf(),
+                value: Value::Object(Map::new()),
+                style: Style::new_file(),
+                original: None,
+            }),
             Err(e) => Err(AppError::from_io(&e, path)),
         }
     }
@@ -88,7 +111,9 @@ impl JsonDoc {
     /// The top-level object; a file whose top level is not an object is a parse error.
     pub fn root_mut(&mut self) -> Result<&mut Map<String, Value>> {
         let path = self.path.clone();
-        self.value.as_object_mut().ok_or_else(|| AppError::parse("the top level is not a JSON object").with_path(path))
+        self.value
+            .as_object_mut()
+            .ok_or_else(|| AppError::parse("the top level is not a JSON object").with_path(path))
     }
 
     /// The document as it would be written, in the file's own style.
@@ -100,7 +125,9 @@ impl JsonDoc {
         let json = match &self.style.indent {
             Some(indent) => {
                 let mut ser = Serializer::with_formatter(Vec::new(), PrettyFormatter::with_indent(indent));
-                self.value.serialize(&mut ser).map_err(|e| AppError::parse(e.to_string()))?;
+                self.value
+                    .serialize(&mut ser)
+                    .map_err(|e| AppError::parse(e.to_string()))?;
                 ser.into_inner()
             }
             None => serde_json::to_vec(&self.value).map_err(|e| AppError::parse(e.to_string()))?,
@@ -132,7 +159,9 @@ impl JsonDoc {
             Err(e) => return Err(AppError::from_io(&e, &self.path)),
         };
         if current != self.original {
-            return Err(AppError::busy("the file changed since it was read; reload and try again").with_path(&self.path));
+            return Err(
+                AppError::busy("the file changed since it was read; reload and try again").with_path(&self.path),
+            );
         }
         if let Some(original) = &self.original {
             back_up_once(&self.path, original)?;
@@ -152,7 +181,9 @@ pub fn backup_path(path: &Path) -> PathBuf {
 fn back_up_once(path: &Path, original: &[u8]) -> Result<()> {
     let backup = backup_path(path);
     match std::fs::OpenOptions::new().write(true).create_new(true).open(&backup) {
-        Ok(mut f) => std::io::Write::write_all(&mut f, original).and_then(|()| f.sync_all()).map_err(|e| AppError::from_io(&e, &backup)),
+        Ok(mut f) => std::io::Write::write_all(&mut f, original)
+            .and_then(|()| f.sync_all())
+            .map_err(|e| AppError::from_io(&e, &backup)),
         Err(e) if e.kind() == ErrorKind::AlreadyExists => Ok(()),
         Err(e) => Err(AppError::from_io(&e, &backup)),
     }
@@ -192,11 +223,15 @@ mod tests {
         let rendered = doc.render().unwrap();
         if let Some(i) = rendered.iter().zip(&original).position(|(a, b)| a != b) {
             let ctx = |v: &[u8]| String::from_utf8_lossy(&v[i.saturating_sub(80)..(i + 80).min(v.len())]).into_owned();
-            panic!("differs at byte {i}:
+            panic!(
+                "differs at byte {i}:
 --- rendered
 {}
 --- original
-{}", ctx(&rendered), ctx(&original));
+{}",
+                ctx(&rendered),
+                ctx(&original)
+            );
         }
         assert_eq!(rendered.len(), original.len());
         assert_eq!(doc.save().unwrap(), WriteOutcome::Unchanged);
@@ -210,10 +245,19 @@ mod tests {
         let before = doc.root_mut().unwrap()["numStartups"].as_u64().unwrap();
         doc.root_mut().unwrap()["numStartups"] = json!(before + 1);
         assert_eq!(doc.save().unwrap(), WriteOutcome::Written);
-        let (old, new) = (String::from_utf8(original).unwrap(), std::fs::read_to_string(&p).unwrap());
+        let (old, new) = (
+            String::from_utf8(original).unwrap(),
+            std::fs::read_to_string(&p).unwrap(),
+        );
         let changed: Vec<_> = old.lines().zip(new.lines()).filter(|(a, b)| a != b).collect();
         assert_eq!(old.lines().count(), new.lines().count());
-        assert_eq!(changed, [(format!("  \"numStartups\": {before},").as_str(), format!("  \"numStartups\": {},", before + 1).as_str())]);
+        assert_eq!(
+            changed,
+            [(
+                format!("  \"numStartups\": {before},").as_str(),
+                format!("  \"numStartups\": {},", before + 1).as_str()
+            )]
+        );
     }
 
     #[test]
@@ -244,7 +288,9 @@ mod tests {
             assert_eq!(doc.render().unwrap(), original, "{}", String::from_utf8_lossy(original));
             doc.root_mut().unwrap().insert("b".into(), json!(2));
             doc.save().unwrap();
-            let expected = String::from_utf8_lossy(original).replace("\"b\": 1", "\"b\": 2").replace("\"b\":1", "\"b\":2");
+            let expected = String::from_utf8_lossy(original)
+                .replace("\"b\": 1", "\"b\": 2")
+                .replace("\"b\":1", "\"b\":2");
             assert_eq!(String::from_utf8_lossy(&std::fs::read(&p).unwrap()), expected);
         }
     }
@@ -253,7 +299,10 @@ mod tests {
     fn a_missing_file_is_created_only_when_allowed() {
         let d = tempfile::tempdir().unwrap();
         let p = d.path().join("settings.json");
-        assert!(matches!(JsonDoc::open(&p, false).unwrap_err(), AppError::NotFound { .. }));
+        assert!(matches!(
+            JsonDoc::open(&p, false).unwrap_err(),
+            AppError::NotFound { .. }
+        ));
         let mut doc = JsonDoc::open(&p, true).unwrap();
         doc.root_mut().unwrap().insert("model".into(), json!("opus"));
         assert_eq!(doc.save().unwrap(), WriteOutcome::Written);

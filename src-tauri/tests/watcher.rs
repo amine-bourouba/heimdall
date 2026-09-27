@@ -9,14 +9,14 @@
 //! M1-37), since the crate concretely links `tauri::Wry` regardless of what an individual test
 //! touches. Verified instead by `cargo check`/`cargo clippy --all-targets -- -D warnings`.
 
-use std::sync::mpsc::{channel, RecvTimeoutError};
+use std::sync::mpsc::{RecvTimeoutError, channel};
 use std::time::Duration;
 
 use heimdall_desktop_lib::events::DataChanged;
 use heimdall_desktop_lib::state::{AppState, Cache};
 use heimdall_desktop_lib::watcher;
-use tauri::test::{mock_builder, mock_context, noop_assets};
 use tauri::Manager;
+use tauri::test::{mock_builder, mock_context, noop_assets};
 use tauri_specta::Event;
 
 /// One debounce window (`watcher::DEBOUNCE` is 1s) plus generous headroom for a slow CI runner —
@@ -28,16 +28,26 @@ fn mock_app(claude_home: heimdall_core::paths::ClaudeHome) -> tauri::App<tauri::
         .plugin(tauri_plugin_store::Builder::default().build())
         .build(mock_context(noop_assets()))
         .expect("build mock app");
-    app.manage(AppState { claude_home, cache: Cache::default() });
+    app.manage(AppState {
+        claude_home,
+        cache: Cache::default(),
+    });
     // `commands::builder()` is concretely `tauri_specta::Builder<tauri::Wry>` (the real production
     // builder); events are re-registered here against `MockRuntime` instead of reusing it.
     tauri_specta::Builder::<tauri::test::MockRuntime>::new()
-        .events(tauri_specta::collect_events![DataChanged, heimdall_desktop_lib::events::WatcherStatus, heimdall_desktop_lib::events::MenuAction, heimdall_desktop_lib::events::Navigate])
+        .events(tauri_specta::collect_events![
+            DataChanged,
+            heimdall_desktop_lib::events::WatcherStatus,
+            heimdall_desktop_lib::events::MenuAction,
+            heimdall_desktop_lib::events::Navigate
+        ])
         .mount_events(&app);
     app
 }
 
-fn recv_data_changed(app: &tauri::App<tauri::test::MockRuntime>) -> Result<Vec<heimdall_core::classify::DataChange>, RecvTimeoutError> {
+fn recv_data_changed(
+    app: &tauri::App<tauri::test::MockRuntime>,
+) -> Result<Vec<heimdall_core::classify::DataChange>, RecvTimeoutError> {
     let (tx, rx) = channel();
     DataChanged::listen(app, move |event| {
         let _ = tx.send(event.payload.0);
@@ -48,14 +58,19 @@ fn recv_data_changed(app: &tauri::App<tauri::test::MockRuntime>) -> Result<Vec<h
 #[test]
 fn creating_a_transcript_produces_one_event_with_transcript_and_sessions() {
     let dir = tempfile::tempdir().unwrap();
-    let claude_home = heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
+    let claude_home =
+        heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
     let project = claude_home.projects_dir().join("-Users-fixture-app");
     std::fs::create_dir_all(&project).unwrap();
 
     let mut app = mock_app(claude_home);
     watcher::init(&mut app).unwrap();
 
-    std::fs::write(project.join("11111111-1111-4111-8111-111111111111.jsonl"), r#"{"type":"user"}"#).unwrap();
+    std::fs::write(
+        project.join("11111111-1111-4111-8111-111111111111.jsonl"),
+        r#"{"type":"user"}"#,
+    )
+    .unwrap();
 
     let changes = recv_data_changed(&app).expect("no data-changed event within the wait budget");
     let areas: Vec<_> = changes.iter().map(|c| c.area).collect();
@@ -66,7 +81,8 @@ fn creating_a_transcript_produces_one_event_with_transcript_and_sessions() {
 #[test]
 fn appending_to_a_transcript_also_produces_one_event() {
     let dir = tempfile::tempdir().unwrap();
-    let claude_home = heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
+    let claude_home =
+        heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
     let project = claude_home.projects_dir().join("-Users-fixture-app");
     std::fs::create_dir_all(&project).unwrap();
     let transcript = project.join("11111111-1111-4111-8111-111111111111.jsonl");
@@ -82,13 +98,18 @@ fn appending_to_a_transcript_also_produces_one_event() {
     drop(file);
 
     let changes = recv_data_changed(&app).expect("no data-changed event within the wait budget");
-    assert!(changes.iter().any(|c| c.area == heimdall_core::classify::Area::Transcript));
+    assert!(
+        changes
+            .iter()
+            .any(|c| c.area == heimdall_core::classify::Area::Transcript)
+    );
 }
 
 #[test]
 fn atomic_rename_over_a_transcript_produces_one_event() {
     let dir = tempfile::tempdir().unwrap();
-    let claude_home = heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
+    let claude_home =
+        heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
     let project = claude_home.projects_dir().join("-Users-fixture-app");
     std::fs::create_dir_all(&project).unwrap();
     let transcript = project.join("11111111-1111-4111-8111-111111111111.jsonl");
@@ -103,13 +124,18 @@ fn atomic_rename_over_a_transcript_produces_one_event() {
     std::fs::rename(&temp, &transcript).unwrap(); // notify reports this as remove + create; both classify the same
 
     let changes = recv_data_changed(&app).expect("no data-changed event within the wait budget");
-    assert!(changes.iter().any(|c| c.area == heimdall_core::classify::Area::Transcript));
+    assert!(
+        changes
+            .iter()
+            .any(|c| c.area == heimdall_core::classify::Area::Transcript)
+    );
 }
 
 #[test]
 fn deleting_a_transcript_produces_one_event() {
     let dir = tempfile::tempdir().unwrap();
-    let claude_home = heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
+    let claude_home =
+        heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
     let project = claude_home.projects_dir().join("-Users-fixture-app");
     std::fs::create_dir_all(&project).unwrap();
     let transcript = project.join("11111111-1111-4111-8111-111111111111.jsonl");
@@ -122,13 +148,18 @@ fn deleting_a_transcript_produces_one_event() {
     std::fs::remove_file(&transcript).unwrap();
 
     let changes = recv_data_changed(&app).expect("no data-changed event within the wait budget");
-    assert!(changes.iter().any(|c| c.area == heimdall_core::classify::Area::Transcript));
+    assert!(
+        changes
+            .iter()
+            .any(|c| c.area == heimdall_core::classify::Area::Transcript)
+    );
 }
 
 #[test]
 fn claude_json_is_watched_through_its_parent_with_a_file_filter() {
     let dir = tempfile::tempdir().unwrap();
-    let claude_home = heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
+    let claude_home =
+        heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
     std::fs::create_dir_all(claude_home.root()).unwrap();
 
     let mut app = mock_app(claude_home.clone());
@@ -141,13 +172,20 @@ fn claude_json_is_watched_through_its_parent_with_a_file_filter() {
 
     std::fs::write(claude_home.config_file(), "{}").unwrap();
     let changes = recv_data_changed(&app).expect("no data-changed event for claude.json itself");
-    assert_eq!(changes, [heimdall_core::classify::DataChange { area: heimdall_core::classify::Area::Mcp, key: None }]);
+    assert_eq!(
+        changes,
+        [heimdall_core::classify::DataChange {
+            area: heimdall_core::classify::Area::Mcp,
+            key: None
+        }]
+    );
 }
 
 #[test]
 fn a_write_through_the_safe_write_primitive_triggers_exactly_one_reload() {
     let dir = tempfile::tempdir().unwrap();
-    let claude_home = heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
+    let claude_home =
+        heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
     std::fs::create_dir_all(claude_home.root()).unwrap();
     let settings = claude_home.root().join("settings.json");
     std::fs::write(&settings, "{}").unwrap();
@@ -161,7 +199,11 @@ fn a_write_through_the_safe_write_primitive_triggers_exactly_one_reload() {
     doc.save().unwrap();
 
     let changes = recv_data_changed(&app).expect("no data-changed event for the safe write");
-    assert!(changes.iter().any(|c| c.area == heimdall_core::classify::Area::Settings));
+    assert!(
+        changes
+            .iter()
+            .any(|c| c.area == heimdall_core::classify::Area::Settings)
+    );
 
     // Idempotency: the write above is the only thing that happened, so waiting again with no
     // further action must time out rather than surface a second, self-triggered event.
@@ -171,7 +213,8 @@ fn a_write_through_the_safe_write_primitive_triggers_exactly_one_reload() {
 #[test]
 fn a_custom_memory_folder_added_through_prefs_is_watched_without_restarting() {
     let dir = tempfile::tempdir().unwrap();
-    let claude_home = heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
+    let claude_home =
+        heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
     std::fs::create_dir_all(claude_home.root()).unwrap();
     let folder = dir.path().join("notes");
     std::fs::create_dir_all(&folder).unwrap();
@@ -185,7 +228,13 @@ fn a_custom_memory_folder_added_through_prefs_is_watched_without_restarting() {
 
     std::fs::write(folder.join("MEMORY.md"), "# Notes").unwrap();
     let changes = recv_data_changed(&app).expect("no data-changed event for the newly watched folder");
-    assert_eq!(changes, [heimdall_core::classify::DataChange { area: heimdall_core::classify::Area::Memory, key: Some("folder:0".to_string()) }]);
+    assert_eq!(
+        changes,
+        [heimdall_core::classify::DataChange {
+            area: heimdall_core::classify::Area::Memory,
+            key: Some("folder:0".to_string())
+        }]
+    );
 }
 
 /// The acceptance criterion's own number; kept short of the full 1000 so the suite stays fast
@@ -196,7 +245,8 @@ const RAPID_WRITE_ROUNDS: usize = 200;
 #[test]
 fn rapid_writes_to_one_file_coalesce_into_very_few_events() {
     let dir = tempfile::tempdir().unwrap();
-    let claude_home = heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
+    let claude_home =
+        heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
     let project = claude_home.projects_dir().join("-Users-fixture-app");
     std::fs::create_dir_all(&project).unwrap();
     let transcript = project.join("11111111-1111-4111-8111-111111111111.jsonl");
@@ -218,5 +268,8 @@ fn rapid_writes_to_one_file_coalesce_into_very_few_events() {
     while rx.recv_timeout(WAIT).is_ok() {
         count += 1;
     }
-    assert!(count <= 3, "expected at most 3 coalesced events for {RAPID_WRITE_ROUNDS} rapid writes, got {count}");
+    assert!(
+        count <= 3,
+        "expected at most 3 coalesced events for {RAPID_WRITE_ROUNDS} rapid writes, got {count}"
+    );
 }

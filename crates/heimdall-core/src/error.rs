@@ -27,22 +27,40 @@ pub type Result<T> = std::result::Result<T, AppError>;
 
 impl AppError {
     pub fn not_found(message: impl Into<String>) -> Self {
-        Self::NotFound { message: message.into(), path: None }
+        Self::NotFound {
+            message: message.into(),
+            path: None,
+        }
     }
     pub fn io(message: impl Into<String>) -> Self {
-        Self::Io { message: message.into(), path: None }
+        Self::Io {
+            message: message.into(),
+            path: None,
+        }
     }
     pub fn parse(message: impl Into<String>) -> Self {
-        Self::Parse { message: message.into(), path: None }
+        Self::Parse {
+            message: message.into(),
+            path: None,
+        }
     }
     pub fn permission(message: impl Into<String>) -> Self {
-        Self::Permission { message: message.into(), path: None }
+        Self::Permission {
+            message: message.into(),
+            path: None,
+        }
     }
     pub fn busy(message: impl Into<String>) -> Self {
-        Self::Busy { message: message.into(), path: None }
+        Self::Busy {
+            message: message.into(),
+            path: None,
+        }
     }
     pub fn invalid_input(message: impl Into<String>) -> Self {
-        Self::InvalidInput { message: message.into(), path: None }
+        Self::InvalidInput {
+            message: message.into(),
+            path: None,
+        }
     }
 
     /// A command whose owning task has not landed yet (M1-37 scaffolding); every real task
@@ -118,7 +136,10 @@ mod tests {
             (AppError::invalid_input("m"), "invalidInput"),
         ];
         for (err, kind) in cases {
-            assert_eq!(serde_json::to_value(&err).unwrap(), json!({"kind": kind, "message": "m", "path": null}));
+            assert_eq!(
+                serde_json::to_value(&err).unwrap(),
+                json!({"kind": kind, "message": "m", "path": null})
+            );
         }
     }
 
@@ -140,14 +161,26 @@ mod tests {
         assert!(matches!(AppError::from_io(&pd, p), AppError::Permission { .. }));
         let sharing = std::io::Error::from_raw_os_error(32);
         let expected_busy = cfg!(windows);
-        assert_eq!(matches!(AppError::from_io(&sharing, p), AppError::Busy { .. }), expected_busy);
+        assert_eq!(
+            matches!(AppError::from_io(&sharing, p), AppError::Busy { .. }),
+            expected_busy
+        );
     }
 
     #[test]
     fn loaded_and_write_outcome_shapes() {
-        assert_eq!(serde_json::to_value(Loaded::new(vec![1, 2], 3)).unwrap(), json!({"value": [1, 2], "skipped": 3}));
+        assert_eq!(
+            serde_json::to_value(Loaded::new(vec![1, 2], 3)).unwrap(),
+            json!({"value": [1, 2], "skipped": 3})
+        );
         assert_eq!(serde_json::to_value(WriteOutcome::Written).unwrap(), json!("written"));
-        assert_eq!(serde_json::to_value(WriteOutcome::Cancelled).unwrap(), json!("cancelled"));
-        assert_eq!(serde_json::to_value(WriteOutcome::Unchanged).unwrap(), json!("unchanged"));
+        assert_eq!(
+            serde_json::to_value(WriteOutcome::Cancelled).unwrap(),
+            json!("cancelled")
+        );
+        assert_eq!(
+            serde_json::to_value(WriteOutcome::Unchanged).unwrap(),
+            json!("unchanged")
+        );
     }
 }

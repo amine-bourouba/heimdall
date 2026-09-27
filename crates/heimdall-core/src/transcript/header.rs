@@ -28,7 +28,9 @@ fn from_records(records: &[Value], project_path: &str, session_id: &str) -> Opti
     let mut preview: Option<String> = None;
     let mut earliest: Option<DateTime<Utc>> = None;
     for record in records {
-        let Some(kind @ ("user" | "assistant")) = record.get("type").and_then(Value::as_str) else { continue };
+        let Some(kind @ ("user" | "assistant")) = record.get("type").and_then(Value::as_str) else {
+            continue;
+        };
         if record.get("isSidechain") == Some(&Value::Bool(true)) {
             continue;
         }
@@ -55,7 +57,14 @@ fn from_records(records: &[Value], project_path: &str, session_id: &str) -> Opti
     Some(Session {
         cached_title: title,
         cached_preview: preview,
-        ..Session::new(session_id, project_path, Vec::new(), earliest.unwrap_or(DateTime::UNIX_EPOCH), None, 0)
+        ..Session::new(
+            session_id,
+            project_path,
+            Vec::new(),
+            earliest.unwrap_or(DateTime::UNIX_EPOCH),
+            None,
+            0,
+        )
     })
 }
 
@@ -63,7 +72,12 @@ fn from_records(records: &[Value], project_path: &str, session_id: &str) -> Opti
 pub(crate) fn first_user_text(content: Option<&Value>) -> Option<String> {
     match content? {
         Value::String(s) if !s.is_empty() => Some(s.clone()),
-        Value::Array(blocks) => blocks.iter().find(|b| b.get("type").and_then(Value::as_str) == Some("text"))?.get("text")?.as_str().map(String::from),
+        Value::Array(blocks) => blocks
+            .iter()
+            .find(|b| b.get("type").and_then(Value::as_str) == Some("text"))?
+            .get("text")?
+            .as_str()
+            .map(String::from),
         _ => None,
     }
 }
@@ -95,7 +109,10 @@ mod tests {
             json!({"type": "assistant", "timestamp": "2026-01-28T09:00:00.000Z", "message": {"content": [{"type": "text", "text": "  "}, {"type": "text", "text": " Hi \n"}]}}),
         ];
         let s = from_records(&records, "/p", "s1").unwrap();
-        assert_eq!((s.cached_title.as_deref(), s.cached_preview.as_deref()), (Some("Hello"), Some("Hi")));
+        assert_eq!(
+            (s.cached_title.as_deref(), s.cached_preview.as_deref()),
+            (Some("Hello"), Some("Hi"))
+        );
         assert_eq!(s.started_at.to_rfc3339(), "2026-01-28T09:00:00+00:00");
         assert!(s.messages.is_empty());
     }

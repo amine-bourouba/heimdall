@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use super::{config_ref, frontmatter, kind_dir, md_files, scope_name, scopes, sort_by_name, ProjectScope};
+use super::{ProjectScope, config_ref, frontmatter, kind_dir, md_files, scope_name, scopes, sort_by_name};
 use crate::error::Loaded;
 use crate::models::config::output_style::OutputStyle;
 use crate::models::config::scope::ConfigKind;
@@ -47,9 +47,22 @@ mod tests {
     #[test]
     fn loads_global_and_project_styles_without_the_readme() {
         let (repo, ctx) = (repo(), context());
-        let items = load(&home(), Some(ProjectScope { root: &repo, context: &ctx })).value;
-        let files: Vec<_> = items.iter().map(|o| (o.filename.as_str(), o.config_ref.project.is_some())).collect();
+        let items = load(
+            &home(),
+            Some(ProjectScope {
+                root: &repo,
+                context: &ctx,
+            }),
+        )
+        .value;
+        let files: Vec<_> = items
+            .iter()
+            .map(|o| (o.filename.as_str(), o.config_ref.project.is_some()))
+            .collect();
         assert_eq!(files, [("concise.md", false), ("terse.md", true)]);
-        assert_eq!((items[0].name.as_str(), items[0].id.as_str()), ("Concise", "global-concise.md"));
+        assert_eq!(
+            (items[0].name.as_str(), items[0].id.as_str()),
+            ("Concise", "global-concise.md")
+        );
     }
 }

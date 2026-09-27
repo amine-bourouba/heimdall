@@ -55,8 +55,14 @@ pub struct FileVersionContent {
 }
 
 impl FileVersion {
-    pub fn new(file_name: impl Into<String>, session_id: impl Into<String>, version: u32, backup_time: DateTime<Utc>,
-               content_hash: impl Into<String>, backup_file_name: impl Into<String>) -> Self {
+    pub fn new(
+        file_name: impl Into<String>,
+        session_id: impl Into<String>,
+        version: u32,
+        backup_time: DateTime<Utc>,
+        content_hash: impl Into<String>,
+        backup_file_name: impl Into<String>,
+    ) -> Self {
         let (session_id, backup_file_name) = (session_id.into(), backup_file_name.into());
         Self {
             id: format!("{session_id}-{backup_file_name}"),
@@ -81,7 +87,10 @@ pub struct FileHistoryEntry {
 impl FileHistoryEntry {
     pub fn new(file_name: impl Into<String>, mut versions: Vec<FileVersion>) -> Self {
         versions.sort_by(|a, b| a.version.cmp(&b.version).then(a.backup_time.cmp(&b.backup_time)));
-        Self { file_name: file_name.into(), versions }
+        Self {
+            file_name: file_name.into(),
+            versions,
+        }
     }
 
     pub fn edit_count(&self) -> usize {
@@ -104,7 +113,11 @@ pub fn file_history(entries: Vec<FileHistoryEntry>) -> FileHistory {
                 versions: e
                     .versions
                     .into_iter()
-                    .map(|v| FileHistoryVersion { version_id: v.backup_file_name, version: v.version, backup_time: v.backup_time })
+                    .map(|v| FileHistoryVersion {
+                        version_id: v.backup_file_name,
+                        version: v.version,
+                        backup_time: v.backup_time,
+                    })
                     .collect(),
             })
             .collect(),
@@ -116,14 +129,30 @@ mod tests {
     use super::*;
 
     fn v(version: u32, secs: i64, backup: &str) -> FileVersion {
-        FileVersion::new("a.rs", "s1", version, DateTime::from_timestamp(secs, 0).unwrap(), "h", backup)
+        FileVersion::new(
+            "a.rs",
+            "s1",
+            version,
+            DateTime::from_timestamp(secs, 0).unwrap(),
+            "h",
+            backup,
+        )
     }
 
     #[test]
     fn versions_sort_by_number_then_time_and_ids_combine_session_and_backup() {
         let e = FileHistoryEntry::new("a.rs", vec![v(2, 5, "h@v2"), v(1, 9, "h@v1b"), v(1, 3, "h@v1a")]);
-        assert_eq!(e.versions.iter().map(|x| x.backup_file_name.as_str()).collect::<Vec<_>>(), ["h@v1a", "h@v1b", "h@v2"]);
-        assert_eq!((e.edit_count(), e.latest_version().unwrap().id.as_str()), (3, "s1-h@v2"));
+        assert_eq!(
+            e.versions
+                .iter()
+                .map(|x| x.backup_file_name.as_str())
+                .collect::<Vec<_>>(),
+            ["h@v1a", "h@v1b", "h@v2"]
+        );
+        assert_eq!(
+            (e.edit_count(), e.latest_version().unwrap().id.as_str()),
+            (3, "s1-h@v2")
+        );
     }
 
     #[test]
@@ -131,7 +160,14 @@ mod tests {
         let entries = vec![FileHistoryEntry::new("a.rs", vec![v(1, 3, "h@v1")])];
         let history = file_history(entries);
         assert_eq!(history.files.len(), 1);
-        assert_eq!((history.files[0].file_name.as_str(), history.files[0].versions[0].version_id.as_str(), history.files[0].versions[0].version), ("a.rs", "h@v1", 1));
+        assert_eq!(
+            (
+                history.files[0].file_name.as_str(),
+                history.files[0].versions[0].version_id.as_str(),
+                history.files[0].versions[0].version
+            ),
+            ("a.rs", "h@v1", 1)
+        );
     }
 
     #[test]

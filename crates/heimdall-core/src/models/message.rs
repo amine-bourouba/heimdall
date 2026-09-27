@@ -45,9 +45,16 @@ pub struct MessagePage {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum ContentBlock {
     #[serde(rename_all = "camelCase")]
-    Text { id: String, text: String, system: Option<Vec<SystemSegment>> },
+    Text {
+        id: String,
+        text: String,
+        system: Option<Vec<SystemSegment>>,
+    },
     #[serde(rename_all = "camelCase")]
-    Thinking { id: String, text: String },
+    Thinking {
+        id: String,
+        text: String,
+    },
     ToolUse(ToolUse),
     ToolResult(ToolResult),
 }
@@ -98,11 +105,19 @@ pub struct EditPair {
 
 impl ToolUse {
     /// Build from the stringified input map, as Poirot does (ToolUse.input is `[String: String]`).
-    pub fn from_input(id: impl Into<String>, tool_use_id: impl Into<String>, name: impl Into<String>,
-                      input: &BTreeMap<String, String>, input_pretty: impl Into<String>) -> Self {
+    pub fn from_input(
+        id: impl Into<String>,
+        tool_use_id: impl Into<String>,
+        name: impl Into<String>,
+        input: &BTreeMap<String, String>,
+        input_pretty: impl Into<String>,
+    ) -> Self {
         let name = name.into();
         let edit = match (name.as_str(), input.get("old_string"), input.get("new_string")) {
-            ("Edit", Some(old), Some(new)) => Some(EditPair { old_string: old.clone(), new_string: new.clone() }),
+            ("Edit", Some(old), Some(new)) => Some(EditPair {
+                old_string: old.clone(),
+                new_string: new.clone(),
+            }),
             _ => None,
         };
         Self {
@@ -160,11 +175,29 @@ impl Message {
     }
 
     pub fn tool_blocks(&self) -> Vec<&ToolUse> {
-        self.blocks.iter().filter_map(|b| if let ContentBlock::ToolUse(t) = b { Some(t) } else { None }).collect()
+        self.blocks
+            .iter()
+            .filter_map(|b| {
+                if let ContentBlock::ToolUse(t) = b {
+                    Some(t)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn tool_result_blocks(&self) -> Vec<&ToolResult> {
-        self.blocks.iter().filter_map(|b| if let ContentBlock::ToolResult(r) = b { Some(r) } else { None }).collect()
+        self.blocks
+            .iter()
+            .filter_map(|b| {
+                if let ContentBlock::ToolResult(r) = b {
+                    Some(r)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     /// Port of `textAndToolSegments`: text runs and tool runs alternate; thinking flushes both;
@@ -213,20 +246,39 @@ pub(crate) mod test_support {
     use super::*;
 
     pub fn text(t: &str) -> ContentBlock {
-        ContentBlock::Text { id: String::new(), text: t.into(), system: None }
+        ContentBlock::Text {
+            id: String::new(),
+            text: t.into(),
+            system: None,
+        }
     }
     pub fn thinking(t: &str) -> ContentBlock {
-        ContentBlock::Thinking { id: String::new(), text: t.into() }
+        ContentBlock::Thinking {
+            id: String::new(),
+            text: t.into(),
+        }
     }
     pub fn tool(id: &str, name: &str, input: &[(&str, &str)]) -> ToolUse {
         let map = input.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
         ToolUse::from_input(id, id, name, &map, "")
     }
     pub fn result(id: &str, tool_use_id: &str, content: &str) -> ContentBlock {
-        ContentBlock::ToolResult(ToolResult { id: id.into(), tool_use_id: tool_use_id.into(), content: content.into(), is_error: false })
+        ContentBlock::ToolResult(ToolResult {
+            id: id.into(),
+            tool_use_id: tool_use_id.into(),
+            content: content.into(),
+            is_error: false,
+        })
     }
     pub fn message(id: &str, role: Role, blocks: Vec<ContentBlock>) -> Message {
-        Message { id: id.into(), role, timestamp: None, model: None, usage: None, blocks }
+        Message {
+            id: id.into(),
+            role,
+            timestamp: None,
+            model: None,
+            usage: None,
+            blocks,
+        }
     }
 }
 
@@ -239,76 +291,162 @@ mod tests {
     // Ported from PoirotTests/Models/MessageTests.swift.
     #[test]
     fn text_content_with_text_blocks_joins_with_newline() {
-        assert_eq!(message("1", Role::User, vec![text("Hello"), text("World")]).text_content(), "Hello\nWorld");
+        assert_eq!(
+            message("1", Role::User, vec![text("Hello"), text("World")]).text_content(),
+            "Hello\nWorld"
+        );
     }
     #[test]
     fn text_content_with_no_text_blocks_returns_empty() {
-        let m = message("2", Role::Assistant, vec![ContentBlock::ToolUse(tool("t1", "Read", &[("file_path", "/test.swift")]))]);
+        let m = message(
+            "2",
+            Role::Assistant,
+            vec![ContentBlock::ToolUse(tool(
+                "t1",
+                "Read",
+                &[("file_path", "/test.swift")],
+            ))],
+        );
         assert!(m.text_content().is_empty());
     }
     #[test]
     fn text_content_with_mixed_blocks_extracts_text_only() {
-        let m = message("3", Role::Assistant, vec![text("Before"), ContentBlock::ToolUse(tool("t1", "Bash", &[("command", "ls")])), text("After")]);
+        let m = message(
+            "3",
+            Role::Assistant,
+            vec![
+                text("Before"),
+                ContentBlock::ToolUse(tool("t1", "Bash", &[("command", "ls")])),
+                text("After"),
+            ],
+        );
         assert_eq!(m.text_content(), "Before\nAfter");
     }
     #[test]
     fn tool_blocks_extracts_tool_use_only() {
-        let m = message("4", Role::Assistant, vec![
-            text("Let me read the file"),
-            ContentBlock::ToolUse(tool("t1", "Read", &[("file_path", "/a.swift")])),
-            result("r1", "t1", "file contents"),
-            ContentBlock::ToolUse(tool("t2", "Edit", &[("file_path", "/b.swift")])),
-        ]);
+        let m = message(
+            "4",
+            Role::Assistant,
+            vec![
+                text("Let me read the file"),
+                ContentBlock::ToolUse(tool("t1", "Read", &[("file_path", "/a.swift")])),
+                result("r1", "t1", "file contents"),
+                ContentBlock::ToolUse(tool("t2", "Edit", &[("file_path", "/b.swift")])),
+            ],
+        );
         let names: Vec<_> = m.tool_blocks().iter().map(|t| t.name.as_str()).collect();
         assert_eq!(names, ["Read", "Edit"]);
     }
     #[test]
     fn tool_blocks_with_no_tools_returns_empty() {
-        assert!(message("5", Role::User, vec![text("Just text")]).tool_blocks().is_empty());
+        assert!(
+            message("5", Role::User, vec![text("Just text")])
+                .tool_blocks()
+                .is_empty()
+        );
     }
     #[test]
     fn segments_text_only_produces_single_text_segment() {
-        assert_eq!(message("s1", Role::Assistant, vec![text("Hello"), text("World")]).segments(), [S::Text("Hello\nWorld".into())]);
+        assert_eq!(
+            message("s1", Role::Assistant, vec![text("Hello"), text("World")]).segments(),
+            [S::Text("Hello\nWorld".into())]
+        );
     }
     #[test]
     fn segments_tools_only_produces_single_tools_segment() {
         let (t1, t2) = (tool("t1", "Read", &[]), tool("t2", "Edit", &[]));
-        let m = message("s2", Role::Assistant, vec![ContentBlock::ToolUse(t1.clone()), ContentBlock::ToolUse(t2.clone())]);
+        let m = message(
+            "s2",
+            Role::Assistant,
+            vec![ContentBlock::ToolUse(t1.clone()), ContentBlock::ToolUse(t2.clone())],
+        );
         assert_eq!(m.segments(), [S::Tools(vec![t1, t2])]);
     }
     #[test]
     fn segments_text_then_tools_produces_two_segments() {
         let t = tool("t1", "Bash", &[]);
-        let m = message("s3", Role::Assistant, vec![text("Let me check"), ContentBlock::ToolUse(t.clone())]);
+        let m = message(
+            "s3",
+            Role::Assistant,
+            vec![text("Let me check"), ContentBlock::ToolUse(t.clone())],
+        );
         assert_eq!(m.segments(), [S::Text("Let me check".into()), S::Tools(vec![t])]);
     }
     #[test]
     fn segments_thinking_produces_thinking_segment() {
-        assert_eq!(message("s4", Role::Assistant, vec![thinking("reasoning here")]).segments(), [S::Thinking("reasoning here".into())]);
+        assert_eq!(
+            message("s4", Role::Assistant, vec![thinking("reasoning here")]).segments(),
+            [S::Thinking("reasoning here".into())]
+        );
     }
     #[test]
     fn segments_thinking_flushes_accumulated_text() {
-        let m = message("s5", Role::Assistant, vec![text("Before"), thinking("reasoning"), text("After")]);
-        assert_eq!(m.segments(), [S::Text("Before".into()), S::Thinking("reasoning".into()), S::Text("After".into())]);
+        let m = message(
+            "s5",
+            Role::Assistant,
+            vec![text("Before"), thinking("reasoning"), text("After")],
+        );
+        assert_eq!(
+            m.segments(),
+            [
+                S::Text("Before".into()),
+                S::Thinking("reasoning".into()),
+                S::Text("After".into())
+            ]
+        );
     }
     #[test]
     fn segments_thinking_flushes_accumulated_tools() {
         let t = tool("t1", "Read", &[]);
-        let m = message("s6", Role::Assistant, vec![ContentBlock::ToolUse(t.clone()), thinking("reasoning"), text("Done")]);
-        assert_eq!(m.segments(), [S::Tools(vec![t]), S::Thinking("reasoning".into()), S::Text("Done".into())]);
+        let m = message(
+            "s6",
+            Role::Assistant,
+            vec![ContentBlock::ToolUse(t.clone()), thinking("reasoning"), text("Done")],
+        );
+        assert_eq!(
+            m.segments(),
+            [
+                S::Tools(vec![t]),
+                S::Thinking("reasoning".into()),
+                S::Text("Done".into())
+            ]
+        );
     }
     #[test]
     fn segments_multiple_thinking_blocks_interleave() {
         let t = tool("t1", "Bash", &[]);
-        let m = message("s7", Role::Assistant, vec![thinking("first thought"), text("Response"), thinking("second thought"), ContentBlock::ToolUse(t.clone())]);
-        assert_eq!(m.segments(), [
-            S::Thinking("first thought".into()), S::Text("Response".into()), S::Thinking("second thought".into()), S::Tools(vec![t]),
-        ]);
+        let m = message(
+            "s7",
+            Role::Assistant,
+            vec![
+                thinking("first thought"),
+                text("Response"),
+                thinking("second thought"),
+                ContentBlock::ToolUse(t.clone()),
+            ],
+        );
+        assert_eq!(
+            m.segments(),
+            [
+                S::Thinking("first thought".into()),
+                S::Text("Response".into()),
+                S::Thinking("second thought".into()),
+                S::Tools(vec![t]),
+            ]
+        );
     }
     #[test]
     fn segments_tool_results_are_ignored() {
         let t = tool("t1", "Read", &[]);
-        let m = message("s8", Role::Assistant, vec![text("Check"), ContentBlock::ToolUse(t.clone()), result("r1", "t1", "output")]);
+        let m = message(
+            "s8",
+            Role::Assistant,
+            vec![
+                text("Check"),
+                ContentBlock::ToolUse(t.clone()),
+                result("r1", "t1", "output"),
+            ],
+        );
         assert_eq!(m.segments(), [S::Text("Check".into()), S::Tools(vec![t])]);
     }
     #[test]
@@ -322,7 +460,11 @@ mod tests {
     }
     #[test]
     fn has_diff_data_true_when_both_strings_present() {
-        let t = tool("e1", "Edit", &[("file_path", "/a.swift"), ("old_string", "old"), ("new_string", "new")]);
+        let t = tool(
+            "e1",
+            "Edit",
+            &[("file_path", "/a.swift"), ("old_string", "old"), ("new_string", "new")],
+        );
         assert!(t.has_diff_data());
         let edit = t.edit.unwrap();
         assert_eq!((edit.old_string.as_str(), edit.new_string.as_str()), ("old", "new"));

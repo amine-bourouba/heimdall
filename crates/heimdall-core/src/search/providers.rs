@@ -9,7 +9,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
-use crate::models::catalog::claude_models::{curated_names, DEFAULT_MODEL_NAME};
+use crate::models::catalog::claude_models::{DEFAULT_MODEL_NAME, curated_names};
 use crate::models::config::command::ClaudeCommand;
 use crate::models::config::hook::HookEntry;
 use crate::models::config::mcp::McpServer;
@@ -24,10 +24,12 @@ use crate::models::project::Project;
 use crate::models::session::Session;
 use crate::models::session_facets::SessionFacets;
 use crate::models::session_todo::TodoItem;
-use crate::paths::{last_component, TargetOs};
+use crate::paths::{TargetOs, last_component};
 
 use super::matcher;
-use super::{MemoryFileLocator, NavScreen, SearchAction, SearchCategory, SearchGroup, SearchHit, SearchMode, SearchResults};
+use super::{
+    MemoryFileLocator, NavScreen, SearchAction, SearchCategory, SearchGroup, SearchHit, SearchMode, SearchResults,
+};
 
 const MAX_PER_GROUP: usize = 5;
 const MAX_FILE_HISTORY_SESSIONS: usize = 50;
@@ -68,15 +70,22 @@ fn highlights(title: &str, query: &str, mode: SearchMode) -> Vec<(u32, u32)> {
 }
 
 fn find_session<'a>(projects: &'a [Project], session_id: &str) -> Option<(&'a Project, &'a Session)> {
-    projects.iter().find_map(|p| p.sessions.iter().find(|s| s.id == session_id).map(|s| (p, s)))
+    projects
+        .iter()
+        .find_map(|p| p.sessions.iter().find(|s| s.id == session_id).map(|s| (p, s)))
 }
 
 /// A session found by id, else `navigateTo(.sessions)` — the fallback Poirot uses when a
 /// file-history or facets entry outlives the session it names (SearchOverlayView.swift:273-283, :544-554).
 fn session_or_sessions_screen(projects: &[Project], session_id: &str) -> SearchAction {
     match find_session(projects, session_id) {
-        Some((p, s)) => SearchAction::OpenSession { project_id: p.id.clone(), session_id: s.id.clone() },
-        None => SearchAction::NavigateTo { screen: NavScreen::Sessions },
+        Some((p, s)) => SearchAction::OpenSession {
+            project_id: p.id.clone(),
+            session_id: s.id.clone(),
+        },
+        None => SearchAction::NavigateTo {
+            screen: NavScreen::Sessions,
+        },
     }
 }
 
@@ -89,10 +98,18 @@ fn push_sessions(out: &mut Vec<Ranked>, projects: &[Project], show_agent_session
                 continue;
             }
             let title = session.title();
-            let meta_best = score(&title, q, mode).max(score(&project.name, q, mode)).max(score(&session.id, q, mode));
+            let meta_best = score(&title, q, mode)
+                .max(score(&project.name, q, mode))
+                .max(score(&session.id, q, mode));
             // Falls back to a literal (mode-independent) substring test of the pre-lowercased
             // searchable text, so sessions surface by what was discussed, not only their title.
-            let best = if meta_best > 0 { meta_best } else if session.searchable_text.contains(&q.to_lowercase()) { 1 } else { 0 };
+            let best = if meta_best > 0 {
+                meta_best
+            } else if session.searchable_text.contains(&q.to_lowercase()) {
+                1
+            } else {
+                0
+            };
             if best == 0 {
                 continue;
             }
@@ -103,14 +120,23 @@ fn push_sessions(out: &mut Vec<Ranked>, projects: &[Project], show_agent_session
                     highlights: highlights(&title, q, mode),
                     title,
                     subtitle: Some(project.name.clone()),
-                    action: SearchAction::OpenSession { project_id: project.id.clone(), session_id: session.id.clone() },
+                    action: SearchAction::OpenSession {
+                        project_id: project.id.clone(),
+                        session_id: session.id.clone(),
+                    },
                 },
             ));
         }
     }
 }
 
-fn push_debug_logs(out: &mut Vec<Ranked>, projects: &[Project], debug_log_session_ids: &BTreeSet<String>, q: &str, mode: SearchMode) {
+fn push_debug_logs(
+    out: &mut Vec<Ranked>,
+    projects: &[Project],
+    debug_log_session_ids: &BTreeSet<String>,
+    q: &str,
+    mode: SearchMode,
+) {
     for project in projects {
         for session in &project.sessions {
             if !debug_log_session_ids.contains(&session.id) {
@@ -128,18 +154,29 @@ fn push_debug_logs(out: &mut Vec<Ranked>, projects: &[Project], debug_log_sessio
                     highlights: highlights(&title, q, mode),
                     title,
                     subtitle: Some("Debug Log".into()),
-                    action: SearchAction::OpenDebugLog { project_id: project.id.clone(), session_id: session.id.clone() },
+                    action: SearchAction::OpenDebugLog {
+                        project_id: project.id.clone(),
+                        session_id: session.id.clone(),
+                    },
                 },
             ));
         }
     }
 }
 
-fn push_file_changes(out: &mut Vec<Ranked>, file_history_sessions: &[(String, Vec<String>)], projects: &[Project], q: &str, mode: SearchMode) {
+fn push_file_changes(
+    out: &mut Vec<Ranked>,
+    file_history_sessions: &[(String, Vec<String>)],
+    projects: &[Project],
+    q: &str,
+    mode: SearchMode,
+) {
     for (session_id, file_names) in file_history_sessions {
         for file_name in file_names {
             let name_only = last_component(file_name);
-            let best = score(name_only, q, mode).max(score(file_name, q, mode)).max(score("file changes", q, mode));
+            let best = score(name_only, q, mode)
+                .max(score(file_name, q, mode))
+                .max(score("file changes", q, mode));
             if best == 0 {
                 continue;
             }
@@ -171,7 +208,9 @@ fn push_todos(out: &mut Vec<Ranked>, todos: &BTreeMap<String, Vec<TodoItem>>, q:
                     highlights: highlights(&todo.content, q, mode),
                     title: todo.content.clone(),
                     subtitle: Some(session_id.clone()),
-                    action: SearchAction::NavigateTo { screen: NavScreen::Todos },
+                    action: SearchAction::NavigateTo {
+                        screen: NavScreen::Todos,
+                    },
                 },
             ));
         }
@@ -192,7 +231,9 @@ fn push_history(out: &mut Vec<Ranked>, history: &[HistoryEntry], q: &str, mode: 
                 highlights: highlights(&title, q, mode),
                 title,
                 subtitle: Some(entry.project_name().to_string()),
-                action: SearchAction::NavigateTo { screen: NavScreen::History },
+                action: SearchAction::NavigateTo {
+                    screen: NavScreen::History,
+                },
             },
         ));
     }
@@ -211,7 +252,11 @@ fn push_commands(out: &mut Vec<Ranked>, commands: &[ClaudeCommand], q: &str, mod
                 highlights: highlights(&cmd.name, q, mode),
                 title: cmd.name.clone(),
                 subtitle: Some(cmd.description.clone()),
-                action: SearchAction::OpenDetail { screen: NavScreen::Commands, config_ref: Some(cmd.config_ref.clone()), memory_file: None },
+                action: SearchAction::OpenDetail {
+                    screen: NavScreen::Commands,
+                    config_ref: Some(cmd.config_ref.clone()),
+                    memory_file: None,
+                },
             },
         ));
     }
@@ -230,7 +275,11 @@ fn push_skills(out: &mut Vec<Ranked>, skills: &[ClaudeSkill], q: &str, mode: Sea
                 highlights: highlights(&skill.name, q, mode),
                 title: skill.name.clone(),
                 subtitle: Some(skill.description.clone()),
-                action: SearchAction::OpenDetail { screen: NavScreen::Skills, config_ref: Some(skill.config_ref.clone()), memory_file: None },
+                action: SearchAction::OpenDetail {
+                    screen: NavScreen::Skills,
+                    config_ref: Some(skill.config_ref.clone()),
+                    memory_file: None,
+                },
             },
         ));
     }
@@ -245,7 +294,12 @@ fn push_plans(out: &mut Vec<Ranked>, plans: &[Plan], q: &str, mode: SearchMode) 
         if best == 0 {
             continue;
         }
-        let filename = plan.file.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
+        let filename = plan
+            .file
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default()
+            .to_string();
         out.push((
             SearchCategory::Plans,
             best,
@@ -253,7 +307,11 @@ fn push_plans(out: &mut Vec<Ranked>, plans: &[Plan], q: &str, mode: SearchMode) 
                 highlights: highlights(&plan.name, q, mode),
                 title: plan.name.clone(),
                 subtitle: Some(filename),
-                action: SearchAction::OpenDetail { screen: NavScreen::Plans, config_ref: Some(plan.config_ref.clone()), memory_file: None },
+                action: SearchAction::OpenDetail {
+                    screen: NavScreen::Plans,
+                    config_ref: Some(plan.config_ref.clone()),
+                    memory_file: None,
+                },
             },
         ));
     }
@@ -262,7 +320,13 @@ fn push_plans(out: &mut Vec<Ranked>, plans: &[Plan], q: &str, mode: SearchMode) 
 fn push_memory(out: &mut Vec<Ranked>, memory_project_files: &[MemoryFile], q: &str, mode: SearchMode) {
     for file in memory_project_files {
         let name_score = score(&file.name, q, mode);
-        let best = if name_score > 0 { name_score } else if file.content.to_lowercase().contains(&q.to_lowercase()) { 1 } else { 0 };
+        let best = if name_score > 0 {
+            name_score
+        } else if file.content.to_lowercase().contains(&q.to_lowercase()) {
+            1
+        } else {
+            0
+        };
         if best == 0 {
             continue;
         }
@@ -276,7 +340,10 @@ fn push_memory(out: &mut Vec<Ranked>, memory_project_files: &[MemoryFile], q: &s
                 action: SearchAction::OpenDetail {
                     screen: NavScreen::Memory,
                     config_ref: None,
-                    memory_file: Some(MemoryFileLocator { source_id: format!("project:{}", file.project_id), file_id: file.id.clone() }),
+                    memory_file: Some(MemoryFileLocator {
+                        source_id: format!("project:{}", file.project_id),
+                        file_id: file.id.clone(),
+                    }),
                 },
             },
         ));
@@ -286,7 +353,9 @@ fn push_memory(out: &mut Vec<Ranked>, memory_project_files: &[MemoryFile], q: &s
 fn push_mcp(out: &mut Vec<Ranked>, mcp_servers: &[McpServer], q: &str, mode: SearchMode) {
     for server in mcp_servers {
         let tool_score = server.tools.iter().map(|t| score(t, q, mode)).max().unwrap_or(0);
-        let best = score(&server.name, q, mode).max(tool_score).max(score(server.status.label(), q, mode));
+        let best = score(&server.name, q, mode)
+            .max(tool_score)
+            .max(score(server.status.label(), q, mode));
         if best == 0 {
             continue;
         }
@@ -298,7 +367,9 @@ fn push_mcp(out: &mut Vec<Ranked>, mcp_servers: &[McpServer], q: &str, mode: Sea
                 highlights: highlights(&server.name, q, mode),
                 title: server.name.clone(),
                 subtitle: Some(subtitle),
-                action: SearchAction::NavigateTo { screen: NavScreen::McpServers },
+                action: SearchAction::NavigateTo {
+                    screen: NavScreen::McpServers,
+                },
             },
         ));
     }
@@ -317,7 +388,9 @@ fn push_plugins(out: &mut Vec<Ranked>, plugins: &[ClaudePlugin], q: &str, mode: 
                 highlights: highlights(&plugin.name, q, mode),
                 title: plugin.name.clone(),
                 subtitle: Some(format!("by {}", plugin.author)),
-                action: SearchAction::NavigateTo { screen: NavScreen::Plugins },
+                action: SearchAction::NavigateTo {
+                    screen: NavScreen::Plugins,
+                },
             },
         ));
     }
@@ -336,7 +409,11 @@ fn push_output_styles(out: &mut Vec<Ranked>, output_styles: &[OutputStyle], q: &
                 highlights: highlights(&style.name, q, mode),
                 title: style.name.clone(),
                 subtitle: Some(style.description.clone()),
-                action: SearchAction::OpenDetail { screen: NavScreen::OutputStyles, config_ref: Some(style.config_ref.clone()), memory_file: None },
+                action: SearchAction::OpenDetail {
+                    screen: NavScreen::OutputStyles,
+                    config_ref: Some(style.config_ref.clone()),
+                    memory_file: None,
+                },
             },
         ));
     }
@@ -362,7 +439,14 @@ fn push_hooks(out: &mut Vec<Ranked>, hooks: &[HookEntry], q: &str, mode: SearchM
         out.push((
             SearchCategory::Hooks,
             best,
-            SearchHit { highlights: highlights(&title, q, mode), title, subtitle: Some(subtitle), action: SearchAction::NavigateTo { screen: NavScreen::Hooks } },
+            SearchHit {
+                highlights: highlights(&title, q, mode),
+                title,
+                subtitle: Some(subtitle),
+                action: SearchAction::NavigateTo {
+                    screen: NavScreen::Hooks,
+                },
+            },
         ));
     }
 }
@@ -381,8 +465,14 @@ fn push_models(out: &mut Vec<Ranked>, q: &str, mode: SearchMode) {
             SearchHit {
                 highlights: highlights(&name, q, mode),
                 title: name,
-                subtitle: Some(if is_default { "Default model".into() } else { "AI Model".into() }),
-                action: SearchAction::NavigateTo { screen: NavScreen::Models },
+                subtitle: Some(if is_default {
+                    "Default model".into()
+                } else {
+                    "AI Model".into()
+                }),
+                action: SearchAction::NavigateTo {
+                    screen: NavScreen::Models,
+                },
             },
         ));
     }
@@ -401,20 +491,35 @@ fn push_sub_agents(out: &mut Vec<Ranked>, sub_agents: &[SubAgent], q: &str, mode
                 highlights: highlights(&agent.name, q, mode),
                 title: agent.name.clone(),
                 subtitle: Some(agent.description.clone()),
-                action: SearchAction::NavigateTo { screen: NavScreen::SubAgents },
+                action: SearchAction::NavigateTo {
+                    screen: NavScreen::SubAgents,
+                },
             },
         ));
     }
 }
 
-fn push_facets(out: &mut Vec<Ranked>, facets: &BTreeMap<String, SessionFacets>, projects: &[Project], q: &str, mode: SearchMode) {
+fn push_facets(
+    out: &mut Vec<Ranked>,
+    facets: &BTreeMap<String, SessionFacets>,
+    projects: &[Project],
+    q: &str,
+    mode: SearchMode,
+) {
     for (session_id, f) in facets {
         let category_score = f.goal_categories.keys().map(|k| score(k, q, mode)).max().unwrap_or(0);
-        let best = score(&f.underlying_goal, q, mode).max(score(&f.brief_summary, q, mode)).max(category_score).max(score(&f.session_type, q, mode));
+        let best = score(&f.underlying_goal, q, mode)
+            .max(score(&f.brief_summary, q, mode))
+            .max(category_score)
+            .max(score(&f.session_type, q, mode));
         if best == 0 {
             continue;
         }
-        let title = if f.brief_summary.is_empty() { f.underlying_goal.clone() } else { f.brief_summary.clone() };
+        let title = if f.brief_summary.is_empty() {
+            f.underlying_goal.clone()
+        } else {
+            f.brief_summary.clone()
+        };
         out.push((
             SearchCategory::Facets,
             best,
@@ -452,13 +557,20 @@ pub fn search(input: &SearchInput, query: &str, mode: SearchMode) -> SearchResul
     let groups = SearchCategory::ALL
         .into_iter()
         .filter_map(|category| {
-            let mut hits: Vec<(i32, SearchHit)> = all.iter().filter(|(c, ..)| *c == category).map(|(_, s, h)| (*s, h.clone())).collect();
+            let mut hits: Vec<(i32, SearchHit)> = all
+                .iter()
+                .filter(|(c, ..)| *c == category)
+                .map(|(_, s, h)| (*s, h.clone()))
+                .collect();
             if hits.is_empty() {
                 return None;
             }
             hits.sort_by_key(|(s, _)| std::cmp::Reverse(*s));
             hits.truncate(MAX_PER_GROUP);
-            Some(SearchGroup { category, hits: hits.into_iter().map(|(_, h)| h).collect() })
+            Some(SearchGroup {
+                category,
+                hits: hits.into_iter().map(|(_, h)| h).collect(),
+            })
         })
         .collect();
     SearchResults { groups }
@@ -467,8 +579,14 @@ pub fn search(input: &SearchInput, query: &str, mode: SearchMode) -> SearchResul
 /// Session ids under `~/.claude/file-history/` (first 50 folders, sorted for determinism — Poirot's
 /// directory order is filesystem-native and not guaranteed) that have at least one tracked file,
 /// paired with those files' tracked names (SearchOverlayView.scanFileHistorySessions).
-pub fn scan_file_history_sessions(file_history_dir: &Path, projects_dir: &Path, os: TargetOs) -> Vec<(String, Vec<String>)> {
-    let Ok(entries) = std::fs::read_dir(file_history_dir) else { return Vec::new() };
+pub fn scan_file_history_sessions(
+    file_history_dir: &Path,
+    projects_dir: &Path,
+    os: TargetOs,
+) -> Vec<(String, Vec<String>)> {
+    let Ok(entries) = std::fs::read_dir(file_history_dir) else {
+        return Vec::new();
+    };
     let mut session_ids: Vec<String> = entries
         .flatten()
         .map(|e| e.path())
@@ -480,7 +598,9 @@ pub fn scan_file_history_sessions(file_history_dir: &Path, projects_dir: &Path, 
     session_ids
         .into_iter()
         .filter_map(|session_id| {
-            let files = crate::data::file_history::load(projects_dir, &session_id, os).ok()?.value;
+            let files = crate::data::file_history::load(projects_dir, &session_id, os)
+                .ok()?
+                .value;
             (!files.is_empty()).then(|| (session_id, files.into_iter().map(|f| f.file_name).collect()))
         })
         .collect()
@@ -489,9 +609,11 @@ pub fn scan_file_history_sessions(file_history_dir: &Path, projects_dir: &Path, 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::read::test_support::{context, home, repo, synthetic};
-    use crate::config::read::{agents, commands, hooks, mcp, memory, output_styles, plans, plugins, skills, ProjectScope};
     use crate::config::read::memory::MemorySourceKind;
+    use crate::config::read::test_support::{context, home, repo, synthetic};
+    use crate::config::read::{
+        ProjectScope, agents, commands, hooks, mcp, memory, output_styles, plans, plugins, skills,
+    };
     use crate::data::{debug_log, facets as facets_data, history as history_data, todos as todos_data};
     use crate::models::config::scope::ConfigKind;
     use crate::paths::ClaudeHome;
@@ -524,18 +646,31 @@ mod tests {
         let home = ClaudeHome::new(home_dir.clone(), synthetic().join("claude.json"));
         let repo = repo();
         let ctx = context();
-        let scope = ProjectScope { root: &repo, context: &ctx };
-        let projects = discovery::discover(&home.projects_dir(), TargetOs::current()).unwrap().value;
+        let scope = ProjectScope {
+            root: &repo,
+            context: &ctx,
+        };
+        let projects = discovery::discover(&home.projects_dir(), TargetOs::current())
+            .unwrap()
+            .value;
         let memory_sources = memory::sources(&home.projects_dir(), &[]);
         let memory_project_files = memory_sources
             .into_iter()
             .filter(|s| s.kind == MemorySourceKind::Project)
-            .flat_map(|s| memory::load_project(&home.projects_dir(), s.id.strip_prefix("project:").unwrap()).unwrap().value)
+            .flat_map(|s| {
+                memory::load_project(&home.projects_dir(), s.id.strip_prefix("project:").unwrap())
+                    .unwrap()
+                    .value
+            })
             .collect();
         World {
             debug_ids: debug_log::all_session_ids(&home.debug_dir()).into_iter().collect(),
             facets: facets_data::load_all(&home.facets_dir()).unwrap().value,
-            file_history_sessions: scan_file_history_sessions(&home.file_history_dir(), &home.projects_dir(), TargetOs::current()),
+            file_history_sessions: scan_file_history_sessions(
+                &home.file_history_dir(),
+                &home.projects_dir(),
+                TargetOs::current(),
+            ),
             todos: todos_data::load_all(&home.todos_dir()).unwrap().value,
             history: history_data::load_all(&home.history_file()).unwrap().value,
             commands: commands::load(&home_dir, Some(scope)).value,
@@ -575,7 +710,11 @@ mod tests {
     /// The single top hit of `category` for `query` (exact mode — every fixture query below is a
     /// verbatim substring of the field it targets).
     fn top(results: &SearchResults, category: SearchCategory) -> &SearchHit {
-        let group = results.groups.iter().find(|g| g.category == category).unwrap_or_else(|| panic!("no {category:?} group"));
+        let group = results
+            .groups
+            .iter()
+            .find(|g| g.category == category)
+            .unwrap_or_else(|| panic!("no {category:?} group"));
         &group.hits[0]
     }
 
@@ -585,49 +724,89 @@ mod tests {
         let w = world();
         let results = search(&input(&w), "auth bug in login", SearchMode::Exact);
         let hit = top(&results, SearchCategory::Sessions);
-        assert_eq!((hit.title.as_str(), hit.subtitle.as_deref()), ("Fix the auth bug in login.py", Some("app")));
-        assert_eq!(hit.action, SearchAction::OpenSession { project_id: "-Users-fixture-src-app".into(), session_id: "11111111-1111-4111-8111-111111111111".into() });
+        assert_eq!(
+            (hit.title.as_str(), hit.subtitle.as_deref()),
+            ("Fix the auth bug in login.py", Some("app"))
+        );
+        assert_eq!(
+            hit.action,
+            SearchAction::OpenSession {
+                project_id: "-Users-fixture-src-app".into(),
+                session_id: "11111111-1111-4111-8111-111111111111".into()
+            }
+        );
     }
     #[test]
     fn debug_logs_category_returns_the_session_with_a_log() {
         let w = world();
         let results = search(&input(&w), "debug log", SearchMode::Exact);
         let hit = top(&results, SearchCategory::DebugLogs);
-        assert_eq!((hit.title.as_str(), hit.subtitle.as_deref()), ("Fix the auth bug in login.py", Some("Debug Log")));
-        assert!(matches!(&hit.action, SearchAction::OpenDebugLog { session_id, .. } if session_id == "11111111-1111-4111-8111-111111111111"));
+        assert_eq!(
+            (hit.title.as_str(), hit.subtitle.as_deref()),
+            ("Fix the auth bug in login.py", Some("Debug Log"))
+        );
+        assert!(
+            matches!(&hit.action, SearchAction::OpenDebugLog { session_id, .. } if session_id == "11111111-1111-4111-8111-111111111111")
+        );
     }
     #[test]
     fn facets_category_returns_the_ai_summary() {
         let w = world();
         let results = search(&input(&w), "authentication bug", SearchMode::Exact);
         let hit = top(&results, SearchCategory::Facets);
-        assert_eq!(hit.title, "Fixed the login authentication bug in login.py and verified with tests.");
+        assert_eq!(
+            hit.title,
+            "Fixed the login authentication bug in login.py and verified with tests."
+        );
         assert_eq!(hit.subtitle.as_deref(), Some("Fix an authentication bug"));
-        assert!(matches!(&hit.action, SearchAction::OpenSession { session_id, .. } if session_id == "11111111-1111-4111-8111-111111111111"));
+        assert!(
+            matches!(&hit.action, SearchAction::OpenSession { session_id, .. } if session_id == "11111111-1111-4111-8111-111111111111")
+        );
     }
     #[test]
     fn file_changes_category_returns_the_tracked_file() {
         let w = world();
         let results = search(&input(&w), "login.py", SearchMode::Exact);
         let hit = top(&results, SearchCategory::FileChanges);
-        assert_eq!((hit.title.as_str(), hit.subtitle.as_deref()), ("login.py", Some("login.py")));
-        assert!(matches!(&hit.action, SearchAction::OpenSession { session_id, .. } if session_id == "11111111-1111-4111-8111-111111111111"));
+        assert_eq!(
+            (hit.title.as_str(), hit.subtitle.as_deref()),
+            ("login.py", Some("login.py"))
+        );
+        assert!(
+            matches!(&hit.action, SearchAction::OpenSession { session_id, .. } if session_id == "11111111-1111-4111-8111-111111111111")
+        );
     }
     #[test]
     fn todos_category_returns_the_matching_todo() {
         let w = world();
         let results = search(&input(&w), "regression test", SearchMode::Exact);
         let hit = top(&results, SearchCategory::Todos);
-        assert_eq!((hit.title.as_str(), hit.subtitle.as_deref()), ("Add a regression test", Some("11111111-1111-4111-8111-111111111111")));
-        assert_eq!(hit.action, SearchAction::NavigateTo { screen: NavScreen::Todos });
+        assert_eq!(
+            (hit.title.as_str(), hit.subtitle.as_deref()),
+            ("Add a regression test", Some("11111111-1111-4111-8111-111111111111"))
+        );
+        assert_eq!(
+            hit.action,
+            SearchAction::NavigateTo {
+                screen: NavScreen::Todos
+            }
+        );
     }
     #[test]
     fn history_category_returns_the_matching_prompt() {
         let w = world();
         let results = search(&input(&w), "stack trace", SearchMode::Exact);
         let hit = top(&results, SearchCategory::History);
-        assert_eq!((hit.title.as_str(), hit.subtitle.as_deref()), ("Paste this stack trace and explain it", Some("app")));
-        assert_eq!(hit.action, SearchAction::NavigateTo { screen: NavScreen::History });
+        assert_eq!(
+            (hit.title.as_str(), hit.subtitle.as_deref()),
+            ("Paste this stack trace and explain it", Some("app"))
+        );
+        assert_eq!(
+            hit.action,
+            SearchAction::NavigateTo {
+                screen: NavScreen::History
+            }
+        );
     }
     #[test]
     fn commands_category_returns_the_matching_command() {
@@ -635,7 +814,9 @@ mod tests {
         let results = search(&input(&w), "/review", SearchMode::Exact);
         let hit = top(&results, SearchCategory::Commands);
         assert_eq!(hit.title, "/review");
-        assert!(matches!(&hit.action, SearchAction::OpenDetail { screen: NavScreen::Commands, config_ref: Some(r), .. } if r.kind == ConfigKind::Command && r.slug == "review"));
+        assert!(
+            matches!(&hit.action, SearchAction::OpenDetail { screen: NavScreen::Commands, config_ref: Some(r), .. } if r.kind == ConfigKind::Command && r.slug == "review")
+        );
     }
     #[test]
     fn skills_category_returns_the_matching_skill() {
@@ -649,15 +830,23 @@ mod tests {
         let w = world();
         let results = search(&input(&w), "refactor auth module", SearchMode::Exact);
         let hit = top(&results, SearchCategory::Plans);
-        assert_eq!((hit.title.as_str(), hit.subtitle.as_deref()), ("Refactor Auth Module", Some("refactor-auth-module.md")));
+        assert_eq!(
+            (hit.title.as_str(), hit.subtitle.as_deref()),
+            ("Refactor Auth Module", Some("refactor-auth-module.md"))
+        );
     }
     #[test]
     fn memory_category_falls_back_to_content_when_the_name_does_not_match() {
         let w = world();
         let results = search(&input(&w), "auth bug", SearchMode::Exact);
         let hit = top(&results, SearchCategory::Memory);
-        assert_eq!((hit.title.as_str(), hit.subtitle.as_deref()), ("MEMORY", Some("MEMORY.md")));
-        assert!(matches!(&hit.action, SearchAction::OpenDetail { screen: NavScreen::Memory, memory_file: Some(m), .. } if m.source_id == "project:-Users-fixture-src-app"));
+        assert_eq!(
+            (hit.title.as_str(), hit.subtitle.as_deref()),
+            ("MEMORY", Some("MEMORY.md"))
+        );
+        assert!(
+            matches!(&hit.action, SearchAction::OpenDetail { screen: NavScreen::Memory, memory_file: Some(m), .. } if m.source_id == "project:-Users-fixture-src-app")
+        );
     }
     #[test]
     fn mcp_servers_category_returns_the_matching_server() {
@@ -665,14 +854,22 @@ mod tests {
         let results = search(&input(&w), "sentry", SearchMode::Exact);
         let hit = top(&results, SearchCategory::McpServers);
         assert_eq!(hit.title, "Sentry");
-        assert_eq!(hit.action, SearchAction::NavigateTo { screen: NavScreen::McpServers });
+        assert_eq!(
+            hit.action,
+            SearchAction::NavigateTo {
+                screen: NavScreen::McpServers
+            }
+        );
     }
     #[test]
     fn plugins_category_returns_the_matching_plugin() {
         let w = world();
         let results = search(&input(&w), "legacy-tools", SearchMode::Exact);
         let hit = top(&results, SearchCategory::Plugins);
-        assert_eq!((hit.title.as_str(), hit.subtitle.as_deref()), ("legacy-tools", Some("by acme")));
+        assert_eq!(
+            (hit.title.as_str(), hit.subtitle.as_deref()),
+            ("legacy-tools", Some("by acme"))
+        );
     }
     #[test]
     fn output_styles_category_returns_the_matching_style() {
@@ -694,7 +891,10 @@ mod tests {
         let w = world();
         let results = search(&input(&w), "haiku", SearchMode::Fuzzy);
         let hit = top(&results, SearchCategory::Models);
-        assert_eq!((hit.title.as_str(), hit.subtitle.as_deref()), ("Haiku 4.5", Some("AI Model")));
+        assert_eq!(
+            (hit.title.as_str(), hit.subtitle.as_deref()),
+            ("Haiku 4.5", Some("AI Model"))
+        );
         let opus5_results = search(&input(&w), "Opus 5", SearchMode::Exact);
         let opus5 = top(&opus5_results, SearchCategory::Models);
         assert_eq!(opus5.subtitle.as_deref(), Some("Default model"));
@@ -715,13 +915,21 @@ mod tests {
         let expected: Vec<_> = SearchCategory::ALL.into_iter().filter(|c| order.contains(c)).collect();
         assert_eq!(order, expected);
         assert!(results.groups.iter().all(|g| g.hits.len() <= 5));
-        assert!(results.groups.len() >= 10, "only {} groups matched \"a\"", results.groups.len());
+        assert!(
+            results.groups.len() >= 10,
+            "only {} groups matched \"a\"",
+            results.groups.len()
+        );
     }
 
     #[test]
     fn a_query_matching_nothing_returns_no_groups() {
         let w = world();
-        assert!(search(&input(&w), "zzz-nonexistent-query-zzz", SearchMode::Exact).groups.is_empty());
+        assert!(
+            search(&input(&w), "zzz-nonexistent-query-zzz", SearchMode::Exact)
+                .groups
+                .is_empty()
+        );
     }
 
     #[test]
@@ -735,7 +943,11 @@ mod tests {
         // None of these sessions have a transcript, so none carries tracked files, but the folder
         // scan itself must still stop at 50.
         assert!(sessions.is_empty());
-        let mut names: Vec<String> = std::fs::read_dir(dir.path()).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+        let mut names: Vec<String> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
         names.sort();
         assert_eq!(names.len(), 60);
     }

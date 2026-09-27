@@ -27,7 +27,12 @@ fn chars(text: &str) -> Vec<Char> {
     text.chars()
         .map(|c| {
             let len16 = c.len_utf16() as u32;
-            let ch = Char { lower: c.to_lowercase().collect(), start16: at, len16, raw: c };
+            let ch = Char {
+                lower: c.to_lowercase().collect(),
+                start16: at,
+                len16,
+                raw: c,
+            };
             at += len16;
             ch
         })
@@ -52,7 +57,10 @@ pub fn score(text: &str, query: &str, mode: SearchMode) -> i32 {
 /// scores 0 with no ranges.
 pub fn exact(text: &str, query: &str) -> Option<Match> {
     if query.is_empty() {
-        return Some(Match { score: 0, ranges: Vec::new() });
+        return Some(Match {
+            score: 0,
+            ranges: Vec::new(),
+        });
     }
     let cs = chars(text);
     let q: Vec<String> = query.chars().map(|c| c.to_lowercase().collect()).collect();
@@ -89,12 +97,18 @@ pub fn exact(text: &str, query: &str) -> Option<Match> {
 pub fn fuzzy(text: &str, query: &str) -> Option<Match> {
     let q: Vec<String> = query.chars().map(|c| c.to_lowercase().collect()).collect();
     if q.is_empty() {
-        return Some(Match { score: 0, ranges: Vec::new() });
+        return Some(Match {
+            score: 0,
+            ranges: Vec::new(),
+        });
     }
     let cs = chars(text);
     if q.len() < 2 {
         let c = cs.iter().find(|c| c.lower == q[0])?;
-        return Some(Match { score: 10, ranges: vec![(c.start16, c.start16 + c.len16)] });
+        return Some(Match {
+            score: 10,
+            ranges: vec![(c.start16, c.start16 + c.len16)],
+        });
     }
     let mut score: i32 = 0;
     let mut ranges = Vec::new();
@@ -168,10 +182,22 @@ mod tests {
     // Worked examples from docs/spec/search-overlay.md §2.2-2.4.
     #[test]
     fn spec_examples_score_and_highlight_as_documented() {
-        assert_eq!(fuzzy("swordfish", "ssh"), Some(Match { score: 37, ranges: vec![(0, 1), (7, 8), (8, 9)] }));
+        assert_eq!(
+            fuzzy("swordfish", "ssh"),
+            Some(Match {
+                score: 37,
+                ranges: vec![(0, 1), (7, 8), (8, 9)]
+            })
+        );
         assert_eq!(exact("ssh config", "ssh").unwrap().ranges, [(0, 3)]);
         assert_eq!(fuzzy("ssh config", "ssh").unwrap().ranges, [(0, 1), (1, 2), (2, 3)]);
-        assert_eq!(fuzzy("xyz", "x"), Some(Match { score: 10, ranges: vec![(0, 1)] }));
+        assert_eq!(
+            fuzzy("xyz", "x"),
+            Some(Match {
+                score: 10,
+                ranges: vec![(0, 1)]
+            })
+        );
     }
     #[test]
     fn exact_highlights_every_occurrence() {
@@ -192,7 +218,13 @@ mod tests {
         assert_eq!(exact(text, "🎉").unwrap().ranges, [(4, 6)]);
         assert_eq!(exact(text, "本語").unwrap().ranges, [(1, 3)]);
         let js_len: u32 = text.encode_utf16().count() as u32;
-        assert!(fuzzy(text, "tunnel").unwrap().ranges.iter().all(|&(_, end)| end <= js_len));
+        assert!(
+            fuzzy(text, "tunnel")
+                .unwrap()
+                .ranges
+                .iter()
+                .all(|&(_, end)| end <= js_len)
+        );
     }
 
     #[test]

@@ -56,8 +56,17 @@ pub fn diff_lines(old_lines: &[&str], new_lines: &[&str]) -> DiffResult {
     let old = &old_lines[..old_lines.len().min(MAX_DIFF_LINES)];
     let new = &new_lines[..new_lines.len().min(MAX_DIFF_LINES)];
     let lines = lcs_diff(old, new);
-    let max_line_number = lines.iter().flat_map(|l| [l.old_line, l.new_line]).flatten().max().unwrap_or(0);
-    DiffResult { lines, truncated, max_line_number }
+    let max_line_number = lines
+        .iter()
+        .flat_map(|l| [l.old_line, l.new_line])
+        .flatten()
+        .max()
+        .unwrap_or(0);
+    DiffResult {
+        lines,
+        truncated,
+        max_line_number,
+    }
 }
 
 /// `unifiedText` (Utilities/LineDiff.swift): one line per row, ` `/`+`/`-` prefixed.
@@ -96,14 +105,29 @@ fn lcs_diff(old: &[&str], new: &[&str]) -> Vec<DiffLine> {
     let (mut i, mut j) = (n, m);
     while i > 0 || j > 0 {
         if i > 0 && j > 0 && old[i - 1] == new[j - 1] {
-            lines.push(DiffLine { kind: DiffKind::Context, old_line: Some(i as u32), new_line: Some(j as u32), text: old[i - 1].to_string() });
+            lines.push(DiffLine {
+                kind: DiffKind::Context,
+                old_line: Some(i as u32),
+                new_line: Some(j as u32),
+                text: old[i - 1].to_string(),
+            });
             i -= 1;
             j -= 1;
         } else if j > 0 && (i == 0 || dp[i * width + (j - 1)] >= dp[(i - 1) * width + j]) {
-            lines.push(DiffLine { kind: DiffKind::Add, old_line: None, new_line: Some(j as u32), text: new[j - 1].to_string() });
+            lines.push(DiffLine {
+                kind: DiffKind::Add,
+                old_line: None,
+                new_line: Some(j as u32),
+                text: new[j - 1].to_string(),
+            });
             j -= 1;
         } else {
-            lines.push(DiffLine { kind: DiffKind::Remove, old_line: Some(i as u32), new_line: None, text: old[i - 1].to_string() });
+            lines.push(DiffLine {
+                kind: DiffKind::Remove,
+                old_line: Some(i as u32),
+                new_line: None,
+                text: old[i - 1].to_string(),
+            });
             i -= 1;
         }
     }
@@ -144,7 +168,10 @@ mod tests {
         let r = diff("hello", "world");
         assert_eq!(r.lines.iter().filter(|l| l.kind == DiffKind::Remove).count(), 1);
         assert_eq!(r.lines.iter().filter(|l| l.kind == DiffKind::Add).count(), 1);
-        assert_eq!(r.lines.iter().find(|l| l.kind == DiffKind::Remove).unwrap().text, "hello");
+        assert_eq!(
+            r.lines.iter().find(|l| l.kind == DiffKind::Remove).unwrap().text,
+            "hello"
+        );
         assert_eq!(r.lines.iter().find(|l| l.kind == DiffKind::Add).unwrap().text, "world");
     }
     #[test]
@@ -198,9 +225,19 @@ mod tests {
     #[test]
     fn prefix_and_suffix_preserved_middle_replacement() {
         let r = diff("keep\nchange me\nalso keep", "keep\nchanged\nalso keep");
-        assert_eq!((r.lines.first().unwrap().kind, r.lines.first().unwrap().text.as_str()), (DiffKind::Context, "keep"));
-        assert_eq!((r.lines.last().unwrap().kind, r.lines.last().unwrap().text.as_str()), (DiffKind::Context, "also keep"));
-        assert!(r.lines.iter().any(|l| l.kind == DiffKind::Remove && l.text == "change me"));
+        assert_eq!(
+            (r.lines.first().unwrap().kind, r.lines.first().unwrap().text.as_str()),
+            (DiffKind::Context, "keep")
+        );
+        assert_eq!(
+            (r.lines.last().unwrap().kind, r.lines.last().unwrap().text.as_str()),
+            (DiffKind::Context, "also keep")
+        );
+        assert!(
+            r.lines
+                .iter()
+                .any(|l| l.kind == DiffKind::Remove && l.text == "change me")
+        );
         assert!(r.lines.iter().any(|l| l.kind == DiffKind::Add && l.text == "changed"));
     }
     #[test]
@@ -225,7 +262,11 @@ mod tests {
         let old_refs: Vec<&str> = old.iter().map(String::as_str).collect();
         let r = diff_lines(&old_refs, &["line0"]);
         assert!(r.truncated);
-        assert!(r.lines.iter().all(|l| l.old_line.is_none_or(|n| n as usize <= MAX_DIFF_LINES)));
+        assert!(
+            r.lines
+                .iter()
+                .all(|l| l.old_line.is_none_or(|n| n as usize <= MAX_DIFF_LINES))
+        );
         let untouched = diff_lines(&old_refs[..MAX_DIFF_LINES], &["line0"]);
         assert!(!untouched.truncated);
     }
@@ -238,7 +279,11 @@ mod tests {
 
     #[test]
     fn kind_names_match_the_contract() {
-        for (kind, name) in [(DiffKind::Context, "context"), (DiffKind::Add, "add"), (DiffKind::Remove, "remove")] {
+        for (kind, name) in [
+            (DiffKind::Context, "context"),
+            (DiffKind::Add, "add"),
+            (DiffKind::Remove, "remove"),
+        ] {
             assert_eq!(serde_json::to_value(kind).unwrap(), name);
         }
     }

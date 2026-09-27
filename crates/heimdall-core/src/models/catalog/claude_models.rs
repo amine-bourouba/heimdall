@@ -17,7 +17,11 @@ pub struct ClaudeModelInfo {
 
 impl ClaudeModelInfo {
     fn curated(display_name: &str, description: &str, strengths: [&str; 4]) -> Self {
-        Self { display_name: display_name.into(), description: description.into(), strengths: strengths.map(String::from).to_vec() }
+        Self {
+            display_name: display_name.into(),
+            description: description.into(),
+            strengths: strengths.map(String::from).to_vec(),
+        }
     }
 }
 
@@ -27,16 +31,56 @@ pub const DEFAULT_MODEL_NAME: &str = "Opus 5";
 /// Curated current models, most capable first.
 pub fn curated() -> Vec<ClaudeModelInfo> {
     vec![
-        ClaudeModelInfo::curated("Fable 5", "Mythos-class model for ambitious, days-long coding and knowledge work.",
-            ["Ambitious multi-day coding", "Large-scale migrations", "Vision, documents, and diagrams", "Long-horizon agentic work"]),
-        ClaudeModelInfo::curated("Opus 5", "Everyday flagship that approaches Fable 5 on coding and knowledge work at half the price.",
-            ["Complex agentic coding", "Root-cause debugging", "Knowledge work and analysis", "Self-verifying iteration"]),
-        ClaudeModelInfo::curated("Opus 4.8", "Most capable Claude model for complex reasoning, large-codebase work, and multi-step tasks.",
-            ["Complex multi-step reasoning", "Large codebase analysis", "Architecture design", "Nuanced debugging"]),
-        ClaudeModelInfo::curated("Sonnet 5", "Balanced speed and capability for everyday coding and conversation.",
-            ["Fast interactive coding", "Code generation", "Refactoring", "Everyday tasks"]),
-        ClaudeModelInfo::curated("Haiku 4.5", "Fastest, lightest Claude model for quick, low-latency tasks.",
-            ["Fastest response time", "Simple lookups", "Quick edits", "Low-latency workflows"]),
+        ClaudeModelInfo::curated(
+            "Fable 5",
+            "Mythos-class model for ambitious, days-long coding and knowledge work.",
+            [
+                "Ambitious multi-day coding",
+                "Large-scale migrations",
+                "Vision, documents, and diagrams",
+                "Long-horizon agentic work",
+            ],
+        ),
+        ClaudeModelInfo::curated(
+            "Opus 5",
+            "Everyday flagship that approaches Fable 5 on coding and knowledge work at half the price.",
+            [
+                "Complex agentic coding",
+                "Root-cause debugging",
+                "Knowledge work and analysis",
+                "Self-verifying iteration",
+            ],
+        ),
+        ClaudeModelInfo::curated(
+            "Opus 4.8",
+            "Most capable Claude model for complex reasoning, large-codebase work, and multi-step tasks.",
+            [
+                "Complex multi-step reasoning",
+                "Large codebase analysis",
+                "Architecture design",
+                "Nuanced debugging",
+            ],
+        ),
+        ClaudeModelInfo::curated(
+            "Sonnet 5",
+            "Balanced speed and capability for everyday coding and conversation.",
+            [
+                "Fast interactive coding",
+                "Code generation",
+                "Refactoring",
+                "Everyday tasks",
+            ],
+        ),
+        ClaudeModelInfo::curated(
+            "Haiku 4.5",
+            "Fastest, lightest Claude model for quick, low-latency tasks.",
+            [
+                "Fastest response time",
+                "Simple lookups",
+                "Quick edits",
+                "Low-latency workflows",
+            ],
+        ),
     ]
 }
 
@@ -48,7 +92,12 @@ pub fn curated_names() -> Vec<String> {
 /// segments are version parts; a segment of six or more digits is the date stamp. Unknown ids pass through.
 pub fn friendly_name(model_id: &str) -> String {
     let lower = model_id.to_lowercase();
-    let families = [("opus", "Opus"), ("sonnet", "Sonnet"), ("haiku", "Haiku"), ("fable", "Fable")];
+    let families = [
+        ("opus", "Opus"),
+        ("sonnet", "Sonnet"),
+        ("haiku", "Haiku"),
+        ("fable", "Fable"),
+    ];
     let Some((_, label)) = families.iter().find(|(f, _)| lower.contains(f)) else {
         return model_id.to_string();
     };
@@ -58,7 +107,11 @@ pub fn friendly_name(model_id: &str) -> String {
         .filter(|s| !s.is_empty() && s.len() < 6 && s.chars().all(|c| c.is_numeric()))
         .collect::<Vec<_>>()
         .join(".");
-    if version.is_empty() { label.to_string() } else { format!("{label} {version}") }
+    if version.is_empty() {
+        label.to_string()
+    } else {
+        format!("{label} {version}")
+    }
 }
 
 /// Curated models, then each distinct discovered model the curated set does not cover (by friendly name).
@@ -68,7 +121,11 @@ pub fn models(discovered_ids: &[String]) -> Vec<ClaudeModelInfo> {
     for id in discovered_ids.iter().filter(|id| !id.is_empty()) {
         let name = friendly_name(id);
         if seen.insert(name.clone()) {
-            result.push(ClaudeModelInfo { display_name: name, description: String::new(), strengths: vec![] });
+            result.push(ClaudeModelInfo {
+                display_name: name,
+                description: String::new(),
+                strengths: vec![],
+            });
         }
     }
     result
@@ -103,7 +160,11 @@ mod tests {
     #[test]
     fn models_include_all_curated_even_with_no_sessions() {
         let names: Vec<_> = models(&[]).into_iter().map(|m| m.display_name).collect();
-        assert!(["Opus 5", "Fable 5", "Opus 4.8"].iter().all(|n| names.iter().any(|x| x == n)));
+        assert!(
+            ["Opus 5", "Fable 5", "Opus 4.8"]
+                .iter()
+                .all(|n| names.iter().any(|x| x == n))
+        );
         assert_eq!(names.len(), curated().len());
     }
     #[test]
@@ -121,8 +182,14 @@ mod tests {
     }
     #[test]
     fn models_append_discovered_without_duplicating_curated() {
-        let ids = ["claude-opus-5", "claude-opus-4-8-20260514", "claude-3-5-sonnet-20241022", "claude-3-5-sonnet-20241022", ""]
-            .map(String::from);
+        let ids = [
+            "claude-opus-5",
+            "claude-opus-4-8-20260514",
+            "claude-3-5-sonnet-20241022",
+            "claude-3-5-sonnet-20241022",
+            "",
+        ]
+        .map(String::from);
         let names: Vec<_> = models(&ids).into_iter().map(|m| m.display_name).collect();
         let count = |n: &str| names.iter().filter(|x| *x == n).count();
         assert_eq!((count("Opus 5"), count("Opus 4.8"), count("Sonnet 3.5")), (1, 1, 1));

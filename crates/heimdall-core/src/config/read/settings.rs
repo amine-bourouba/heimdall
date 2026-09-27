@@ -15,12 +15,17 @@ pub fn load(settings_file: &Path) -> Result<Option<ClaudeSettings>> {
         Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
         Err(e) => return Err(AppError::from_io(&e, settings_file)),
     };
-    serde_json::from_slice(&bytes).map(Some).map_err(|e| AppError::parse(e.to_string()).with_path(settings_file))
+    serde_json::from_slice(&bytes)
+        .map(Some)
+        .map_err(|e| AppError::parse(e.to_string()).with_path(settings_file))
 }
 
 /// The `model` of `<project>/.claude/settings.json`; `None` when there is none or the file is unreadable.
 pub fn project_model(project_root: &Path) -> Option<String> {
-    load(&project_root.join(".claude").join("settings.json")).ok().flatten()?.model
+    load(&project_root.join(".claude").join("settings.json"))
+        .ok()
+        .flatten()?
+        .model
 }
 
 #[cfg(test)]
@@ -33,14 +38,20 @@ mod tests {
         let s = load(&home().join("settings.json")).unwrap().unwrap();
         assert_eq!(s.model.as_deref(), Some("claude-opus-4-6"));
         let p = s.permissions.unwrap();
-        assert_eq!((p.allow.unwrap().len(), p.deny.unwrap()), (4, vec!["mcp__filesystem__delete_file".to_string()]));
+        assert_eq!(
+            (p.allow.unwrap().len(), p.deny.unwrap()),
+            (4, vec!["mcp__filesystem__delete_file".to_string()])
+        );
         assert_eq!(s.enabled_plugins.unwrap().get("legacy-tools@acme"), Some(&false));
     }
 
     #[test]
     fn missing_is_none_and_corrupt_is_a_parse_error() {
         assert!(load(Path::new("/nonexistent/2c7e/settings.json")).unwrap().is_none());
-        assert!(matches!(load(&synthetic().join("corrupt").join("settings.json")).unwrap_err(), AppError::Parse { path: Some(_), .. }));
+        assert!(matches!(
+            load(&synthetic().join("corrupt").join("settings.json")).unwrap_err(),
+            AppError::Parse { path: Some(_), .. }
+        ));
     }
 
     #[test]

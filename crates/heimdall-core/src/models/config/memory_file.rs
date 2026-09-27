@@ -68,7 +68,8 @@ impl MemoryFile {
             .filter(|w| !w.is_empty())
             .map(|w| {
                 let mut c = w.chars();
-                c.next().map_or_else(String::new, |f| f.to_uppercase().chain(c).collect())
+                c.next()
+                    .map_or_else(String::new, |f| f.to_uppercase().chain(c).collect())
             })
             .collect::<Vec<_>>()
             .join(" ")
@@ -83,8 +84,13 @@ mod tests {
 
     fn file(id: &str, filename: &str, content: &str) -> MemoryFile {
         MemoryFile {
-            id: id.into(), name: MemoryFile::display_name(filename), filename: filename.into(), content: content.into(),
-            file: format!("/tmp/{filename}").into(), project_id: "proj".into(), source_label: None,
+            id: id.into(),
+            name: MemoryFile::display_name(filename),
+            filename: filename.into(),
+            content: content.into(),
+            file: format!("/tmp/{filename}").into(),
+            project_id: "proj".into(),
+            source_label: None,
         }
     }
 

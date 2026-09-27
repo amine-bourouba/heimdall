@@ -31,10 +31,24 @@ pub enum HookEvent {
 
 impl HookEvent {
     pub const ALL: [Self; 18] = [
-        Self::PreToolUse, Self::PostToolUse, Self::PostToolUseFailure, Self::PermissionRequest, Self::SessionStart,
-        Self::SessionEnd, Self::UserPromptSubmit, Self::Notification, Self::SubagentStart, Self::SubagentStop, Self::Stop,
-        Self::TeammateIdle, Self::TaskCompleted, Self::InstructionsLoaded, Self::ConfigChange, Self::WorktreeCreate,
-        Self::WorktreeRemove, Self::PreCompact,
+        Self::PreToolUse,
+        Self::PostToolUse,
+        Self::PostToolUseFailure,
+        Self::PermissionRequest,
+        Self::SessionStart,
+        Self::SessionEnd,
+        Self::UserPromptSubmit,
+        Self::Notification,
+        Self::SubagentStart,
+        Self::SubagentStop,
+        Self::Stop,
+        Self::TeammateIdle,
+        Self::TaskCompleted,
+        Self::InstructionsLoaded,
+        Self::ConfigChange,
+        Self::WorktreeCreate,
+        Self::WorktreeRemove,
+        Self::PreCompact,
     ];
 
     pub fn raw_value(self) -> &'static str {
@@ -91,8 +105,13 @@ impl HookEvent {
     pub fn supports_matcher(self) -> bool {
         !matches!(
             self,
-            Self::UserPromptSubmit | Self::Stop | Self::TeammateIdle | Self::TaskCompleted | Self::WorktreeCreate
-                | Self::WorktreeRemove | Self::InstructionsLoaded
+            Self::UserPromptSubmit
+                | Self::Stop
+                | Self::TeammateIdle
+                | Self::TaskCompleted
+                | Self::WorktreeCreate
+                | Self::WorktreeRemove
+                | Self::InstructionsLoaded
         )
     }
 }
@@ -153,8 +172,12 @@ impl HookHandler {
             HookHandlerType::Http => "http",
         };
         obj.insert("type".into(), kind.into());
-        let fields = [("command", self.command.clone().map(Value::from)), ("url", self.url.clone().map(Value::from)),
-                      ("timeout", self.timeout.map(Value::from)), ("statusMessage", self.status_message.clone().map(Value::from))];
+        let fields = [
+            ("command", self.command.clone().map(Value::from)),
+            ("url", self.url.clone().map(Value::from)),
+            ("timeout", self.timeout.map(Value::from)),
+            ("statusMessage", self.status_message.clone().map(Value::from)),
+        ];
         for (k, v) in fields {
             if let Some(v) = v {
                 obj.insert(k.into(), v);
@@ -241,7 +264,10 @@ mod tests {
     fn handler_keeps_unknown_keys_but_only_exposes_their_names() {
         let obj = json!({"type": "http", "url": "https://h", "timeout": 5, "headers": {"Authorization": "secret"}});
         let h = HookHandler::from_json(obj.as_object().unwrap()).unwrap();
-        assert_eq!((h.display_command(), h.timeout, h.default_timeout()), ("https://h", Some(5), 30));
+        assert_eq!(
+            (h.display_command(), h.timeout, h.default_timeout()),
+            ("https://h", Some(5), 30)
+        );
         assert_eq!(h.extra_keys, ["headers"]);
         let wire = serde_json::to_string(&h).unwrap();
         assert!(!wire.contains("secret") && wire.contains(r#""extraKeys":["headers"]"#));

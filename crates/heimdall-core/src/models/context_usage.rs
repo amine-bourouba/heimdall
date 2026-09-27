@@ -31,7 +31,11 @@ impl ContextUsage {
         let series: Vec<u64> = usages.iter().map(|u| u.context_tokens()).filter(|&c| c > 0).collect();
         let peak = series.iter().copied().max().unwrap_or(0);
         // A turn above the standard tier must have run on the extended window.
-        let window = if peak > STANDARD_WINDOW { EXTENDED_WINDOW } else { STANDARD_WINDOW };
+        let window = if peak > STANDARD_WINDOW {
+            EXTENDED_WINDOW
+        } else {
+            STANDARD_WINDOW
+        };
         Self {
             current: series.last().copied().unwrap_or(0),
             peak,
@@ -50,7 +54,11 @@ impl ContextUsage {
 
     /// How full the window is now (0..=1).
     pub fn fraction(&self) -> f64 {
-        if self.window > 0 { (self.current as f64 / self.window as f64).clamp(0.0, 1.0) } else { 0.0 }
+        if self.window > 0 {
+            (self.current as f64 / self.window as f64).clamp(0.0, 1.0)
+        } else {
+            0.0
+        }
     }
 
     pub fn percent(&self) -> u32 {
@@ -60,7 +68,11 @@ impl ContextUsage {
     /// Fraction (0..=1) of all prompt tokens served from cache across the conversation.
     pub fn cache_hit_rate(&self) -> f64 {
         let prompt = self.input_tokens + self.cache_read_tokens + self.cache_creation_tokens;
-        if prompt > 0 { self.cache_read_tokens as f64 / prompt as f64 } else { 0.0 }
+        if prompt > 0 {
+            self.cache_read_tokens as f64 / prompt as f64
+        } else {
+            0.0
+        }
     }
 }
 

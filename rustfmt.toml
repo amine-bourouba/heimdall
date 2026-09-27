@@ -1,0 +1,6 @@
+# Formalizes the line width this codebase has used since M1-01 (dense one-liners with inline
+# explanatory comments) — rustfmt's own 100-char default would rewrap the large majority of
+# existing code for no functional reason. Chosen by measuring the actual codebase: at 120, only
+# ~3% of lines exceed it (crates/heimdall-core/src, checked at task M1-58), concentrated in real
+# code constructs rustfmt would wrap anyway, not comments (which rustfmt never rewraps by default).
+max_width = 120

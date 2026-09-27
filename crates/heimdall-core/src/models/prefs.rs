@@ -55,9 +55,26 @@ pub enum ColorThemeId {
 
 impl ColorThemeId {
     pub const ALL: [Self; 20] = [
-        Self::Default, Self::Solarized, Self::HighContrast, Self::Charcoal, Self::TealNight, Self::White, Self::Pastel,
-        Self::GreenTheme, Self::Nightshade, Self::Fjord, Self::FjordLight, Self::Harbor, Self::Mocha, Self::Rosewood,
-        Self::Ember, Self::Parchment, Self::DeepSea, Self::Daybreak, Self::Citrus, Self::Evergreen,
+        Self::Default,
+        Self::Solarized,
+        Self::HighContrast,
+        Self::Charcoal,
+        Self::TealNight,
+        Self::White,
+        Self::Pastel,
+        Self::GreenTheme,
+        Self::Nightshade,
+        Self::Fjord,
+        Self::FjordLight,
+        Self::Harbor,
+        Self::Mocha,
+        Self::Rosewood,
+        Self::Ember,
+        Self::Parchment,
+        Self::DeepSea,
+        Self::Daybreak,
+        Self::Citrus,
+        Self::Evergreen,
     ];
 }
 
@@ -76,7 +93,10 @@ impl PreferredEditor {
 
     /// Editors offered on `os`; Xcode is macOS only.
     pub fn options(os: TargetOs) -> Vec<Self> {
-        Self::ALL.into_iter().filter(|e| *e != Self::Xcode || os == TargetOs::Macos).collect()
+        Self::ALL
+            .into_iter()
+            .filter(|e| *e != Self::Xcode || os == TargetOs::Macos)
+            .collect()
     }
 
     pub const fn display_name(self) -> &'static str {
@@ -311,7 +331,10 @@ mod tests {
     }
     #[test]
     fn cli_commands_match_expected() {
-        assert_eq!(PreferredEditor::ALL.map(PreferredEditor::cli_command), ["code", "cursor", "xed", "zed"]);
+        assert_eq!(
+            PreferredEditor::ALL.map(PreferredEditor::cli_command),
+            ["code", "cursor", "xed", "zed"]
+        );
     }
     #[test]
     fn editor_bundle_identifiers_non_empty() {
@@ -321,7 +344,12 @@ mod tests {
     fn editor_bundle_identifiers_match_expected() {
         assert_eq!(
             PreferredEditor::ALL.map(PreferredEditor::bundle_identifier),
-            ["com.microsoft.VSCode", "com.todesktop.230313mzl4w4u92", "com.apple.dt.Xcode", "dev.zed.Zed"]
+            [
+                "com.microsoft.VSCode",
+                "com.todesktop.230313mzl4w4u92",
+                "com.apple.dt.Xcode",
+                "dev.zed.Zed"
+            ]
         );
     }
 
@@ -332,18 +360,39 @@ mod tests {
     }
     #[test]
     fn terminal_raw_values_match_expected() {
-        let raw: Vec<_> = PreferredTerminal::options(TargetOs::Macos).iter().map(|t| serde_json::to_value(t).unwrap()).collect();
-        assert_eq!(raw, ["terminal", "iterm2", "warp", "ghostty", "kitty", "alacritty"].map(serde_json::Value::from));
+        let raw: Vec<_> = PreferredTerminal::options(TargetOs::Macos)
+            .iter()
+            .map(|t| serde_json::to_value(t).unwrap())
+            .collect();
+        assert_eq!(
+            raw,
+            ["terminal", "iterm2", "warp", "ghostty", "kitty", "alacritty"].map(serde_json::Value::from)
+        );
     }
     #[test]
     fn terminal_display_names_non_empty() {
-        let all = [TargetOs::Macos, TargetOs::Windows, TargetOs::Linux].map(PreferredTerminal::options).concat();
+        let all = [TargetOs::Macos, TargetOs::Windows, TargetOs::Linux]
+            .map(PreferredTerminal::options)
+            .concat();
         assert!(all.iter().all(|t| !t.display_name().is_empty()));
     }
     #[test]
     fn terminal_bundle_identifiers_match_expected() {
-        let ids: Vec<_> = PreferredTerminal::options(TargetOs::Macos).iter().map(|t| t.bundle_identifier().unwrap()).collect();
-        assert_eq!(ids, ["com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.Warp-Stable", "com.mitchellh.ghostty", "net.kovidgoyal.kitty", "org.alacritty"]);
+        let ids: Vec<_> = PreferredTerminal::options(TargetOs::Macos)
+            .iter()
+            .map(|t| t.bundle_identifier().unwrap())
+            .collect();
+        assert_eq!(
+            ids,
+            [
+                "com.apple.Terminal",
+                "com.googlecode.iterm2",
+                "dev.warp.Warp-Stable",
+                "com.mitchellh.ghostty",
+                "net.kovidgoyal.kitty",
+                "org.alacritty"
+            ]
+        );
     }
 
     #[test]
@@ -354,15 +403,27 @@ mod tests {
             let d = Prefs::defaults_for(os);
             assert!(PreferredTerminal::options(os).contains(&d.preferred_terminal));
         }
-        assert_eq!(Prefs::defaults_for(TargetOs::Windows).preferred_terminal, PreferredTerminal::WindowsTerminal);
-        assert_eq!(Prefs::defaults_for(TargetOs::Linux).preferred_terminal, PreferredTerminal::System);
-        assert_eq!(Prefs::defaults_for(TargetOs::Macos).preferred_terminal, PreferredTerminal::Terminal);
+        assert_eq!(
+            Prefs::defaults_for(TargetOs::Windows).preferred_terminal,
+            PreferredTerminal::WindowsTerminal
+        );
+        assert_eq!(
+            Prefs::defaults_for(TargetOs::Linux).preferred_terminal,
+            PreferredTerminal::System
+        );
+        assert_eq!(
+            Prefs::defaults_for(TargetOs::Macos).preferred_terminal,
+            PreferredTerminal::Terminal
+        );
     }
 
     #[test]
     fn has_twenty_theme_ids() {
         assert_eq!(ColorThemeId::ALL.len(), 20);
-        assert_eq!(serde_json::to_value(ColorThemeId::HighContrast).unwrap(), "highContrast");
+        assert_eq!(
+            serde_json::to_value(ColorThemeId::HighContrast).unwrap(),
+            "highContrast"
+        );
     }
 
     #[test]
@@ -370,24 +431,48 @@ mod tests {
         let v = serde_json::to_value(Prefs::defaults_for(TargetOs::Windows)).unwrap();
         assert_eq!(v.as_object().unwrap().len(), 19); // schemaVersion + 18 keys
         assert_eq!(v["claudeCodePath"], serde_json::Value::Null);
-        assert_eq!((v["colorTheme"].as_str(), v["fontScale"].as_f64(), v["textEditor"].as_str()), (Some("default"), Some(1.0), Some("vscode")));
-        assert_eq!((v["showMenuBarIcon"].as_bool(), v["wrapCodeLines"].as_bool(), v["showAgentSessions"].as_bool()), (Some(true), Some(true), Some(false)));
+        assert_eq!(
+            (
+                v["colorTheme"].as_str(),
+                v["fontScale"].as_f64(),
+                v["textEditor"].as_str()
+            ),
+            (Some("default"), Some(1.0), Some("vscode"))
+        );
+        assert_eq!(
+            (
+                v["showMenuBarIcon"].as_bool(),
+                v["wrapCodeLines"].as_bool(),
+                v["showAgentSessions"].as_bool()
+            ),
+            (Some(true), Some(true), Some(false))
+        );
     }
 
     #[test]
     fn missing_keys_take_defaults_and_unknown_keys_are_ignored() {
         let p: Prefs = serde_json::from_value(json!({"fontScale": 1.25, "someFutureKey": 1})).unwrap();
         assert_eq!(p.font_scale, 1.25);
-        assert_eq!(p, Prefs { font_scale: 1.25, ..Prefs::default() });
+        assert_eq!(
+            p,
+            Prefs {
+                font_scale: 1.25,
+                ..Prefs::default()
+            }
+        );
     }
 
     #[test]
     fn a_bad_value_falls_back_for_that_key_only() {
-        let stored = json!({"colorTheme": "fromTheFuture", "customMemoryFolders": ["/notes"], "wrapCodeLines": false, "x": 1});
+        let stored =
+            json!({"colorTheme": "fromTheFuture", "customMemoryFolders": ["/notes"], "wrapCodeLines": false, "x": 1});
         let p = Prefs::from_stored(stored, TargetOs::Linux);
         assert_eq!(p.color_theme, ColorThemeId::Default);
         assert_eq!(p.custom_memory_folders, ["/notes"]);
         assert!(!p.wrap_code_lines);
-        assert_eq!(Prefs::from_stored(json!("garbage"), TargetOs::Linux), Prefs::defaults_for(TargetOs::Linux));
+        assert_eq!(
+            Prefs::from_stored(json!("garbage"), TargetOs::Linux),
+            Prefs::defaults_for(TargetOs::Linux)
+        );
     }
 }

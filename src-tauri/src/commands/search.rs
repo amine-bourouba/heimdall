@@ -10,37 +10,61 @@
 
 use std::collections::BTreeSet;
 
-use heimdall_core::config::read::{agents, commands as command_loader, hooks, mcp, memory, output_styles, plans, plugins, skills, ProjectScope};
+use heimdall_core::Result;
+use heimdall_core::config::read::{
+    ProjectScope, agents, commands as command_loader, hooks, mcp, memory, output_styles, plans, plugins, skills,
+};
 use heimdall_core::data::{debug_log, facets, history, todos};
 use heimdall_core::models::config::scope::ProjectContext;
 use heimdall_core::models::prefs::SearchMode;
 use heimdall_core::paths::TargetOs;
 use heimdall_core::projects::discovery::discover;
-use heimdall_core::search::providers::{scan_file_history_sessions, search as run_search, SearchInput};
 use heimdall_core::search::SearchResults;
-use heimdall_core::Result;
+use heimdall_core::search::providers::{SearchInput, scan_file_history_sessions, search as run_search};
 use tauri::{AppHandle, Manager};
 
 use super::config_read::resolve_project_scope;
-use crate::state::{blocking, AppState};
+use crate::state::{AppState, blocking};
 
-fn search_inner<R: tauri::Runtime>(app: &AppHandle<R>, state: &AppState, query: &str, mode: SearchMode, project: Option<ProjectContext>) -> Result<SearchResults> {
+fn search_inner<R: tauri::Runtime>(
+    app: &AppHandle<R>,
+    state: &AppState,
+    query: &str,
+    mode: SearchMode,
+    project: Option<ProjectContext>,
+) -> Result<SearchResults> {
     let claude_home = &state.claude_home;
     let os = TargetOs::current();
-    let root = project.as_ref().map(|context| resolve_project_scope(app, state, context)).transpose()?;
-    let scope = root.as_deref().zip(project.as_ref()).map(|(root, context)| ProjectScope { root, context });
+    let root = project
+        .as_ref()
+        .map(|context| resolve_project_scope(app, state, context))
+        .transpose()?;
+    let scope = root
+        .as_deref()
+        .zip(project.as_ref())
+        .map(|(root, context)| ProjectScope { root, context });
 
     let projects = discover(&claude_home.projects_dir(), os)?.value;
     let show_agent_sessions = crate::prefs::load(app)?.show_agent_sessions;
-    let debug_log_session_ids: BTreeSet<String> = debug_log::all_session_ids(&claude_home.debug_dir()).into_iter().collect();
+    let debug_log_session_ids: BTreeSet<String> = debug_log::all_session_ids(&claude_home.debug_dir())
+        .into_iter()
+        .collect();
     let facets = facets::load_all(&claude_home.facets_dir())?.value;
-    let file_history_sessions = scan_file_history_sessions(&claude_home.file_history_dir(), &claude_home.projects_dir(), os);
+    let file_history_sessions =
+        scan_file_history_sessions(&claude_home.file_history_dir(), &claude_home.projects_dir(), os);
     let todos = todos::load_all(&claude_home.todos_dir())?.value;
     let history = history::load_all(&claude_home.history_file())?.value;
     let commands = command_loader::load(claude_home.root(), scope).value;
     let skills = skills::load(claude_home.root(), scope).value;
     let plans = plans::load(claude_home.root()).value;
-    let memory_project_files: Vec<_> = projects.iter().flat_map(|p| memory::load_project(&claude_home.projects_dir(), &p.id).map(|l| l.value).unwrap_or_default()).collect();
+    let memory_project_files: Vec<_> = projects
+        .iter()
+        .flat_map(|p| {
+            memory::load_project(&claude_home.projects_dir(), &p.id)
+                .map(|l| l.value)
+                .unwrap_or_default()
+        })
+        .collect();
     let mcp_servers = mcp::load(claude_home, root.as_deref().and_then(|p| p.to_str()), os).value;
     let plugins = plugins::load(claude_home).value;
     let output_styles = output_styles::load(claude_home.root(), scope).value;
@@ -70,23 +94,34 @@ fn search_inner<R: tauri::Runtime>(app: &AppHandle<R>, state: &AppState, query: 
 
 #[tauri::command]
 #[specta::specta]
-pub async fn search(app: AppHandle, query: String, mode: SearchMode, project: Option<ProjectContext>) -> Result<SearchResults> {
+pub async fn search(
+    app: AppHandle,
+    query: String,
+    mode: SearchMode,
+    project: Option<ProjectContext>,
+) -> Result<SearchResults> {
     blocking(move || search_inner(&app, &app.state::<AppState>(), &query, mode, project)).await
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use heimdall_core::paths::ClaudeHome;
     use heimdall_core::AppError;
+    use heimdall_core::paths::ClaudeHome;
     use std::path::Path;
     use tauri::test::{mock_builder, mock_context, noop_assets};
 
     fn app_handle() -> AppHandle<tauri::test::MockRuntime> {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../fixtures/synthetic");
         let claude_home = ClaudeHome::new(root.join("claude-home"), root.join("claude.json"));
-        let app = mock_builder().plugin(tauri_plugin_store::Builder::default().build()).build(mock_context(noop_assets())).expect("build mock app");
-        app.manage(AppState { claude_home, cache: crate::state::Cache::default() });
+        let app = mock_builder()
+            .plugin(tauri_plugin_store::Builder::default().build())
+            .build(mock_context(noop_assets()))
+            .expect("build mock app");
+        app.manage(AppState {
+            claude_home,
+            cache: crate::state::Cache::default(),
+        });
         app.handle().clone()
     }
 
@@ -98,7 +133,12 @@ mod tests {
     fn a_broad_query_returns_all_16_groups() {
         let app = app_handle();
         let results = search_inner(&app, &app.state::<AppState>(), "e", SearchMode::Fuzzy, None).unwrap();
-        assert_eq!(results.groups.len(), 16, "{:?}", results.groups.iter().map(|g| g.category).collect::<Vec<_>>());
+        assert_eq!(
+            results.groups.len(),
+            16,
+            "{:?}",
+            results.groups.iter().map(|g| g.category).collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -111,7 +151,14 @@ mod tests {
     #[test]
     fn an_unmatched_query_returns_no_groups() {
         let app = app_handle();
-        let results = search_inner(&app, &app.state::<AppState>(), "zzzzznonexistentqueryxyz", SearchMode::Exact, None).unwrap();
+        let results = search_inner(
+            &app,
+            &app.state::<AppState>(),
+            "zzzzznonexistentqueryxyz",
+            SearchMode::Exact,
+            None,
+        )
+        .unwrap();
         assert!(results.groups.is_empty());
     }
 
@@ -119,18 +166,35 @@ mod tests {
     fn project_scope_adds_the_projects_own_command() {
         let app = app_handle();
         let global = search_inner(&app, &app.state::<AppState>(), "review", SearchMode::Fuzzy, None).unwrap();
-        let project = Some(ProjectContext::Project { project_id: "-Users-fixture-src-app".into() });
+        let project = Some(ProjectContext::Project {
+            project_id: "-Users-fixture-src-app".into(),
+        });
         let scoped = search_inner(&app, &app.state::<AppState>(), "review", SearchMode::Fuzzy, project).unwrap();
         // The fixture's one command ("review") is global already, so both scopes find it; the
         // real assertion is that a project-scoped search does not error and still finds it.
-        assert!(global.groups.iter().any(|g| g.category == heimdall_core::search::SearchCategory::Commands));
-        assert!(scoped.groups.iter().any(|g| g.category == heimdall_core::search::SearchCategory::Commands));
+        assert!(
+            global
+                .groups
+                .iter()
+                .any(|g| g.category == heimdall_core::search::SearchCategory::Commands)
+        );
+        assert!(
+            scoped
+                .groups
+                .iter()
+                .any(|g| g.category == heimdall_core::search::SearchCategory::Commands)
+        );
     }
 
     #[test]
     fn rejects_an_unknown_project_as_invalid_input() {
         let app = app_handle();
-        let project = Some(ProjectContext::Project { project_id: "-Users-nobody-nowhere".into() });
-        assert!(matches!(search_inner(&app, &app.state::<AppState>(), "e", SearchMode::Fuzzy, project).unwrap_err(), AppError::InvalidInput { .. }));
+        let project = Some(ProjectContext::Project {
+            project_id: "-Users-nobody-nowhere".into(),
+        });
+        assert!(matches!(
+            search_inner(&app, &app.state::<AppState>(), "e", SearchMode::Fuzzy, project).unwrap_err(),
+            AppError::InvalidInput { .. }
+        ));
     }
 }

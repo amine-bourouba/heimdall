@@ -24,14 +24,24 @@ pub fn load_all(facets_dir: &Path) -> Result<Loaded<BTreeMap<String, SessionFace
     let mut facets = BTreeMap::new();
     let mut skipped = 0;
     for path in entries.flatten().map(|e| e.path()) {
-        let Some(stem) = path.file_stem().and_then(|s| s.to_str()).filter(|s| !s.starts_with('.')) else { continue };
+        let Some(stem) = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .filter(|s| !s.starts_with('.'))
+        else {
+            continue;
+        };
         if path.extension().is_none_or(|x| x != "json") {
             continue;
         }
         match read(&path) {
             // Keyed by the id inside the file, as Poirot does; the file name when that is missing.
             Some(f) => {
-                let key = if f.session_id.is_empty() { stem.to_string() } else { f.session_id.clone() };
+                let key = if f.session_id.is_empty() {
+                    stem.to_string()
+                } else {
+                    f.session_id.clone()
+                };
                 facets.insert(key, f);
             }
             None => skipped += 1,
@@ -68,7 +78,10 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         write(d.path(), "abc-1234", "Refactor auth");
         let f = load(d.path(), "abc-1234").unwrap().unwrap();
-        assert_eq!((f.session_id.as_str(), f.underlying_goal.as_str()), ("abc-1234", "Refactor auth"));
+        assert_eq!(
+            (f.session_id.as_str(), f.underlying_goal.as_str()),
+            ("abc-1234", "Refactor auth")
+        );
     }
     #[test]
     fn load_facets_missing_file_returns_nil() {
@@ -107,7 +120,14 @@ mod tests {
         write(d.path(), "good-session", "Good goal");
         std::fs::write(d.path().join("bad-session.json"), "not json").unwrap();
         let loaded = load_all(d.path()).unwrap();
-        assert_eq!((loaded.value.len(), loaded.value.contains_key("good-session"), loaded.skipped), (1, true, 1));
+        assert_eq!(
+            (
+                loaded.value.len(),
+                loaded.value.contains_key("good-session"),
+                loaded.skipped
+            ),
+            (1, true, 1)
+        );
     }
     #[test]
     fn load_all_facets_skips_non_json_files() {
@@ -120,7 +140,10 @@ mod tests {
     fn load_all_facets_keyed_by_session_id() {
         let d = tempfile::tempdir().unwrap();
         write(d.path(), "00163b58-3b30-49fa-af28-052f06724f50", "UUID session");
-        assert_eq!(load_all(d.path()).unwrap().value["00163b58-3b30-49fa-af28-052f06724f50"].underlying_goal, "UUID session");
+        assert_eq!(
+            load_all(d.path()).unwrap().value["00163b58-3b30-49fa-af28-052f06724f50"].underlying_goal,
+            "UUID session"
+        );
     }
 
     #[test]

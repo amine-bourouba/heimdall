@@ -24,7 +24,14 @@ pub enum AgentColor {
 }
 
 impl AgentColor {
-    pub const ALL: [Self; 6] = [Self::Orange, Self::Red, Self::Blue, Self::Green, Self::Purple, Self::Teal];
+    pub const ALL: [Self; 6] = [
+        Self::Orange,
+        Self::Red,
+        Self::Blue,
+        Self::Green,
+        Self::Purple,
+        Self::Teal,
+    ];
 
     pub fn from_raw(raw: &str) -> Option<Self> {
         serde_json::from_value(serde_json::Value::String(raw.to_string())).ok()
@@ -91,14 +98,42 @@ impl SubAgent {
         self.scope == AgentScope::BuiltIn
     }
 
-    pub const KNOWN_TOOLS: [&'static str; 12] =
-        ["Agent", "AskUserQuestion", "Bash", "Edit", "Glob", "Grep", "NotebookEdit", "Read", "TodoWrite", "WebFetch", "WebSearch", "Write"];
+    pub const KNOWN_TOOLS: [&'static str; 12] = [
+        "Agent",
+        "AskUserQuestion",
+        "Bash",
+        "Edit",
+        "Glob",
+        "Grep",
+        "NotebookEdit",
+        "Read",
+        "TodoWrite",
+        "WebFetch",
+        "WebSearch",
+        "Write",
+    ];
 
     pub const TOOL_CATEGORIES: [ToolCategory; 4] = [
-        ToolCategory { id: "readonly", name: "Read-only tools", tools: &["Glob", "Grep", "Read", "WebFetch", "WebSearch"] },
-        ToolCategory { id: "edit", name: "Edit tools", tools: &["Edit", "Write", "NotebookEdit"] },
-        ToolCategory { id: "execution", name: "Execution tools", tools: &["Bash", "Agent"] },
-        ToolCategory { id: "other", name: "Other tools", tools: &["AskUserQuestion", "TodoWrite"] },
+        ToolCategory {
+            id: "readonly",
+            name: "Read-only tools",
+            tools: &["Glob", "Grep", "Read", "WebFetch", "WebSearch"],
+        },
+        ToolCategory {
+            id: "edit",
+            name: "Edit tools",
+            tools: &["Edit", "Write", "NotebookEdit"],
+        },
+        ToolCategory {
+            id: "execution",
+            name: "Execution tools",
+            tools: &["Bash", "Agent"],
+        },
+        ToolCategory {
+            id: "other",
+            name: "Other tools",
+            tools: &["AskUserQuestion", "TodoWrite"],
+        },
     ];
 
     /// The four agents Claude Code ships (SubAgent.swift:76-110).
@@ -118,13 +153,34 @@ impl SubAgent {
             config_ref: None,
         };
         vec![
-            agent("explore", "Explore", "magnifyingglass", "Fast agent for codebase exploration — find files, search code, answer structural questions",
-                  &["Glob", "Grep", "Read", "Bash"]),
-            agent("plan", "Plan", "map", "Software architect for designing implementation plans and identifying critical files",
-                  &["Glob", "Grep", "Read", "Bash"]),
-            agent("bash", "Bash", "terminal", "Command execution specialist for running shell commands, git operations, and builds", &["Bash"]),
-            agent("general", "General-purpose", "person.fill", "General-purpose agent for researching questions, searching code, and multi-step tasks",
-                  &["Glob", "Grep", "Read", "Write", "Edit", "Bash"]),
+            agent(
+                "explore",
+                "Explore",
+                "magnifyingglass",
+                "Fast agent for codebase exploration — find files, search code, answer structural questions",
+                &["Glob", "Grep", "Read", "Bash"],
+            ),
+            agent(
+                "plan",
+                "Plan",
+                "map",
+                "Software architect for designing implementation plans and identifying critical files",
+                &["Glob", "Grep", "Read", "Bash"],
+            ),
+            agent(
+                "bash",
+                "Bash",
+                "terminal",
+                "Command execution specialist for running shell commands, git operations, and builds",
+                &["Bash"],
+            ),
+            agent(
+                "general",
+                "General-purpose",
+                "person.fill",
+                "General-purpose agent for researching questions, searching code, and multi-step tasks",
+                &["Glob", "Grep", "Read", "Write", "Edit", "Bash"],
+            ),
         ]
     }
 }
@@ -164,12 +220,20 @@ mod tests {
     }
     #[test]
     fn built_in_all_have_non_empty_fields() {
-        assert!(SubAgent::built_in().iter().all(|a| !a.name.is_empty() && !a.icon.is_empty() && !a.description.is_empty() && !a.tools.is_empty()));
+        assert!(
+            SubAgent::built_in()
+                .iter()
+                .all(|a| !a.name.is_empty() && !a.icon.is_empty() && !a.description.is_empty() && !a.tools.is_empty())
+        );
     }
     #[test]
     fn built_in_explore_agent_has_expected_tools() {
         let tools = find("explore").tools;
-        assert!(["Glob", "Grep", "Read", "Bash"].iter().all(|t| tools.iter().any(|x| x == t)));
+        assert!(
+            ["Glob", "Grep", "Read", "Bash"]
+                .iter()
+                .all(|t| tools.iter().any(|x| x == t))
+        );
     }
     #[test]
     fn built_in_bash_agent_has_only_bash_tool() {
@@ -177,7 +241,11 @@ mod tests {
     }
     #[test]
     fn built_in_all_are_built_in_scope() {
-        assert!(SubAgent::built_in().iter().all(|a| a.is_built_in() && a.scope == AgentScope::BuiltIn && a.file_path.is_none()));
+        assert!(
+            SubAgent::built_in()
+                .iter()
+                .all(|a| a.is_built_in() && a.scope == AgentScope::BuiltIn && a.file_path.is_none())
+        );
     }
     #[test]
     fn known_tools_is_non_empty() {

@@ -30,7 +30,13 @@ pub fn discover_with(projects_dir: &Path, os: TargetOs, exists: &dyn Fn(&str) ->
     let mut dirs: Vec<_> = entries
         .flatten()
         .map(|e| e.path())
-        .filter(|p| p.is_dir() && !p.file_name().and_then(|n| n.to_str()).is_some_and(|n| n.starts_with('.')))
+        .filter(|p| {
+            p.is_dir()
+                && !p
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .is_some_and(|n| n.starts_with('.'))
+        })
         .collect();
     dirs.sort();
     let mut skipped = 0;
@@ -56,7 +62,12 @@ fn load_project_with(dir: &Path, os: TargetOs, exists: &dyn Fn(&str) -> bool) ->
     let mut skipped = 0;
     let mut sessions = Vec::new();
     let mut summarize = |path: &Path, session_id: &str, index_started_at, is_sidechain| {
-        let ctx = ParseContext { project_path: "", session_id, index_started_at, is_sidechain };
+        let ctx = ParseContext {
+            project_path: "",
+            session_id,
+            index_started_at,
+            is_sidechain,
+        };
         match summary::parse(path, ctx) {
             Ok(loaded) => {
                 skipped += loaded.skipped;
@@ -84,14 +95,20 @@ fn load_project_with(dir: &Path, os: TargetOs, exists: &dyn Fn(&str) -> bool) ->
                     sessions.push(s);
                 }
             }
-            sessions.iter().filter(|s| !s.is_sidechain).map(|s| s.id.clone()).collect()
+            sessions
+                .iter()
+                .filter(|s| !s.is_sidechain)
+                .map(|s| s.id.clone())
+                .collect()
         }
         // Fallback: `<uuid>.jsonl` main sessions and older top-level `agent-<id>.jsonl` files. Other
         // stems, such as `<uuid>.orphaned-<ms>-<hex>`, are ignored.
         None => {
             let mut main_ids = Vec::new();
             for path in std::fs::read_dir(dir).into_iter().flatten().flatten().map(|e| e.path()) {
-                let Some(stem) = path.file_stem().and_then(|s| s.to_str()).map(String::from) else { continue };
+                let Some(stem) = path.file_stem().and_then(|s| s.to_str()).map(String::from) else {
+                    continue;
+                };
                 if path.extension().is_none_or(|e| e != "jsonl") {
                     continue;
                 }
@@ -120,13 +137,25 @@ fn load_project_with(dir: &Path, os: TargetOs, exists: &dyn Fn(&str) -> bool) ->
     for (cwd, n) in sessions.iter().flat_map(|s| &s.cwds) {
         *cwds.entry(cwd.clone()).or_default() += n;
     }
-    let (path, source) = project_path::resolve(&dir_name, &cwds, index.as_ref().and_then(|i| i.project_path.as_deref()), os, exists);
+    let (path, source) = project_path::resolve(
+        &dir_name,
+        &cwds,
+        index.as_ref().and_then(|i| i.project_path.as_deref()),
+        os,
+        exists,
+    );
     for s in &mut sessions {
         s.project_path.clone_from(&path);
     }
     sessions.sort_by_key(|s| std::cmp::Reverse(s.started_at));
 
-    let project = Project { id: dir_name, name: paths::last_component(&path).to_string(), path: Some(path), path_source: Some(source), sessions };
+    let project = Project {
+        id: dir_name,
+        name: paths::last_component(&path).to_string(),
+        path: Some(path),
+        path_source: Some(source),
+        sessions,
+    };
     Loaded::new(project, skipped)
 }
 
@@ -159,7 +188,11 @@ mod tests {
                            "usage": {"input_tokens": 100, "output_tokens": 50}}}).to_string()
     }
     fn simple_jsonl(user_text: &str, user_ts: &str) -> String {
-        [user(user_text, user_ts), assistant("Hi there", "2026-01-28T10:01:00.000Z")].join("\n")
+        [
+            user(user_text, user_ts),
+            assistant("Hi there", "2026-01-28T10:01:00.000Z"),
+        ]
+        .join("\n")
     }
     fn simple() -> String {
         simple_jsonl("Hello", "2026-01-28T10:00:00.000Z")
@@ -175,7 +208,9 @@ mod tests {
     }
     /// Pretends only `/Users` exists, like a Mac without the test's folders.
     fn run(base: &Path) -> Vec<Project> {
-        discover_with(base, TargetOs::Macos, &|p: &str| p == "/Users").unwrap().value
+        discover_with(base, TargetOs::Macos, &|p: &str| p == "/Users")
+            .unwrap()
+            .value
     }
     fn index_json(entries: serde_json::Value) -> String {
         json!({"version": 1, "entries": entries}).to_string()
@@ -213,7 +248,10 @@ mod tests {
         project_with(tmp.path(), "test-project", SESSION, &simple(), None);
         let projects = run(tmp.path());
         let s = &projects[0].sessions[0];
-        assert_eq!((projects.len(), projects[0].sessions.len(), s.id.as_str()), (1, 1, SESSION));
+        assert_eq!(
+            (projects.len(), projects[0].sessions.len(), s.id.as_str()),
+            (1, 1, SESSION)
+        );
         assert!(s.messages.is_empty() && s.file.is_some());
         assert_eq!(s.title(), "Hello");
     }
@@ -235,19 +273,44 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let old = "00000000-0000-0000-0000-000000000001";
         let new = "00000000-0000-0000-0000-000000000002";
-        let d = project_with(tmp.path(), "test-project", old, &simple_jsonl("Hello", "2026-01-01T10:00:00.000Z"), None);
-        fs::write(d.join(format!("{new}.jsonl")), simple_jsonl("Hello", "2026-02-01T10:00:00.000Z")).unwrap();
+        let d = project_with(
+            tmp.path(),
+            "test-project",
+            old,
+            &simple_jsonl("Hello", "2026-01-01T10:00:00.000Z"),
+            None,
+        );
+        fs::write(
+            d.join(format!("{new}.jsonl")),
+            simple_jsonl("Hello", "2026-02-01T10:00:00.000Z"),
+        )
+        .unwrap();
         let ids: Vec<_> = run(tmp.path())[0].sessions.iter().map(|s| s.id.clone()).collect();
         assert_eq!(ids, [new, old]);
     }
     #[test]
     fn discover_projects_uses_original_path_from_index() {
         let tmp = tempfile::tempdir().unwrap();
-        let index = index_json(json!([{"sessionId": SESSION, "created": "2026-01-28T10:00:00.000Z", "isSidechain": false,
-                                       "projectPath": "/Users/dev/projects/my-cool-app", "firstPrompt": "Hello from index"}]));
-        project_with(tmp.path(), "-Users-dev-projects-my-cool-app", SESSION, &simple(), Some(&index));
+        let index = index_json(
+            json!([{"sessionId": SESSION, "created": "2026-01-28T10:00:00.000Z", "isSidechain": false,
+                                       "projectPath": "/Users/dev/projects/my-cool-app", "firstPrompt": "Hello from index"}]),
+        );
+        project_with(
+            tmp.path(),
+            "-Users-dev-projects-my-cool-app",
+            SESSION,
+            &simple(),
+            Some(&index),
+        );
         let p = &run(tmp.path())[0];
-        assert_eq!((p.name.as_str(), p.path.as_deref(), p.path_source), ("my-cool-app", Some("/Users/dev/projects/my-cool-app"), Some(PathSource::SessionsIndex)));
+        assert_eq!(
+            (p.name.as_str(), p.path.as_deref(), p.path_source),
+            (
+                "my-cool-app",
+                Some("/Users/dev/projects/my-cool-app"),
+                Some(PathSource::SessionsIndex)
+            )
+        );
         let s = &p.sessions[0];
         assert!(s.messages.is_empty() && s.file.is_some());
         assert_eq!(s.title(), "Hello");
@@ -257,7 +320,10 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         project_with(tmp.path(), "-Users-dev-projects-my-app", SESSION, &simple(), None);
         let p = &run(tmp.path())[0];
-        assert_eq!((p.name.as_str(), p.path_source), ("dev-projects-my-app", Some(PathSource::Decoded)));
+        assert_eq!(
+            (p.name.as_str(), p.path_source),
+            ("dev-projects-my-app", Some(PathSource::Decoded))
+        );
     }
     #[test]
     fn discover_projects_empty_jsonl_file_produces_no_session() {
@@ -293,7 +359,9 @@ mod tests {
             let id = format!("00000000-0000-0000-0000-{i:012}");
             let created = format!("2026-01-{:02}T10:00:00.000Z", i + 1);
             fs::write(d.join(format!("{id}.jsonl")), simple_jsonl("Hello", &created)).unwrap();
-            entries.push(json!({"sessionId": id, "created": created, "isSidechain": false, "projectPath": "/test/project"}));
+            entries.push(
+                json!({"sessionId": id, "created": created, "isSidechain": false, "projectPath": "/test/project"}),
+            );
         }
         fs::write(d.join("sessions-index.json"), index_json(json!(entries))).unwrap();
         assert_eq!(run(tmp.path())[0].sessions.len(), 25);
@@ -301,7 +369,13 @@ mod tests {
     #[test]
     fn discover_projects_fallback_path_uses_header_parse() {
         let tmp = tempfile::tempdir().unwrap();
-        project_with(tmp.path(), "test-project", SESSION, &simple_jsonl("Fallback title", "2026-01-28T10:00:00.000Z"), None);
+        project_with(
+            tmp.path(),
+            "test-project",
+            SESSION,
+            &simple_jsonl("Fallback title", "2026-01-28T10:00:00.000Z"),
+            None,
+        );
         let s = &run(tmp.path())[0].sessions[0];
         assert!(s.messages.is_empty() && s.file.is_some());
         assert_eq!(s.title(), "Fallback title");
@@ -309,14 +383,21 @@ mod tests {
     #[test]
     fn discover_projects_index_path_passes_first_prompt_to_session() {
         let tmp = tempfile::tempdir().unwrap();
-        let index = index_json(json!([{"sessionId": SESSION, "created": "2026-01-28T10:00:00.000Z", "isSidechain": false, "projectPath": "/test/project", "firstPrompt": "Fix the login bug"}]));
+        let index = index_json(
+            json!([{"sessionId": SESSION, "created": "2026-01-28T10:00:00.000Z", "isSidechain": false, "projectPath": "/test/project", "firstPrompt": "Fix the login bug"}]),
+        );
         project_with(tmp.path(), "test-project", SESSION, &simple(), Some(&index));
-        assert_eq!(run(tmp.path())[0].sessions[0].first_prompt.as_deref(), Some("Fix the login bug"));
+        assert_eq!(
+            run(tmp.path())[0].sessions[0].first_prompt.as_deref(),
+            Some("Fix the login bug")
+        );
     }
     #[test]
     fn discover_projects_index_path_nil_first_prompt_when_missing() {
         let tmp = tempfile::tempdir().unwrap();
-        let index = index_json(json!([{"sessionId": SESSION, "created": "2026-01-28T10:00:00.000Z", "isSidechain": false, "projectPath": "/test/project"}]));
+        let index = index_json(
+            json!([{"sessionId": SESSION, "created": "2026-01-28T10:00:00.000Z", "isSidechain": false, "projectPath": "/test/project"}]),
+        );
         project_with(tmp.path(), "test-project", SESSION, &simple(), Some(&index));
         assert!(run(tmp.path())[0].sessions[0].first_prompt.is_none());
     }
@@ -331,7 +412,9 @@ mod tests {
     fn index_entries_whose_file_is_missing_are_skipped() {
         let tmp = tempfile::tempdir().unwrap();
         let gone = "00000000-0000-0000-0000-00000000dead";
-        let index = index_json(json!([{"sessionId": SESSION, "created": "2026-01-28T10:00:00.000Z"}, {"sessionId": gone, "created": "2026-01-29T10:00:00.000Z"}]));
+        let index = index_json(
+            json!([{"sessionId": SESSION, "created": "2026-01-28T10:00:00.000Z"}, {"sessionId": gone, "created": "2026-01-29T10:00:00.000Z"}]),
+        );
         project_with(tmp.path(), "p", SESSION, &simple(), Some(&index));
         assert_eq!(run(tmp.path())[0].sessions.len(), 1);
     }
@@ -348,19 +431,41 @@ mod tests {
         for project in loaded.value.iter().filter(|p| !p.sessions.is_empty()) {
             let path = project.path.as_deref().unwrap();
             assert_eq!(project.path_source, Some(PathSource::TranscriptCwd), "{}", project.id);
-            assert!(path.as_bytes()[1] == b':' && paths::encodes_to(path, &project.id), "{} -> {path}", project.id);
+            assert!(
+                path.as_bytes()[1] == b':' && paths::encodes_to(path, &project.id),
+                "{} -> {path}",
+                project.id
+            );
             assert!(project.sessions.iter().all(|s| s.project_path == path));
         }
         // The tech folder's sessions mostly ran in a subfolder; the project stays the folder itself.
-        assert_eq!(p("C--Users-fixture-Desktop-tech").path.as_deref(), Some(r"C:\Users\fixture\Desktop\tech"));
+        assert_eq!(
+            p("C--Users-fixture-Desktop-tech").path.as_deref(),
+            Some(r"C:\Users\fixture\Desktop\tech")
+        );
         // Folders differing only in drive-letter case stay separate projects.
-        assert!(by_id.contains_key("c--Users-fixture-Desktop-tech-proj-11") && by_id.contains_key("C--Users-fixture-Desktop-tech"));
+        assert!(
+            by_id.contains_key("c--Users-fixture-Desktop-tech-proj-11")
+                && by_id.contains_key("C--Users-fixture-Desktop-tech")
+        );
         // Orphaned transcripts are not sessions.
-        assert!(p("C--Users-fixture-Desktop-tech").sessions.iter().all(|s| !s.id.contains("orphaned")));
+        assert!(
+            p("C--Users-fixture-Desktop-tech")
+                .sessions
+                .iter()
+                .all(|s| !s.id.contains("orphaned"))
+        );
         // Sub-agents come from <session>/subagents with their meta.
-        let agents: Vec<_> = p("c--Users-fixture-Desktop-tech-proj-11").sessions.iter().filter(|s| s.parent_session_id.is_some()).collect();
+        let agents: Vec<_> = p("c--Users-fixture-Desktop-tech-proj-11")
+            .sessions
+            .iter()
+            .filter(|s| s.parent_session_id.is_some())
+            .collect();
         assert!(!agents.is_empty() && agents.iter().all(|s| s.is_sidechain && s.agent_type.is_some()));
         // A folder with only memory files has no cwd to go on.
-        assert_eq!(p("c--Users-fixture-Desktop-tech-proj-2").path_source, Some(PathSource::Decoded));
+        assert_eq!(
+            p("c--Users-fixture-Desktop-tech-proj-2").path_source,
+            Some(PathSource::Decoded)
+        );
     }
 }

@@ -30,10 +30,19 @@ struct Set {
 }
 
 fn sets() -> Vec<Set> {
-    [("synthetic", TargetOs::Macos), ("screenshot", TargetOs::Macos), ("windows", TargetOs::Windows), ("linux", TargetOs::Linux)]
-        .into_iter()
-        .map(|(name, os)| Set { name, claude_home: fixtures_root().join(name).join("claude-home"), os })
-        .collect()
+    [
+        ("synthetic", TargetOs::Macos),
+        ("screenshot", TargetOs::Macos),
+        ("windows", TargetOs::Windows),
+        ("linux", TargetOs::Linux),
+    ]
+    .into_iter()
+    .map(|(name, os)| Set {
+        name,
+        claude_home: fixtures_root().join(name).join("claude-home"),
+        os,
+    })
+    .collect()
 }
 
 /// Every session id under a set's `projects/`, discovered once and reused across the several
@@ -41,7 +50,11 @@ fn sets() -> Vec<Set> {
 /// times, not once per assertion.
 fn discovered(set: &Set) -> Vec<heimdall_core::models::project::Project> {
     let loaded = discovery::discover(&set.claude_home.join("projects"), set.os).unwrap();
-    assert_eq!(loaded.skipped, 0, "{}: project/session discovery skipped {} lines/files", set.name, loaded.skipped);
+    assert_eq!(
+        loaded.skipped, 0,
+        "{}: project/session discovery skipped {} lines/files",
+        set.name, loaded.skipped
+    );
     loaded.value
 }
 
@@ -71,12 +84,24 @@ fn every_fixture_set_discovers_projects_with_no_skips_and_no_unnecessary_decodin
 /// `TranscriptCwd` is the only source that should ever fire there.
 #[test]
 fn windows_projects_report_path_source_transcript_cwd() {
-    let windows = Set { name: "windows", claude_home: fixtures_root().join("windows").join("claude-home"), os: TargetOs::Windows };
+    let windows = Set {
+        name: "windows",
+        claude_home: fixtures_root().join("windows").join("claude-home"),
+        os: TargetOs::Windows,
+    };
     let projects = discovered(&windows);
     let with_sessions: Vec<_> = projects.iter().filter(|p| !p.sessions.is_empty()).collect();
-    assert!(!with_sessions.is_empty(), "windows fixture has no projects with sessions to assert against");
+    assert!(
+        !with_sessions.is_empty(),
+        "windows fixture has no projects with sessions to assert against"
+    );
     for p in with_sessions {
-        assert_eq!(p.path_source, Some(heimdall_core::models::project::PathSource::TranscriptCwd), "project {}", p.id);
+        assert_eq!(
+            p.path_source,
+            Some(heimdall_core::models::project::PathSource::TranscriptCwd),
+            "project {}",
+            p.id
+        );
     }
 }
 
@@ -87,18 +112,54 @@ fn windows_projects_report_path_source_transcript_cwd() {
 fn crlf_and_lf_variants_of_the_same_transcript_parse_identically() {
     let session_id = "7f33ce70-8d2c-4c0c-adc5-64f1aee23b5e";
     let project_dir = "c--Users-fixture-Desktop-tech-proj-11";
-    let lf_path = fixtures_root().join("windows/claude-home/projects").join(project_dir).join(format!("{session_id}.jsonl"));
-    let crlf_path = fixtures_root().join("windows/crlf/claude-home/projects").join(project_dir).join(format!("{session_id}.jsonl"));
-    assert!(lf_path.is_file() && crlf_path.is_file(), "fixture paths moved — update this test");
+    let lf_path = fixtures_root()
+        .join("windows/claude-home/projects")
+        .join(project_dir)
+        .join(format!("{session_id}.jsonl"));
+    let crlf_path = fixtures_root()
+        .join("windows/crlf/claude-home/projects")
+        .join(project_dir)
+        .join(format!("{session_id}.jsonl"));
+    assert!(
+        lf_path.is_file() && crlf_path.is_file(),
+        "fixture paths moved — update this test"
+    );
 
-    let ctx = ParseContext { project_path: "/same/for/both", session_id, index_started_at: None, is_sidechain: false };
-    let lf = full::parse(&lf_path, ctx).unwrap().value.expect("LF transcript failed to parse");
-    let crlf = full::parse(&crlf_path, ctx).unwrap().value.expect("CRLF transcript failed to parse");
+    let ctx = ParseContext {
+        project_path: "/same/for/both",
+        session_id,
+        index_started_at: None,
+        is_sidechain: false,
+    };
+    let lf = full::parse(&lf_path, ctx)
+        .unwrap()
+        .value
+        .expect("LF transcript failed to parse");
+    let crlf = full::parse(&crlf_path, ctx)
+        .unwrap()
+        .value
+        .expect("CRLF transcript failed to parse");
 
     assert_eq!(lf.messages, crlf.messages);
     assert_eq!(
-        (lf.started_at, lf.ended_at, &lf.model, lf.total_tokens, lf.tokens, lf.is_sidechain, &lf.searchable_text),
-        (crlf.started_at, crlf.ended_at, &crlf.model, crlf.total_tokens, crlf.tokens, crlf.is_sidechain, &crlf.searchable_text)
+        (
+            lf.started_at,
+            lf.ended_at,
+            &lf.model,
+            lf.total_tokens,
+            lf.tokens,
+            lf.is_sidechain,
+            &lf.searchable_text
+        ),
+        (
+            crlf.started_at,
+            crlf.ended_at,
+            &crlf.model,
+            crlf.total_tokens,
+            crlf.tokens,
+            crlf.is_sidechain,
+            &crlf.searchable_text
+        )
     );
 }
 
@@ -110,15 +171,34 @@ fn crlf_and_lf_variants_of_the_same_transcript_parse_identically() {
 #[test]
 fn every_loaded_returning_loader_has_zero_skips_on_every_set() {
     for set in sets() {
-        let home = ClaudeHome::new(set.claude_home.clone(), set.claude_home.parent().unwrap().join("claude.json"));
+        let home = ClaudeHome::new(
+            set.claude_home.clone(),
+            set.claude_home.parent().unwrap().join("claude.json"),
+        );
         let projects = discovered(&set);
 
         let check = |what: &str, skipped: u32| assert_eq!(skipped, 0, "{}: {what} skipped {skipped}", set.name);
 
-        check("history", history::load_all(&set.claude_home.join("history.jsonl")).unwrap().skipped);
-        check("todos (flat)", todos::load_all(&set.claude_home.join("todos")).unwrap().skipped);
-        check("todos (lists)", todos::load_all_lists(&set.claude_home.join("todos")).unwrap().skipped);
-        check("facets", facets::load_all(&set.claude_home.join("usage-data/facets")).unwrap().skipped);
+        check(
+            "history",
+            history::load_all(&set.claude_home.join("history.jsonl"))
+                .unwrap()
+                .skipped,
+        );
+        check(
+            "todos (flat)",
+            todos::load_all(&set.claude_home.join("todos")).unwrap().skipped,
+        );
+        check(
+            "todos (lists)",
+            todos::load_all_lists(&set.claude_home.join("todos")).unwrap().skipped,
+        );
+        check(
+            "facets",
+            facets::load_all(&set.claude_home.join("usage-data/facets"))
+                .unwrap()
+                .skipped,
+        );
         check("agents", agents::load(&set.claude_home).skipped);
         check("commands", commands::load(&set.claude_home, None).skipped);
         check("output_styles", output_styles::load(&set.claude_home, None).skipped);
@@ -132,7 +212,9 @@ fn every_loaded_returning_loader_has_zero_skips_on_every_set() {
             for s in &p.sessions {
                 check(
                     &format!("file_history({})", s.id),
-                    file_history::load(&set.claude_home.join("projects"), &s.id, set.os).unwrap().skipped,
+                    file_history::load(&set.claude_home.join("projects"), &s.id, set.os)
+                        .unwrap()
+                        .skipped,
                 );
             }
         }
@@ -147,7 +229,12 @@ fn every_loaded_returning_loader_has_zero_skips_on_every_set() {
 fn settings_and_stats_cache_load_without_error_on_every_set() {
     for set in sets() {
         let settings_result = heimdall_core::config::read::settings::load(&set.claude_home.join("settings.json"));
-        assert!(settings_result.is_ok(), "{}: settings.json failed to load: {:?}", set.name, settings_result.err());
+        assert!(
+            settings_result.is_ok(),
+            "{}: settings.json failed to load: {:?}",
+            set.name,
+            settings_result.err()
+        );
 
         // A missing/absent cache is `None`, not an error — only a genuinely malformed file would
         // be a real conformance problem, and none of these fixtures ship one under this name.

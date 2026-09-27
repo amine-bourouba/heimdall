@@ -35,7 +35,10 @@ pub fn parse(text: &str) -> Parsed {
                 if !before.is_empty() {
                     parts.push(before);
                 }
-                blocks.push(SystemBlock { tag: tag.to_string(), content: text[content_start..content_start + len].trim().to_string() });
+                blocks.push(SystemBlock {
+                    tag: tag.to_string(),
+                    content: text[content_start..content_start + len].trim().to_string(),
+                });
                 last = content_start + len + close.len();
                 i = last;
                 continue;
@@ -44,13 +47,19 @@ pub fn parse(text: &str) -> Parsed {
         i = start + 1;
     }
     if blocks.is_empty() {
-        return Parsed { user_text: text.to_string(), blocks };
+        return Parsed {
+            user_text: text.to_string(),
+            blocks,
+        };
     }
     let after = text[last..].trim();
     if !after.is_empty() {
         parts.push(after);
     }
-    Parsed { user_text: parts.join("\n\n"), blocks }
+    Parsed {
+        user_text: parts.join("\n\n"),
+        blocks,
+    }
 }
 
 /// The tag name starting at the `<` at `start`, and the byte offset just past its `>`.
@@ -87,7 +96,9 @@ pub fn segments(text: &str) -> Option<Vec<SystemSegment>> {
         let inner = parse(&block.content);
         let children = (!inner.blocks.is_empty()).then(|| {
             let lead = (!inner.user_text.is_empty()).then(|| plain(&beautify(&inner.user_text)));
-            lead.into_iter().chain(inner.blocks.iter().map(|b| tagged(&b.tag, beautify(&b.content), None))).collect()
+            lead.into_iter()
+                .chain(inner.blocks.iter().map(|b| tagged(&b.tag, beautify(&b.content), None)))
+                .collect()
         });
         out.push(tagged(&block.tag, beautify(&block.content), children));
     }
@@ -95,7 +106,12 @@ pub fn segments(text: &str) -> Option<Vec<SystemSegment>> {
 }
 
 fn plain(text: &str) -> SystemSegment {
-    SystemSegment { kind: SystemSegmentKind::Text, tag: None, text: text.to_string(), children: None }
+    SystemSegment {
+        kind: SystemSegmentKind::Text,
+        tag: None,
+        text: text.to_string(),
+        children: None,
+    }
 }
 
 fn tagged(tag: &str, text: String, children: Option<Vec<SystemSegment>>) -> SystemSegment {
@@ -104,7 +120,12 @@ fn tagged(tag: &str, text: String, children: Option<Vec<SystemSegment>>) -> Syst
         "command-message" | "command-name" | "command-args" => SystemSegmentKind::CommandMessage,
         _ => SystemSegmentKind::Other,
     };
-    SystemSegment { kind, tag: Some(tag.to_string()), text, children }
+    SystemSegment {
+        kind,
+        tag: Some(tag.to_string()),
+        text,
+        children,
+    }
 }
 
 #[cfg(test)]
@@ -126,7 +147,13 @@ mod tests {
     fn parse_single_xml_tag_extracts_block() {
         let r = parse("Fix the login flow\n<system-reminder>You are a helpful assistant</system-reminder>");
         assert_eq!(r.user_text, "Fix the login flow");
-        assert_eq!(r.blocks, [SystemBlock { tag: "system-reminder".into(), content: "You are a helpful assistant".into() }]);
+        assert_eq!(
+            r.blocks,
+            [SystemBlock {
+                tag: "system-reminder".into(),
+                content: "You are a helpful assistant".into()
+            }]
+        );
     }
     #[test]
     fn parse_multiple_xml_tags_extracts_all_blocks() {
@@ -165,7 +192,10 @@ mod tests {
     }
     #[test]
     fn parse_trims_whitespace_in_system_content() {
-        assert_eq!(parse("<tag>  content with spaces  </tag>").blocks[0].content, "content with spaces");
+        assert_eq!(
+            parse("<tag>  content with spaces  </tag>").blocks[0].content,
+            "content with spaces"
+        );
     }
 
     #[test]
@@ -178,12 +208,18 @@ mod tests {
     #[test]
     fn segments_classify_tags_and_nest_one_level() {
         assert!(segments("plain").is_none());
-        let s = segments("run it <command-name>/test</command-name><system-reminder>A <file>{\"b\":1}</file></system-reminder>").unwrap();
+        let s = segments(
+            "run it <command-name>/test</command-name><system-reminder>A <file>{\"b\":1}</file></system-reminder>",
+        )
+        .unwrap();
         assert_eq!(s[0].kind, SystemSegmentKind::Text);
         assert_eq!(s[1].kind, SystemSegmentKind::CommandMessage);
         assert_eq!(s[2].kind, SystemSegmentKind::SystemReminder);
         let children = s[2].children.as_ref().unwrap();
-        assert_eq!((children[0].text.as_str(), children[1].tag.as_deref()), ("A", Some("file")));
+        assert_eq!(
+            (children[0].text.as_str(), children[1].tag.as_deref()),
+            ("A", Some("file"))
+        );
         assert_eq!(children[1].text, "{\n  \"b\": 1\n}");
     }
 }

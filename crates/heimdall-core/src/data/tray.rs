@@ -35,7 +35,10 @@ pub struct TraySnapshot {
 
 /// The 10 most recently started sessions across every project (MenuBarState.loadRecentSessions).
 pub fn recent_sessions(projects: &[Project]) -> Vec<(&Project, &crate::models::session::Session)> {
-    let mut all: Vec<_> = projects.iter().flat_map(|p| p.sessions.iter().map(move |s| (p, s))).collect();
+    let mut all: Vec<_> = projects
+        .iter()
+        .flat_map(|p| p.sessions.iter().map(move |s| (p, s)))
+        .collect();
     all.sort_by_key(|(_, s)| std::cmp::Reverse(s.started_at));
     all.truncate(MAX_RECENT_SESSIONS);
     all
@@ -44,10 +47,17 @@ pub fn recent_sessions(projects: &[Project]) -> Vec<(&Project, &crate::models::s
 /// `recent`, kept to pairs whose session title or project name fuzzy-matches `query`
 /// (MenuBarState.filteredSessions). A blank query, after trimming, returns `recent` unchanged —
 /// the filter narrows the already-capped top 10, it never looks further back for a better match.
-pub fn filter_recent<'a>(recent: &[(&'a Project, &'a crate::models::session::Session)], query: Option<&str>) -> Vec<(&'a Project, &'a crate::models::session::Session)> {
+pub fn filter_recent<'a>(
+    recent: &[(&'a Project, &'a crate::models::session::Session)],
+    query: Option<&str>,
+) -> Vec<(&'a Project, &'a crate::models::session::Session)> {
     let trimmed = query.map(str::trim).filter(|q| !q.is_empty());
     let Some(q) = trimmed else { return recent.to_vec() };
-    recent.iter().copied().filter(|(p, s)| matcher::fuzzy(&s.title(), q).is_some() || matcher::fuzzy(&p.name, q).is_some()).collect()
+    recent
+        .iter()
+        .copied()
+        .filter(|(p, s)| matcher::fuzzy(&s.title(), q).is_some() || matcher::fuzzy(&p.name, q).is_some())
+        .collect()
 }
 
 /// The snapshot in local time.
@@ -55,16 +65,27 @@ pub fn snapshot(projects: &[Project], stats: Option<&StatsCache>, query: Option<
     snapshot_in(projects, stats, query, &Local)
 }
 
-pub fn snapshot_in<Tz: TimeZone>(projects: &[Project], stats: Option<&StatsCache>, query: Option<&str>, tz: &Tz) -> TraySnapshot
+pub fn snapshot_in<Tz: TimeZone>(
+    projects: &[Project],
+    stats: Option<&StatsCache>,
+    query: Option<&str>,
+    tz: &Tz,
+) -> TraySnapshot
 where
     Tz::Offset: Display,
 {
     let recent = filter_recent(&recent_sessions(projects), query)
         .into_iter()
-        .map(|(p, s)| RecentSession { project_id: p.id.clone(), project_name: p.name.clone(), session: s.summary(p.id.clone()) })
+        .map(|(p, s)| RecentSession {
+            project_id: p.id.clone(),
+            project_name: p.name.clone(),
+            session: s.summary(p.id.clone()),
+        })
         .collect();
     let today = Utc::now().with_timezone(tz).format("%Y-%m-%d").to_string();
-    let today_messages = stats.and_then(|s| s.daily_activity.iter().find(|d| d.date == today)).map_or(0, |d| d.message_count);
+    let today_messages = stats
+        .and_then(|s| s.daily_activity.iter().find(|d| d.date == today))
+        .map_or(0, |d| d.message_count);
     TraySnapshot {
         total_sessions: stats.map_or(0, |s| s.total_sessions),
         total_messages: stats.map_or(0, |s| s.total_messages),
@@ -80,10 +101,23 @@ mod tests {
     use chrono::{DateTime, FixedOffset};
 
     fn session(id: &str, secs: i64) -> Session {
-        Session::new(id, "/test/path", vec![], DateTime::from_timestamp(secs, 0).unwrap(), None, 0)
+        Session::new(
+            id,
+            "/test/path",
+            vec![],
+            DateTime::from_timestamp(secs, 0).unwrap(),
+            None,
+            0,
+        )
     }
     fn project(id: &str, name: &str, sessions: Vec<Session>) -> Project {
-        Project { id: id.into(), name: name.into(), path: Some("/test/path".into()), path_source: None, sessions }
+        Project {
+            id: id.into(),
+            name: name.into(),
+            path: Some("/test/path".into()),
+            path_source: None,
+            sessions,
+        }
     }
     fn ids<'a>(pairs: &'a [(&'a Project, &'a Session)]) -> Vec<&'a str> {
         pairs.iter().map(|(_, s)| s.id.as_str()).collect()
@@ -97,7 +131,10 @@ mod tests {
     }
     #[test]
     fn load_recent_sessions_sorts_by_most_recent() {
-        let projects = [project("p1", "alpha", vec![session("s1", 1000)]), project("p2", "beta", vec![session("s2", 9000)])];
+        let projects = [
+            project("p1", "alpha", vec![session("s1", 1000)]),
+            project("p2", "beta", vec![session("s2", 9000)]),
+        ];
         assert_eq!(ids(&recent_sessions(&projects)), ["s2", "s1"]);
     }
     #[test]
@@ -131,7 +168,10 @@ mod tests {
     fn filter_matches_project_name_or_session_title() {
         let mut alpha_session = session("s1", 2000);
         alpha_session.cached_title = Some("Fix the login flow".into());
-        let projects = [project("p1", "alpha", vec![alpha_session]), project("p2", "beta", vec![session("s2", 1000)])];
+        let projects = [
+            project("p1", "alpha", vec![alpha_session]),
+            project("p2", "beta", vec![session("s2", 1000)]),
+        ];
         let recent = recent_sessions(&projects);
         assert_eq!(ids(&filter_recent(&recent, Some("login"))), ["s1"]);
         assert_eq!(ids(&filter_recent(&recent, Some("beta"))), ["s2"]);
@@ -157,8 +197,18 @@ mod tests {
             total_sessions: 42,
             total_messages: 1234,
             daily_activity: vec![
-                crate::models::stats_cache::DailyActivity { date: "2020-01-01".into(), message_count: 999, session_count: 1, tool_call_count: 0 },
-                crate::models::stats_cache::DailyActivity { date: today, message_count: 7, session_count: 1, tool_call_count: 0 },
+                crate::models::stats_cache::DailyActivity {
+                    date: "2020-01-01".into(),
+                    message_count: 999,
+                    session_count: 1,
+                    tool_call_count: 0,
+                },
+                crate::models::stats_cache::DailyActivity {
+                    date: today,
+                    message_count: 7,
+                    session_count: 1,
+                    tool_call_count: 0,
+                },
             ],
             ..Default::default()
         };
@@ -168,8 +218,19 @@ mod tests {
 
     #[test]
     fn snapshot_without_a_matching_day_reports_zero() {
-        let stats = StatsCache { daily_activity: vec![crate::models::stats_cache::DailyActivity { date: "2020-01-01".into(), message_count: 999, session_count: 1, tool_call_count: 0 }], ..Default::default() };
-        assert_eq!(snapshot_in(&[], Some(&stats), None, &FixedOffset::east_opt(0).unwrap()).today_messages, 0);
+        let stats = StatsCache {
+            daily_activity: vec![crate::models::stats_cache::DailyActivity {
+                date: "2020-01-01".into(),
+                message_count: 999,
+                session_count: 1,
+                tool_call_count: 0,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(
+            snapshot_in(&[], Some(&stats), None, &FixedOffset::east_opt(0).unwrap()).today_messages,
+            0
+        );
     }
 
     #[test]

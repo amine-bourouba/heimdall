@@ -24,7 +24,9 @@ use heimdall_core::paths::ClaudeHome;
 /// contains the code path that reads it.
 #[cfg(debug_assertions)]
 fn heimdall_claude_home_override() -> Option<PathBuf> {
-    std::env::var_os("HEIMDALL_CLAUDE_HOME").map(PathBuf::from).filter(|p| !p.as_os_str().is_empty())
+    std::env::var_os("HEIMDALL_CLAUDE_HOME")
+        .map(PathBuf::from)
+        .filter(|p| !p.as_os_str().is_empty())
 }
 
 #[cfg(not(debug_assertions))]
@@ -68,12 +70,31 @@ impl Cache {
     pub fn get<T: Clone + Send + Sync + 'static>(&self, path: &Path, mtime: SystemTime, size: u64) -> Option<T> {
         let entries = self.entries.lock().expect("cache lock");
         let entry = entries.get(path)?;
-        if entry.mtime == mtime && entry.size == size { entry.value.downcast_ref::<T>().cloned() } else { None }
+        if entry.mtime == mtime && entry.size == size {
+            entry.value.downcast_ref::<T>().cloned()
+        } else {
+            None
+        }
     }
 
-    pub fn put<T: Send + Sync + 'static>(&self, path: impl Into<PathBuf>, mtime: SystemTime, size: u64, area: Area, value: T) {
+    pub fn put<T: Send + Sync + 'static>(
+        &self,
+        path: impl Into<PathBuf>,
+        mtime: SystemTime,
+        size: u64,
+        area: Area,
+        value: T,
+    ) {
         let mut entries = self.entries.lock().expect("cache lock");
-        entries.insert(path.into(), CacheEntry { mtime, size, area, value: Box::new(value) });
+        entries.insert(
+            path.into(),
+            CacheEntry {
+                mtime,
+                size,
+                area,
+                value: Box::new(value),
+            },
+        );
     }
 
     /// Drops every entry tagged with `area` (called with each `DataChange` the watcher emits, M1-47).
@@ -101,7 +122,10 @@ pub struct AppState {
 
 impl AppState {
     pub fn new() -> Result<Self> {
-        Ok(Self { claude_home: resolve_claude_home()?, cache: Cache::default() })
+        Ok(Self {
+            claude_home: resolve_claude_home()?,
+            cache: Cache::default(),
+        })
     }
 }
 
@@ -111,7 +135,9 @@ where
     T: Send + 'static,
     F: FnOnce() -> T + Send + 'static,
 {
-    tauri::async_runtime::spawn_blocking(f).await.expect("blocking task panicked")
+    tauri::async_runtime::spawn_blocking(f)
+        .await
+        .expect("blocking task panicked")
 }
 
 #[cfg(test)]
@@ -128,7 +154,10 @@ mod tests {
     fn cache_session_stores_and_retrieves() {
         let cache = Cache::default();
         cache.put("s.json", stamp(1), 10, Area::Sessions, "abc-123".to_string());
-        assert_eq!(cache.get::<String>(Path::new("s.json"), stamp(1), 10), Some("abc-123".to_string()));
+        assert_eq!(
+            cache.get::<String>(Path::new("s.json"), stamp(1), 10),
+            Some("abc-123".to_string())
+        );
     }
 
     #[test]
@@ -143,7 +172,13 @@ mod tests {
         cache.put("s1.json", stamp(1), 1, Area::Sessions, 1u32);
         cache.put("s2.json", stamp(1), 1, Area::Sessions, 2u32);
         cache.clear();
-        assert_eq!((cache.get::<u32>(Path::new("s1.json"), stamp(1), 1), cache.get::<u32>(Path::new("s2.json"), stamp(1), 1)), (None, None));
+        assert_eq!(
+            (
+                cache.get::<u32>(Path::new("s1.json"), stamp(1), 1),
+                cache.get::<u32>(Path::new("s2.json"), stamp(1), 1)
+            ),
+            (None, None)
+        );
         assert_eq!(cache.len(), 0);
     }
 
@@ -179,7 +214,10 @@ mod tests {
         cache.put("todos/b", stamp(1), 1, Area::Todos, "b".to_string());
         cache.invalidate_area(Area::Sessions);
         assert_eq!(cache.get::<String>(Path::new("sessions/a"), stamp(1), 1), None);
-        assert_eq!(cache.get::<String>(Path::new("todos/b"), stamp(1), 1), Some("b".to_string()));
+        assert_eq!(
+            cache.get::<String>(Path::new("todos/b"), stamp(1), 1),
+            Some("b".to_string())
+        );
     }
 
     #[test]

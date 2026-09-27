@@ -27,7 +27,9 @@ pub enum ConfigKind {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum ProjectContext {
     #[serde(rename_all = "camelCase")]
-    Project { project_id: String },
+    Project {
+        project_id: String,
+    },
     PickedFolder,
 }
 

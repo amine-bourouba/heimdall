@@ -16,9 +16,11 @@ use serde_json::Value;
 
 use super::{plugins, settings, sort_by_name};
 use crate::error::Loaded;
-use crate::models::config::mcp::{ClaudeConfig, McpProjectConfig, McpServer, McpServerDefinition, McpServerSource, McpServerStatus};
+use crate::models::config::mcp::{
+    ClaudeConfig, McpProjectConfig, McpServer, McpServerDefinition, McpServerSource, McpServerStatus,
+};
 use crate::models::config::scope::ConfigScope;
-use crate::paths::{same_path, ClaudeHome, TargetOs};
+use crate::paths::{ClaudeHome, TargetOs, same_path};
 
 pub const CLOUD_PREFIX: &str = "claude.ai ";
 
@@ -38,21 +40,43 @@ pub fn load(home: &ClaudeHome, project_path: Option<&str>, os: TargetOs) -> Load
     let mut by_name: BTreeMap<String, McpServer> = BTreeMap::new();
     let make = |name: &str, def: &McpServerDefinition, scope, source| {
         let known = tools.get(name);
-        McpServer::new(format!("{}-{name}", source_id(source)), format_server_name(name), name, scope, source, def, known.cloned().unwrap_or_default(), known.is_none())
+        McpServer::new(
+            format!("{}-{name}", source_id(source)),
+            format_server_name(name),
+            name,
+            scope,
+            source,
+            def,
+            known.cloned().unwrap_or_default(),
+            known.is_none(),
+        )
     };
 
     for (name, def) in config.mcp_servers.iter().flatten() {
-        by_name.insert(name.clone(), make(name, def, ConfigScope::Global, McpServerSource::User));
+        by_name.insert(
+            name.clone(),
+            make(name, def, ConfigScope::Global, McpServerSource::User),
+        );
     }
     if let Some(project) = project_path {
         // Claude Code keys projects by path; on Windows the key uses `/` while paths elsewhere use `\`.
-        let local = config.projects.iter().flatten().find(|(key, _)| same_path(key, project, os)).and_then(|(_, p)| p.mcp_servers.as_ref());
+        let local = config
+            .projects
+            .iter()
+            .flatten()
+            .find(|(key, _)| same_path(key, project, os))
+            .and_then(|(_, p)| p.mcp_servers.as_ref());
         for (name, def) in local.into_iter().flatten() {
-            by_name.insert(name.clone(), make(name, def, ConfigScope::Project, McpServerSource::Local));
+            by_name.insert(
+                name.clone(),
+                make(name, def, ConfigScope::Project, McpServerSource::Local),
+            );
         }
         let project_config: Option<McpProjectConfig> = read_json(&Path::new(project).join(".mcp.json"), &mut skipped);
         for (name, def) in project_config.and_then(|c| c.mcp_servers).into_iter().flatten() {
-            by_name.entry(name.clone()).or_insert_with(|| make(&name, &def, ConfigScope::Project, McpServerSource::Project));
+            by_name
+                .entry(name.clone())
+                .or_insert_with(|| make(&name, &def, ConfigScope::Project, McpServerSource::Project));
         }
     }
     for server in plugin_servers(&tools, &plugins::enabled_plugins(home)) {
@@ -60,8 +84,20 @@ pub fn load(home: &ClaudeHome, project_path: Option<&str>, os: TargetOs) -> Load
     }
     for name in auth_cache_names(home) {
         if name.starts_with(CLOUD_PREFIX) && !by_name.contains_key(&name) {
-            let def = McpServerDefinition { transport: Some("http".into()), ..Default::default() };
-            let mut server = McpServer::new(format!("cloud-{name}"), &name[CLOUD_PREFIX.len()..], name.as_str(), ConfigScope::Global, McpServerSource::CloudIntegration, &def, Vec::new(), true);
+            let def = McpServerDefinition {
+                transport: Some("http".into()),
+                ..Default::default()
+            };
+            let mut server = McpServer::new(
+                format!("cloud-{name}"),
+                &name[CLOUD_PREFIX.len()..],
+                name.as_str(),
+                ConfigScope::Global,
+                McpServerSource::CloudIntegration,
+                &def,
+                Vec::new(),
+                true,
+            );
             server.status = McpServerStatus::NeedsAuth;
             by_name.insert(name, server);
         }
@@ -74,7 +110,9 @@ pub fn load(home: &ClaudeHome, project_path: Option<&str>, os: TargetOs) -> Load
 
 /// Server names in `mcp-needs-auth-cache.json`. Only the keys are read.
 pub fn auth_cache_names(home: &ClaudeHome) -> BTreeSet<String> {
-    let Ok(bytes) = std::fs::read(home.mcp_auth_cache_file()) else { return BTreeSet::new() };
+    let Ok(bytes) = std::fs::read(home.mcp_auth_cache_file()) else {
+        return BTreeSet::new();
+    };
     match serde_json::from_slice::<Value>(&bytes) {
         Ok(Value::Object(map)) => map.keys().cloned().collect(),
         _ => BTreeSet::new(),
@@ -86,7 +124,9 @@ pub fn auth_cache_names(home: &ClaudeHome) -> BTreeSet<String> {
 pub fn tool_permissions(allow: &[String]) -> BTreeMap<String, Vec<String>> {
     let mut tools: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for entry in allow {
-        let Some((server, tool)) = entry.strip_prefix("mcp__").and_then(|rest| rest.split_once("__")) else { continue };
+        let Some((server, tool)) = entry.strip_prefix("mcp__").and_then(|rest| rest.split_once("__")) else {
+            continue;
+        };
         tools.entry(server.to_string()).or_default().push(tool.to_string());
     }
     for list in tools.values_mut() {
@@ -101,7 +141,8 @@ pub fn format_server_name(raw: &str) -> String {
         .filter(|w| !w.is_empty())
         .map(|w| {
             let mut c = w.chars();
-            c.next().map_or_else(String::new, |f| f.to_uppercase().chain(c).collect())
+            c.next()
+                .map_or_else(String::new, |f| f.to_uppercase().chain(c).collect())
         })
         .collect::<Vec<_>>()
         .join(" ")
@@ -111,7 +152,10 @@ pub fn format_server_name(raw: &str) -> String {
 /// raw `plugin:context-mode:context-mode`, shown as `Context Mode`); a plugin disabled in
 /// `enabledPlugins` hides its server.
 fn plugin_servers(tools: &BTreeMap<String, Vec<String>>, enabled: &BTreeMap<String, bool>) -> Vec<McpServer> {
-    let def = McpServerDefinition { transport: Some("stdio".into()), ..Default::default() };
+    let def = McpServerDefinition {
+        transport: Some("stdio".into()),
+        ..Default::default()
+    };
     tools
         .iter()
         .filter_map(|(permission, server_tools)| {
@@ -122,7 +166,16 @@ fn plugin_servers(tools: &BTreeMap<String, Vec<String>>, enabled: &BTreeMap<Stri
                 return None;
             }
             let raw = format!("plugin:{}", rest.replace('_', ":"));
-            Some(McpServer::new(format!("plugin-{raw}"), format_server_name(plugin), raw, ConfigScope::Global, McpServerSource::Plugin, &def, server_tools.clone(), false))
+            Some(McpServer::new(
+                format!("plugin-{raw}"),
+                format_server_name(plugin),
+                raw,
+                ConfigScope::Global,
+                McpServerSource::Plugin,
+                &def,
+                server_tools.clone(),
+                false,
+            ))
         })
         .collect()
 }
@@ -161,23 +214,53 @@ mod tests {
             "perplexity": {"type": "http", "url": "https://mcp.perplexity.ai", "headers": {"Authorization": "Bearer token"}}}})).unwrap();
         let servers = c.mcp_servers.unwrap();
         let (g, p) = (&servers["github"], &servers["perplexity"]);
-        assert_eq!((servers.len(), g.transport.as_deref(), g.command.as_deref(), g.url.as_deref()), (2, Some("stdio"), Some("npx"), None));
-        assert_eq!(g.args.as_deref(), Some(&["-y".to_string(), "@modelcontextprotocol/server-github".into()][..]));
-        assert_eq!((p.transport.as_deref(), p.url.as_deref(), p.command.as_deref()), (Some("http"), Some("https://mcp.perplexity.ai"), None));
+        assert_eq!(
+            (
+                servers.len(),
+                g.transport.as_deref(),
+                g.command.as_deref(),
+                g.url.as_deref()
+            ),
+            (2, Some("stdio"), Some("npx"), None)
+        );
+        assert_eq!(
+            g.args.as_deref(),
+            Some(&["-y".to_string(), "@modelcontextprotocol/server-github".into()][..])
+        );
+        assert_eq!(
+            (p.transport.as_deref(), p.url.as_deref(), p.command.as_deref()),
+            (Some("http"), Some("https://mcp.perplexity.ai"), None)
+        );
         assert_eq!(p.headers.as_ref().unwrap()["Authorization"].expose(), "Bearer token");
     }
     #[test]
     fn decode_claude_config_local_scope_servers() {
         let c: ClaudeConfig = serde_json::from_value(json!({"projects": {"/Users/dev/my-project": {"mcpServers": {
             "local-db": {"type": "stdio", "command": "node", "args": ["db-server.js"], "env": {"DB_PATH": "/tmp/dev.db"}}}}}})).unwrap();
-        let s = &c.projects.unwrap()["/Users/dev/my-project"].mcp_servers.clone().unwrap()["local-db"];
-        assert_eq!((s.transport.as_deref(), s.command.as_deref(), s.env.as_ref().unwrap()["DB_PATH"].expose()), (Some("stdio"), Some("node"), "/tmp/dev.db"));
+        let s = &c.projects.unwrap()["/Users/dev/my-project"]
+            .mcp_servers
+            .clone()
+            .unwrap()["local-db"];
+        assert_eq!(
+            (
+                s.transport.as_deref(),
+                s.command.as_deref(),
+                s.env.as_ref().unwrap()["DB_PATH"].expose()
+            ),
+            (Some("stdio"), Some("node"), "/tmp/dev.db")
+        );
     }
     #[test]
     fn decode_mcp_project_config() {
-        let c: McpProjectConfig = serde_json::from_value(json!({"mcpServers": {"team-tool": {"type": "http", "url": "http://localhost:3000/mcp"}}})).unwrap();
+        let c: McpProjectConfig = serde_json::from_value(
+            json!({"mcpServers": {"team-tool": {"type": "http", "url": "http://localhost:3000/mcp"}}}),
+        )
+        .unwrap();
         let s = &c.mcp_servers.unwrap()["team-tool"];
-        assert_eq!((s.transport.as_deref(), s.url.as_deref()), (Some("http"), Some("http://localhost:3000/mcp")));
+        assert_eq!(
+            (s.transport.as_deref(), s.url.as_deref()),
+            (Some("http"), Some("http://localhost:3000/mcp"))
+        );
     }
     #[test]
     fn decode_claude_config_empty_object() {
@@ -192,22 +275,70 @@ mod tests {
     }
     #[test]
     fn decode_mcp_server_definition_all_fields() {
-        let d: McpServerDefinition = serde_json::from_value(json!({"type": "stdio", "command": "/usr/bin/python3", "args": ["-m", "server"],
-            "env": {"API_KEY": "secret"}, "url": "http://fallback.local", "headers": {"X-Custom": "value"}})).unwrap();
-        assert_eq!((d.command.as_deref(), d.url.as_deref()), (Some("/usr/bin/python3"), Some("http://fallback.local")));
-        assert_eq!((d.env.unwrap()["API_KEY"].expose(), d.headers.unwrap()["X-Custom"].expose()), ("secret", "value"));
+        let d: McpServerDefinition = serde_json::from_value(
+            json!({"type": "stdio", "command": "/usr/bin/python3", "args": ["-m", "server"],
+            "env": {"API_KEY": "secret"}, "url": "http://fallback.local", "headers": {"X-Custom": "value"}}),
+        )
+        .unwrap();
+        assert_eq!(
+            (d.command.as_deref(), d.url.as_deref()),
+            (Some("/usr/bin/python3"), Some("http://fallback.local"))
+        );
+        assert_eq!(
+            (
+                d.env.unwrap()["API_KEY"].expose(),
+                d.headers.unwrap()["X-Custom"].expose()
+            ),
+            ("secret", "value")
+        );
     }
     #[test]
     fn mcp_server_model_new_fields() {
         let def: McpServerDefinition = serde_json::from_value(json!({"type": "stdio", "command": "node", "args": ["server.js", "--port", "3000"], "env": {"NODE_ENV": "production"}})).unwrap();
-        let s = McpServer::new("global-test", "Test Server", "test", ConfigScope::Global, McpServerSource::User, &def, vec!["read".into(), "write".into()], false);
-        assert_eq!((s.transport.as_deref(), s.command.as_deref(), s.args.len(), s.env["NODE_ENV"].expose(), s.url.as_deref()), (Some("stdio"), Some("node"), 3, "production", None));
+        let s = McpServer::new(
+            "global-test",
+            "Test Server",
+            "test",
+            ConfigScope::Global,
+            McpServerSource::User,
+            &def,
+            vec!["read".into(), "write".into()],
+            false,
+        );
+        assert_eq!(
+            (
+                s.transport.as_deref(),
+                s.command.as_deref(),
+                s.args.len(),
+                s.env["NODE_ENV"].expose(),
+                s.url.as_deref()
+            ),
+            (Some("stdio"), Some("node"), 3, "production", None)
+        );
     }
     #[test]
     fn mcp_server_model_http_type() {
-        let def: McpServerDefinition = serde_json::from_value(json!({"type": "http", "url": "https://api.example.com/mcp"})).unwrap();
-        let s = McpServer::new("global-api", "API Server", "api", ConfigScope::Project, McpServerSource::User, &def, vec![], true);
-        assert_eq!((s.transport.as_deref(), s.command.as_deref(), s.url.as_deref(), s.scope), (Some("http"), None, Some("https://api.example.com/mcp"), ConfigScope::Project));
+        let def: McpServerDefinition =
+            serde_json::from_value(json!({"type": "http", "url": "https://api.example.com/mcp"})).unwrap();
+        let s = McpServer::new(
+            "global-api",
+            "API Server",
+            "api",
+            ConfigScope::Project,
+            McpServerSource::User,
+            &def,
+            vec![],
+            true,
+        );
+        assert_eq!(
+            (s.transport.as_deref(), s.command.as_deref(), s.url.as_deref(), s.scope),
+            (
+                Some("http"),
+                None,
+                Some("https://api.example.com/mcp"),
+                ConfigScope::Project
+            )
+        );
     }
 
     /// A Claude home with every source populated, and the project folder.
@@ -226,7 +357,11 @@ mod tests {
             "permissions": {"allow": ["mcp__github__search", "mcp__github__get_file", "mcp__plugin_context-mode_context-mode__index", "mcp__plugin_old_old__x", "Read"]},
             "enabledPlugins": {"context-mode@someone": true, "old@someone": false},
         }).to_string()).unwrap();
-        std::fs::write(root.join("mcp-needs-auth-cache.json"), json!({"github": true, "claude.ai Gmail": true}).to_string()).unwrap();
+        std::fs::write(
+            root.join("mcp-needs-auth-cache.json"),
+            json!({"github": true, "claude.ai Gmail": true}).to_string(),
+        )
+        .unwrap();
         let home = ClaudeHome::new(root, d.path().join(".claude.json"));
         (d, home, project)
     }
@@ -235,23 +370,49 @@ mod tests {
     fn five_sources_follow_poirots_precedence() {
         let (_d, home, project) = world("PLACEHOLDER");
         // Rewrite the local key to the real project path, as Claude Code stores it.
-        let cfg = std::fs::read_to_string(home.config_file()).unwrap().replace("PLACEHOLDER", &project.display().to_string().replace('\\', "\\\\"));
+        let cfg = std::fs::read_to_string(home.config_file())
+            .unwrap()
+            .replace("PLACEHOLDER", &project.display().to_string().replace('\\', "\\\\"));
         std::fs::write(home.config_file(), cfg).unwrap();
         let servers = load(&home, Some(&project.display().to_string()), TargetOs::current()).value;
-        let got: Vec<_> = servers.iter().map(|s| (s.raw_name.as_str(), s.source, s.command.as_deref())).collect();
-        assert_eq!(got, [
-            ("plugin:context-mode:context-mode", McpServerSource::Plugin, None),
-            ("github", McpServerSource::Local, Some("local-github")),
-            ("claude.ai Gmail", McpServerSource::CloudIntegration, None),
-            ("sentry", McpServerSource::User, None),
-            ("team-tool", McpServerSource::Project, None),
-        ]);
+        let got: Vec<_> = servers
+            .iter()
+            .map(|s| (s.raw_name.as_str(), s.source, s.command.as_deref()))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                ("plugin:context-mode:context-mode", McpServerSource::Plugin, None),
+                ("github", McpServerSource::Local, Some("local-github")),
+                ("claude.ai Gmail", McpServerSource::CloudIntegration, None),
+                ("sentry", McpServerSource::User, None),
+                ("team-tool", McpServerSource::Project, None),
+            ]
+        );
         let github = &servers[1];
-        assert_eq!((github.tools.clone(), github.is_wildcard, github.name.as_str()), (vec!["get_file".to_string(), "search".into()], false, "Github"));
+        assert_eq!(
+            (github.tools.clone(), github.is_wildcard, github.name.as_str()),
+            (vec!["get_file".to_string(), "search".into()], false, "Github")
+        );
         assert!(servers[4].is_wildcard);
-        assert_eq!((servers[0].name.as_str(), servers[2].name.as_str(), servers[2].status), ("Context Mode", "Gmail", McpServerStatus::NeedsAuth));
+        assert_eq!(
+            (servers[0].name.as_str(), servers[2].name.as_str(), servers[2].status),
+            ("Context Mode", "Gmail", McpServerStatus::NeedsAuth)
+        );
         // Without a project only global sources count.
-        assert_eq!(load(&home, None, TargetOs::current()).value.iter().map(|s| s.raw_name.as_str()).collect::<Vec<_>>(), ["plugin:context-mode:context-mode", "github", "claude.ai Gmail", "sentry"]);
+        assert_eq!(
+            load(&home, None, TargetOs::current())
+                .value
+                .iter()
+                .map(|s| s.raw_name.as_str())
+                .collect::<Vec<_>>(),
+            [
+                "plugin:context-mode:context-mode",
+                "github",
+                "claude.ai Gmail",
+                "sentry"
+            ]
+        );
     }
 
     #[test]
@@ -265,7 +426,11 @@ mod tests {
     fn serialised_servers_never_carry_secret_values() {
         let home = ClaudeHome::new(synthetic().join("claude-home"), synthetic().join("claude.json"));
         let servers = load(&home, Some("/Users/fixture/src/app"), TargetOs::Macos).value;
-        assert!(servers.iter().any(|s| s.raw_name == "local-db" && s.env_keys == ["DB_PASSWORD", "DB_PATH"]));
+        assert!(
+            servers
+                .iter()
+                .any(|s| s.raw_name == "local-db" && s.env_keys == ["DB_PASSWORD", "DB_PATH"])
+        );
         let json = serde_json::to_string(&servers).unwrap();
         assert!(!json.contains("SENTINEL-SECRET"), "{json}");
     }

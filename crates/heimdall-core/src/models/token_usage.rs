@@ -14,11 +14,21 @@ pub struct TokenUsage {
 
 impl TokenUsage {
     pub const fn new(input: u64, output: u64) -> Self {
-        Self { input, output, cache_read: 0, cache_creation: 0 }
+        Self {
+            input,
+            output,
+            cache_read: 0,
+            cache_creation: 0,
+        }
     }
 
     pub const fn with_cache(input: u64, output: u64, cache_read: u64, cache_creation: u64) -> Self {
-        Self { input, output, cache_read, cache_creation }
+        Self {
+            input,
+            output,
+            cache_read,
+            cache_creation,
+        }
     }
 
     /// Billable volume for the turn: prompt input plus generated output (the session total sums this).
@@ -34,13 +44,21 @@ impl TokenUsage {
     /// Fraction (0..=1) of the prompt served from cache.
     pub fn cache_hit_rate(&self) -> f64 {
         let ctx = self.context_tokens();
-        if ctx > 0 { self.cache_read as f64 / ctx as f64 } else { 0.0 }
+        if ctx > 0 {
+            self.cache_read as f64 / ctx as f64
+        } else {
+            0.0
+        }
     }
 
     /// `499`, `1.0k`, `125.0k` (TokenUsage.formatted).
     pub fn formatted(&self) -> String {
         let total = self.total();
-        if total >= 1000 { format!("{:.1}k", total as f64 / 1000.0) } else { total.to_string() }
+        if total >= 1000 {
+            format!("{:.1}k", total as f64 / 1000.0)
+        } else {
+            total.to_string()
+        }
     }
 
     /// Component-wise sum, used to total a session.
@@ -98,6 +116,9 @@ mod tests {
     #[test]
     fn legacy_init_defaults_cache_to_zero() {
         let usage = TokenUsage::new(100, 200);
-        assert_eq!((usage.cache_read, usage.cache_creation, usage.context_tokens()), (0, 0, 100));
+        assert_eq!(
+            (usage.cache_read, usage.cache_creation, usage.context_tokens()),
+            (0, 0, 100)
+        );
     }
 }

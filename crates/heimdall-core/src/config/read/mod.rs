@@ -54,7 +54,9 @@ pub fn item_path(claude_dir: &Path, kind: ConfigKind, slug: &str) -> Result<Path
 
 /// `(stem, path)` of each `.md` file in `dir`, by name; a missing folder has none.
 pub(crate) fn md_files(dir: &Path) -> Vec<(String, PathBuf)> {
-    let Ok(entries) = std::fs::read_dir(dir) else { return Vec::new() };
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
     let mut files: Vec<(String, PathBuf)> = entries
         .flatten()
         .map(|e| e.path())
@@ -66,7 +68,10 @@ pub(crate) fn md_files(dir: &Path) -> Vec<(String, PathBuf)> {
 }
 
 /// Where a loader looks: the global folder, then the project's when there is one.
-pub(crate) fn scopes<'a>(claude_home: &'a Path, project: Option<ProjectScope<'a>>) -> Vec<(PathBuf, ConfigScope, Option<ProjectContext>)> {
+pub(crate) fn scopes<'a>(
+    claude_home: &'a Path,
+    project: Option<ProjectScope<'a>>,
+) -> Vec<(PathBuf, ConfigScope, Option<ProjectContext>)> {
     let mut v = vec![(claude_home.to_path_buf(), ConfigScope::Global, None)];
     if let Some(p) = project {
         v.push((p.root.join(".claude"), ConfigScope::Project, Some(p.context.clone())));
@@ -83,7 +88,11 @@ pub(crate) fn scope_name(scope: ConfigScope) -> &'static str {
 }
 
 pub(crate) fn config_ref(kind: ConfigKind, project: &Option<ProjectContext>, slug: &str) -> ConfigRef {
-    ConfigRef { kind, project: project.clone(), slug: slug.to_string() }
+    ConfigRef {
+        kind,
+        project: project.clone(),
+        slug: slug.to_string(),
+    }
 }
 
 /// Case-insensitive name order, as Poirot's `localizedCaseInsensitiveCompare`.
@@ -105,7 +114,9 @@ pub(crate) mod test_support {
         synthetic().join("project-repo")
     }
     pub fn context() -> ProjectContext {
-        ProjectContext::Project { project_id: "-Users-fixture-src-app".into() }
+        ProjectContext::Project {
+            project_id: "-Users-fixture-src-app".into(),
+        }
     }
 }
 
@@ -116,8 +127,14 @@ mod tests {
     #[test]
     fn refs_resolve_only_inside_their_folder() {
         let home = Path::new("/h/.claude");
-        assert_eq!(item_path(home, ConfigKind::Skill, "pdf-tools").unwrap(), home.join("skills").join("pdf-tools").join("SKILL.md"));
-        assert_eq!(item_path(home, ConfigKind::OutputStyle, "concise").unwrap(), home.join("output-styles").join("concise.md"));
+        assert_eq!(
+            item_path(home, ConfigKind::Skill, "pdf-tools").unwrap(),
+            home.join("skills").join("pdf-tools").join("SKILL.md")
+        );
+        assert_eq!(
+            item_path(home, ConfigKind::OutputStyle, "concise").unwrap(),
+            home.join("output-styles").join("concise.md")
+        );
         for bad in ["../settings", "a/b", "..", ""] {
             assert!(item_path(home, ConfigKind::Command, bad).is_err(), "{bad}");
         }

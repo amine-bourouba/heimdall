@@ -7,11 +7,11 @@
 #![deny(clippy::print_stdout, clippy::print_stderr)]
 
 pub mod app_shell;
-pub mod error;
 pub mod classify;
 pub mod config;
 pub mod data;
 pub mod diff;
+pub mod error;
 pub mod export;
 pub mod jsonl;
 pub mod mcp_status;
@@ -27,5 +27,7 @@ pub use error::{AppError, Loaded, Result, WriteOutcome};
 /// 64-bit FNV-1a: the same bytes always give the same value, across runs and machines, unlike
 /// Swift's `hashValue`. Used for ids that must survive a re-read (todos, history lines).
 pub fn stable_hash(bytes: &[u8]) -> u64 {
-    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(*b)).wrapping_mul(0x0100_0000_01b3))
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |h, b| {
+        (h ^ u64::from(*b)).wrapping_mul(0x0100_0000_01b3)
+    })
 }

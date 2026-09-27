@@ -27,7 +27,9 @@ pub fn load(claude_home: &Path, project_root: Option<&Path>) -> Loaded<Vec<HookE
             skipped += 1;
             continue;
         };
-        let Some(hooks) = doc.get("hooks").and_then(Value::as_object) else { continue };
+        let Some(hooks) = doc.get("hooks").and_then(Value::as_object) else {
+            continue;
+        };
         for (event, groups) in hooks {
             let Some(groups) = groups.as_array() else { continue };
             for (index, group) in groups.iter().enumerate() {
@@ -65,26 +67,53 @@ mod tests {
     fn global_and_project_hooks_with_their_groups_and_handlers() {
         let repo = repo();
         let entries = load(&home(), Some(&repo)).value;
-        let summary: Vec<_> = entries.iter().map(|e| (e.event.as_str(), e.scope, e.matcher.as_deref(), e.handlers.len())).collect();
-        assert_eq!(summary, [
-            ("PostToolUse", ConfigScope::Project, Some("Bash"), 1),
-            ("PreToolUse", ConfigScope::Global, Some("Edit|Write"), 2),
-            ("SessionStart", ConfigScope::Global, None, 1),
-        ]);
+        let summary: Vec<_> = entries
+            .iter()
+            .map(|e| (e.event.as_str(), e.scope, e.matcher.as_deref(), e.handlers.len()))
+            .collect();
+        assert_eq!(
+            summary,
+            [
+                ("PostToolUse", ConfigScope::Project, Some("Bash"), 1),
+                ("PreToolUse", ConfigScope::Global, Some("Edit|Write"), 2),
+                ("SessionStart", ConfigScope::Global, None, 1),
+            ]
+        );
         let pre = &entries[1];
-        assert_eq!(pre.handlers.iter().map(|h| h.handler_type).collect::<Vec<_>>(), [HookHandlerType::Command, HookHandlerType::Http]);
-        assert_eq!((pre.handlers[1].url.as_deref(), pre.handlers[1].status_message.as_deref(), pre.handlers[1].timeout), (Some("https://hooks.example.com/pre-tool-use"), Some("Notifying the audit service"), Some(10)));
+        assert_eq!(
+            pre.handlers.iter().map(|h| h.handler_type).collect::<Vec<_>>(),
+            [HookHandlerType::Command, HookHandlerType::Http]
+        );
+        assert_eq!(
+            (
+                pre.handlers[1].url.as_deref(),
+                pre.handlers[1].status_message.as_deref(),
+                pre.handlers[1].timeout
+            ),
+            (
+                Some("https://hooks.example.com/pre-tool-use"),
+                Some("Notifying the audit service"),
+                Some(10)
+            )
+        );
         assert_eq!(load(&home(), None).value.len(), 2);
     }
 
     #[test]
     fn unknown_handler_keys_and_new_events_are_kept() {
         let d = tempfile::tempdir().unwrap();
-        std::fs::write(d.path().join("settings.json"), r#"{"hooks": {"SomeFutureEvent": [{"hooks": [
+        std::fs::write(
+            d.path().join("settings.json"),
+            r#"{"hooks": {"SomeFutureEvent": [{"hooks": [
             {"type": "command", "command": "x.sh", "async": true, "env": {"A": "1"}},
-            {"type": "prompt", "prompt": "unknown handler type"}]}]}}"#).unwrap();
+            {"type": "prompt", "prompt": "unknown handler type"}]}]}}"#,
+        )
+        .unwrap();
         let entries = load(d.path(), None).value;
-        assert_eq!((entries.len(), entries[0].event.as_str(), entries[0].handlers.len()), (1, "SomeFutureEvent", 1));
+        assert_eq!(
+            (entries.len(), entries[0].event.as_str(), entries[0].handlers.len()),
+            (1, "SomeFutureEvent", 1)
+        );
         let h = &entries[0].handlers[0];
         assert_eq!(h.extra_keys, ["async", "env"]);
         assert_eq!(h.extra["env"]["A"], "1");

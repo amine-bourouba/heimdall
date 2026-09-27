@@ -83,7 +83,9 @@ pub fn parse_records(records: impl Iterator<Item = Value>, ctx: ParseContext) ->
     let mut usage_by_id: HashMap<String, TokenUsage> = HashMap::new();
 
     for (n, record) in records.enumerate() {
-        let Some(kind @ ("user" | "assistant")) = record.get("type").and_then(Value::as_str) else { continue };
+        let Some(kind @ ("user" | "assistant")) = record.get("type").and_then(Value::as_str) else {
+            continue;
+        };
         if !ctx.is_sidechain && record.get("isSidechain") == Some(&Value::Bool(true)) {
             continue;
         }
@@ -98,12 +100,25 @@ pub fn parse_records(records: impl Iterator<Item = Value>, ctx: ParseContext) ->
         // Records without an id get one from their position, so ids stay stable across re-parses.
         if kind == "user" {
             flush(&mut pending, &mut messages);
-            let id = record.get("uuid").and_then(Value::as_str).map_or_else(|| format!("record-{n}"), String::from);
+            let id = record
+                .get("uuid")
+                .and_then(Value::as_str)
+                .map_or_else(|| format!("record-{n}"), String::from);
             let mut blocks = blocks::user_blocks(message.get("content"));
             blocks::assign_ids(&id, &mut blocks);
-            messages.push(Message { id, role: Role::User, timestamp, model: None, usage: None, blocks });
+            messages.push(Message {
+                id,
+                role: Role::User,
+                timestamp,
+                model: None,
+                usage: None,
+                blocks,
+            });
         } else {
-            let id = message.get("id").and_then(Value::as_str).map_or_else(|| format!("record-{n}"), String::from);
+            let id = message
+                .get("id")
+                .and_then(Value::as_str)
+                .map_or_else(|| format!("record-{n}"), String::from);
             let new_blocks = blocks::assistant_blocks(message.get("content"));
             if let Some(u) = blocks::usage(message.get("usage")) {
                 usage_by_id.insert(id.clone(), u);
@@ -129,8 +144,16 @@ pub fn parse_records(records: impl Iterator<Item = Value>, ctx: ParseContext) ->
         return None;
     }
 
-    let started_at = messages.iter().filter_map(|m| m.timestamp).min().or(ctx.index_started_at).unwrap_or(DateTime::UNIX_EPOCH);
-    let model = messages.iter().find(|m| m.role == Role::Assistant).and_then(|m| m.model.clone());
+    let started_at = messages
+        .iter()
+        .filter_map(|m| m.timestamp)
+        .min()
+        .or(ctx.index_started_at)
+        .unwrap_or(DateTime::UNIX_EPOCH);
+    let model = messages
+        .iter()
+        .find(|m| m.role == Role::Assistant)
+        .and_then(|m| m.model.clone());
     let mut placed: HashSet<String> = HashSet::new();
     for m in messages.iter_mut().filter(|m| m.role == Role::Assistant) {
         if placed.insert(m.id.clone()) {
@@ -162,7 +185,12 @@ mod tests {
     use crate::models::message::ContentBlock;
     use serde_json::json;
 
-    const CTX: ParseContext = ParseContext { project_path: "/test", session_id: "s1", index_started_at: None, is_sidechain: false };
+    const CTX: ParseContext = ParseContext {
+        project_path: "/test",
+        session_id: "s1",
+        index_started_at: None,
+        is_sidechain: false,
+    };
 
     fn parse_lines(lines: &[String]) -> Option<Session> {
         let text = lines.join("\n");
@@ -181,23 +209,42 @@ mod tests {
     }
     fn user_with(content: Value, timestamp: &str, sidechain: bool, uuid: Option<&str>) -> String {
         json!({"type": "user", "uuid": uuid.unwrap_or("u-default"), "timestamp": timestamp, "isSidechain": sidechain,
-               "message": {"role": "user", "content": content}}).to_string()
+               "message": {"role": "user", "content": content}})
+        .to_string()
     }
     fn assistant(content: Value) -> String {
-        assistant_with(content, "msg_123", "claude-opus-4-6", "2026-01-28T10:01:00.000Z", (100, 50))
+        assistant_with(
+            content,
+            "msg_123",
+            "claude-opus-4-6",
+            "2026-01-28T10:01:00.000Z",
+            (100, 50),
+        )
     }
     fn assistant_with(content: Value, msg_id: &str, model: &str, timestamp: &str, tokens: (u64, u64)) -> String {
         json!({"type": "assistant", "uuid": "a-uuid", "timestamp": timestamp, "isSidechain": false,
                "message": {"id": msg_id, "role": "assistant", "model": model, "content": content,
-                           "usage": {"input_tokens": tokens.0, "output_tokens": tokens.1}}}).to_string()
+                           "usage": {"input_tokens": tokens.0, "output_tokens": tokens.1}}})
+        .to_string()
     }
     /// `n` independent user/assistant turns, each with its own id — 2n messages total.
     fn turns(n: usize) -> Vec<String> {
         (0..n)
             .flat_map(|i| {
                 [
-                    user_with(json!(format!("q{i}")), &format!("2026-01-28T10:{i:02}:00.000Z"), false, Some(&format!("u{i}"))),
-                    assistant_with(json!([{"type": "text", "text": format!("a{i}")}]), &format!("msg_{i}"), "claude-opus-4-6", &format!("2026-01-28T10:{i:02}:01.000Z"), (10, 5)),
+                    user_with(
+                        json!(format!("q{i}")),
+                        &format!("2026-01-28T10:{i:02}:00.000Z"),
+                        false,
+                        Some(&format!("u{i}")),
+                    ),
+                    assistant_with(
+                        json!([{"type": "text", "text": format!("a{i}")}]),
+                        &format!("msg_{i}"),
+                        "claude-opus-4-6",
+                        &format!("2026-01-28T10:{i:02}:01.000Z"),
+                        (10, 5),
+                    ),
                 ]
             })
             .collect()
@@ -263,66 +310,111 @@ mod tests {
     }
     #[test]
     fn parse_malformed_lines_skips_gracefully() {
-        let text = ["not valid json".to_string(), "{broken json".to_string(), user(json!("Hello"))].join("\n");
+        let text = [
+            "not valid json".to_string(),
+            "{broken json".to_string(),
+            user(json!("Hello")),
+        ]
+        .join("\n");
         let mut records = Records::<_, Value>::new(text.as_bytes());
         let s = parse_records(records.by_ref(), CTX).unwrap();
         assert_eq!((s.messages.len(), records.skipped()), (1, 2));
     }
     #[test]
     fn parse_sidechain_records_skipped() {
-        let lines = [user_with(json!("Hello"), "2026-01-28T10:00:00.000Z", true, None), user(json!("World"))];
+        let lines = [
+            user_with(json!("Hello"), "2026-01-28T10:00:00.000Z", true, None),
+            user(json!("World")),
+        ];
         let s = parse_lines(&lines).unwrap();
         assert_eq!(s.messages.len(), 1);
         assert_eq!(s.messages[0].text_content(), "World");
-        let kept = parse_records(Records::<_, Value>::new(lines.join("\n").as_bytes()), ParseContext { is_sidechain: true, ..CTX });
+        let kept = parse_records(
+            Records::<_, Value>::new(lines.join("\n").as_bytes()),
+            ParseContext {
+                is_sidechain: true,
+                ..CTX
+            },
+        );
         assert_eq!(kept.unwrap().messages.len(), 2);
     }
     #[test]
     fn parse_user_string_content_creates_text_block() {
         let s = parse_lines(&[user(json!("Hello world"))]);
         let m = &s.as_ref().unwrap().messages[0];
-        assert_eq!((m.role, m.blocks.len(), text_of(&m.blocks[0])), (Role::User, 1, "Hello world"));
+        assert_eq!(
+            (m.role, m.blocks.len(), text_of(&m.blocks[0])),
+            (Role::User, 1, "Hello world")
+        );
     }
     #[test]
     fn parse_user_tool_result_creates_tool_result_block() {
-        let s = parse_lines(&[user(json!([{"type": "tool_result", "tool_use_id": "toolu_abc", "content": "File created successfully"}]))]);
-        let ContentBlock::ToolResult(r) = first_block(&s) else { panic!("expected tool result") };
-        assert_eq!((r.tool_use_id.as_str(), r.content.as_str(), r.is_error), ("toolu_abc", "File created successfully", false));
+        let s = parse_lines(&[user(
+            json!([{"type": "tool_result", "tool_use_id": "toolu_abc", "content": "File created successfully"}]),
+        )]);
+        let ContentBlock::ToolResult(r) = first_block(&s) else {
+            panic!("expected tool result")
+        };
+        assert_eq!(
+            (r.tool_use_id.as_str(), r.content.as_str(), r.is_error),
+            ("toolu_abc", "File created successfully", false)
+        );
     }
     #[test]
     fn parse_tool_result_string_content_normalized() {
-        let s = parse_lines(&[user(json!([{"type": "tool_result", "tool_use_id": "toolu_1", "content": "Simple string content"}]))]);
-        let ContentBlock::ToolResult(r) = first_block(&s) else { panic!() };
+        let s = parse_lines(&[user(
+            json!([{"type": "tool_result", "tool_use_id": "toolu_1", "content": "Simple string content"}]),
+        )]);
+        let ContentBlock::ToolResult(r) = first_block(&s) else {
+            panic!()
+        };
         assert_eq!(r.content, "Simple string content");
     }
     #[test]
     fn parse_tool_result_array_content_extracts_text_only() {
         let content = json!([{"type": "text", "text": "Line 1"}, {"type": "tool_reference", "ref": "something"}, {"type": "text", "text": "Line 2"}]);
-        let s = parse_lines(&[user(json!([{"type": "tool_result", "tool_use_id": "toolu_2", "content": content}]))]);
-        let ContentBlock::ToolResult(r) = first_block(&s) else { panic!() };
+        let s = parse_lines(&[user(
+            json!([{"type": "tool_result", "tool_use_id": "toolu_2", "content": content}]),
+        )]);
+        let ContentBlock::ToolResult(r) = first_block(&s) else {
+            panic!()
+        };
         assert_eq!(r.content, "Line 1\nLine 2");
     }
     #[test]
     fn parse_tool_result_is_error_flagged() {
-        let s = parse_lines(&[user(json!([{"type": "tool_result", "tool_use_id": "toolu_err", "content": "Error", "is_error": true}]))]);
-        let ContentBlock::ToolResult(r) = first_block(&s) else { panic!() };
+        let s = parse_lines(&[user(
+            json!([{"type": "tool_result", "tool_use_id": "toolu_err", "content": "Error", "is_error": true}]),
+        )]);
+        let ContentBlock::ToolResult(r) = first_block(&s) else {
+            panic!()
+        };
         assert!(r.is_error);
     }
     #[test]
     fn parse_assistant_text_block() {
         let s = parse_lines(&[assistant(json!([{"type": "text", "text": "Hello from assistant"}]))]);
         let m = &s.as_ref().unwrap().messages[0];
-        assert_eq!((m.role, m.blocks.len(), text_of(&m.blocks[0])), (Role::Assistant, 1, "Hello from assistant"));
+        assert_eq!(
+            (m.role, m.blocks.len(), text_of(&m.blocks[0])),
+            (Role::Assistant, 1, "Hello from assistant")
+        );
     }
     #[test]
     fn parse_assistant_thinking_block() {
-        let s = parse_lines(&[assistant(json!([{"type": "thinking", "thinking": "Let me think about this"}]))]);
+        let s = parse_lines(&[assistant(
+            json!([{"type": "thinking", "thinking": "Let me think about this"}]),
+        )]);
         assert!(matches!(first_block(&s), ContentBlock::Thinking { text, .. } if text == "Let me think about this"));
     }
     #[test]
     fn parse_assistant_tool_use_block() {
-        let s = parse_lines(&[assistant(json!([{"type": "tool_use", "id": "toolu_xyz", "name": "Read", "input": {"file_path": "/foo/bar.swift"}}]))]);
-        let ContentBlock::ToolUse(t) = first_block(&s) else { panic!() };
+        let s = parse_lines(&[assistant(
+            json!([{"type": "tool_use", "id": "toolu_xyz", "name": "Read", "input": {"file_path": "/foo/bar.swift"}}]),
+        )]);
+        let ContentBlock::ToolUse(t) = first_block(&s) else {
+            panic!()
+        };
         assert_eq!((t.tool_use_id.as_str(), t.name.as_str()), ("toolu_xyz", "Read"));
         assert_eq!(t.input["file_path"], "/foo/bar.swift");
         assert_eq!(t.file_path.as_deref(), Some("/foo/bar.swift"));
@@ -330,72 +422,170 @@ mod tests {
     #[test]
     fn parse_tool_use_non_string_inputs_stringified() {
         let input = json!({"command": "ls", "timeout": 5000, "dangerouslyDisableSandbox": true});
-        let s = parse_lines(&[assistant(json!([{"type": "tool_use", "id": "toolu_num", "name": "Bash", "input": input}]))]);
-        let ContentBlock::ToolUse(t) = first_block(&s) else { panic!() };
-        assert_eq!((t.input["command"].as_str(), t.input["timeout"].as_str(), t.input["dangerouslyDisableSandbox"].as_str()), ("ls", "5000", "true"));
+        let s = parse_lines(&[assistant(
+            json!([{"type": "tool_use", "id": "toolu_num", "name": "Bash", "input": input}]),
+        )]);
+        let ContentBlock::ToolUse(t) = first_block(&s) else {
+            panic!()
+        };
+        assert_eq!(
+            (
+                t.input["command"].as_str(),
+                t.input["timeout"].as_str(),
+                t.input["dangerouslyDisableSandbox"].as_str()
+            ),
+            ("ls", "5000", "true")
+        );
         assert!(t.input_pretty.contains("\"timeout\": 5000"));
     }
     #[test]
     fn parse_synthetic_model_skipped() {
-        let lines = [assistant_with(json!([{"type": "text", "text": "Synthetic"}]), "m", SYNTHETIC_MODEL, "2026-01-28T10:01:00.000Z", (1, 1)), user(json!("Real user message"))];
+        let lines = [
+            assistant_with(
+                json!([{"type": "text", "text": "Synthetic"}]),
+                "m",
+                SYNTHETIC_MODEL,
+                "2026-01-28T10:01:00.000Z",
+                (1, 1),
+            ),
+            user(json!("Real user message")),
+        ];
         let s = parse_lines(&lines).unwrap();
         assert_eq!((s.messages.len(), s.messages[0].role), (1, Role::User));
     }
     #[test]
     fn parse_multiple_records_same_id_grouped() {
         let lines = [
-            assistant_with(json!([{"type": "text", "text": "Part 1"}]), "msg_grouped", "claude-opus-4-6", "2026-01-28T10:01:00.000Z", (100, 50)),
-            assistant_with(json!([{"type": "tool_use", "id": "t1", "name": "Read", "input": {"path": "/a"}}]), "msg_grouped", "claude-opus-4-6", "2026-01-28T10:01:01.000Z", (100, 50)),
+            assistant_with(
+                json!([{"type": "text", "text": "Part 1"}]),
+                "msg_grouped",
+                "claude-opus-4-6",
+                "2026-01-28T10:01:00.000Z",
+                (100, 50),
+            ),
+            assistant_with(
+                json!([{"type": "tool_use", "id": "t1", "name": "Read", "input": {"path": "/a"}}]),
+                "msg_grouped",
+                "claude-opus-4-6",
+                "2026-01-28T10:01:01.000Z",
+                (100, 50),
+            ),
         ];
         let s = parse_lines(&lines).unwrap();
         let m = &s.messages[0];
-        assert_eq!((s.messages.len(), m.role, m.blocks.len(), text_of(&m.blocks[0])), (1, Role::Assistant, 2, "Part 1"));
+        assert_eq!(
+            (s.messages.len(), m.role, m.blocks.len(), text_of(&m.blocks[0])),
+            (1, Role::Assistant, 2, "Part 1")
+        );
         assert!(matches!(&m.blocks[1], ContentBlock::ToolUse(t) if t.name == "Read"));
     }
     #[test]
     /// Deviation (D5): the group's usage is its last record's, where Poirot kept the first (100, 50).
     fn parse_usage_deduplicated_per_group() {
         let lines = [
-            assistant_with(json!([{"type": "text", "text": "A"}]), "msg_dup", "claude-opus-4-6", "2026-01-28T10:01:00.000Z", (100, 50)),
-            assistant_with(json!([{"type": "text", "text": "B"}]), "msg_dup", "claude-opus-4-6", "2026-01-28T10:01:00.000Z", (200, 100)),
+            assistant_with(
+                json!([{"type": "text", "text": "A"}]),
+                "msg_dup",
+                "claude-opus-4-6",
+                "2026-01-28T10:01:00.000Z",
+                (100, 50),
+            ),
+            assistant_with(
+                json!([{"type": "text", "text": "B"}]),
+                "msg_dup",
+                "claude-opus-4-6",
+                "2026-01-28T10:01:00.000Z",
+                (200, 100),
+            ),
         ];
         let s = parse_lines(&lines).unwrap();
         let u = s.messages[0].usage.unwrap();
-        assert_eq!((s.messages.len(), u.input, u.output, s.total_tokens), (1, 200, 100, 300));
+        assert_eq!(
+            (s.messages.len(), u.input, u.output, s.total_tokens),
+            (1, 200, 100, 300)
+        );
     }
     #[test]
     fn usage_counts_once_when_tool_results_split_a_message() {
         let tool = |id: &str| json!([{"type": "tool_use", "id": id, "name": "Read", "input": {}}]);
         let lines = [
-            assistant_with(json!([{"type": "text", "text": "A"}]), "msg_1", "m", "2026-01-28T10:01:00.000Z", (2, 8)),
+            assistant_with(
+                json!([{"type": "text", "text": "A"}]),
+                "msg_1",
+                "m",
+                "2026-01-28T10:01:00.000Z",
+                (2, 8),
+            ),
             assistant_with(tool("t1"), "msg_1", "m", "2026-01-28T10:01:01.000Z", (2, 8)),
             user(json!([{"type": "tool_result", "tool_use_id": "t1", "content": "ok"}])),
             assistant_with(tool("t2"), "msg_1", "m", "2026-01-28T10:01:02.000Z", (2, 209)),
         ];
         let s = parse_lines(&lines).unwrap();
         assert_eq!(s.messages.len(), 3);
-        assert_eq!((s.messages[0].usage, s.messages[2].usage, s.total_tokens), (Some(TokenUsage::new(2, 209)), None, 211));
+        assert_eq!(
+            (s.messages[0].usage, s.messages[2].usage, s.total_tokens),
+            (Some(TokenUsage::new(2, 209)), None, 211)
+        );
     }
     #[test]
     fn parse_started_at_uses_earliest_timestamp() {
-        let lines = [user_with(json!("First"), "2026-01-28T09:00:00.000Z", false, None), assistant_with(json!([{"type": "text", "text": "Reply"}]), "m", "x", "2026-01-28T10:00:00.000Z", (1, 1))];
-        assert_eq!(parse_lines(&lines).unwrap().started_at.to_rfc3339(), "2026-01-28T09:00:00+00:00");
+        let lines = [
+            user_with(json!("First"), "2026-01-28T09:00:00.000Z", false, None),
+            assistant_with(
+                json!([{"type": "text", "text": "Reply"}]),
+                "m",
+                "x",
+                "2026-01-28T10:00:00.000Z",
+                (1, 1),
+            ),
+        ];
+        assert_eq!(
+            parse_lines(&lines).unwrap().started_at.to_rfc3339(),
+            "2026-01-28T09:00:00+00:00"
+        );
     }
     #[test]
     fn parse_model_from_first_assistant_group() {
         let lines = [
             user(json!("Hi")),
-            assistant_with(json!([{"type": "text", "text": "A"}]), "msg_1", "claude-sonnet-4-5-20250514", "2026-01-28T10:01:00.000Z", (1, 1)),
-            assistant_with(json!([{"type": "text", "text": "B"}]), "msg_2", "claude-opus-4-6", "2026-01-28T10:02:00.000Z", (1, 1)),
+            assistant_with(
+                json!([{"type": "text", "text": "A"}]),
+                "msg_1",
+                "claude-sonnet-4-5-20250514",
+                "2026-01-28T10:01:00.000Z",
+                (1, 1),
+            ),
+            assistant_with(
+                json!([{"type": "text", "text": "B"}]),
+                "msg_2",
+                "claude-opus-4-6",
+                "2026-01-28T10:02:00.000Z",
+                (1, 1),
+            ),
         ];
-        assert_eq!(parse_lines(&lines).unwrap().model.as_deref(), Some("claude-sonnet-4-5-20250514"));
+        assert_eq!(
+            parse_lines(&lines).unwrap().model.as_deref(),
+            Some("claude-sonnet-4-5-20250514")
+        );
     }
     #[test]
     fn parse_total_tokens_summed_across_groups() {
         let lines = [
             user(json!("Hi")),
-            assistant_with(json!([{"type": "text", "text": "A"}]), "msg_1", "m", "2026-01-28T10:01:00.000Z", (100, 50)),
-            assistant_with(json!([{"type": "text", "text": "B"}]), "msg_2", "m", "2026-01-28T10:02:00.000Z", (200, 100)),
+            assistant_with(
+                json!([{"type": "text", "text": "A"}]),
+                "msg_1",
+                "m",
+                "2026-01-28T10:01:00.000Z",
+                (100, 50),
+            ),
+            assistant_with(
+                json!([{"type": "text", "text": "B"}]),
+                "msg_2",
+                "m",
+                "2026-01-28T10:02:00.000Z",
+                (200, 100),
+            ),
         ];
         assert_eq!(parse_lines(&lines).unwrap().total_tokens, 450);
     }
@@ -403,29 +593,62 @@ mod tests {
     fn parse_interleaved_user_and_assistant_preserves_order() {
         let lines = [
             user_with(json!("Q1"), "2026-01-28T10:00:00.000Z", false, Some("u1")),
-            assistant_with(json!([{"type": "text", "text": "A1"}]), "msg_a1", "m", "2026-01-28T10:01:00.000Z", (1, 1)),
+            assistant_with(
+                json!([{"type": "text", "text": "A1"}]),
+                "msg_a1",
+                "m",
+                "2026-01-28T10:01:00.000Z",
+                (1, 1),
+            ),
             user_with(json!("Q2"), "2026-01-28T10:02:00.000Z", false, Some("u2")),
-            assistant_with(json!([{"type": "text", "text": "A2"}]), "msg_a2", "m", "2026-01-28T10:03:00.000Z", (1, 1)),
+            assistant_with(
+                json!([{"type": "text", "text": "A2"}]),
+                "msg_a2",
+                "m",
+                "2026-01-28T10:03:00.000Z",
+                (1, 1),
+            ),
         ];
         let s = parse_lines(&lines).unwrap();
         let got: Vec<_> = s.messages.iter().map(|m| (m.role, m.text_content())).collect();
-        let want = [(Role::User, "Q1"), (Role::Assistant, "A1"), (Role::User, "Q2"), (Role::Assistant, "A2")].map(|(r, t)| (r, t.to_string()));
+        let want = [
+            (Role::User, "Q1"),
+            (Role::Assistant, "A1"),
+            (Role::User, "Q2"),
+            (Role::Assistant, "A2"),
+        ]
+        .map(|(r, t)| (r, t.to_string()));
         assert_eq!(got, want);
     }
     #[test]
     fn parse_searchable_text_indexes_content() {
-        let s = parse_lines(&[user(json!("FindMe in Content")), assistant(json!([{"type": "text", "text": "Here is the Response"}]))]).unwrap();
+        let s = parse_lines(&[
+            user(json!("FindMe in Content")),
+            assistant(json!([{"type": "text", "text": "Here is the Response"}])),
+        ])
+        .unwrap();
         assert!(s.searchable_text.contains("findme in content") && s.searchable_text.contains("here is the response"));
     }
 
     #[test]
     fn block_ids_are_message_id_and_index_and_stable() {
-        let lines = [user_with(json!([{"type": "text", "text": "q"}, {"type": "tool_result", "tool_use_id": "t", "content": "r"}]), "2026-01-28T10:00:00.000Z", false, Some("u1"))];
-        let ids = |s: Session| s.messages[0].blocks.iter().map(|b| match b {
-            ContentBlock::Text { id, .. } | ContentBlock::Thinking { id, .. } => id.clone(),
-            ContentBlock::ToolUse(t) => t.id.clone(),
-            ContentBlock::ToolResult(r) => r.id.clone(),
-        }).collect::<Vec<_>>();
+        let lines = [user_with(
+            json!([{"type": "text", "text": "q"}, {"type": "tool_result", "tool_use_id": "t", "content": "r"}]),
+            "2026-01-28T10:00:00.000Z",
+            false,
+            Some("u1"),
+        )];
+        let ids = |s: Session| {
+            s.messages[0]
+                .blocks
+                .iter()
+                .map(|b| match b {
+                    ContentBlock::Text { id, .. } | ContentBlock::Thinking { id, .. } => id.clone(),
+                    ContentBlock::ToolUse(t) => t.id.clone(),
+                    ContentBlock::ToolResult(r) => r.id.clone(),
+                })
+                .collect::<Vec<_>>()
+        };
         let first = ids(parse_lines(&lines).unwrap());
         assert_eq!(first, ["u1:0", "u1:1"]);
         assert_eq!(first, ids(parse_lines(&lines).unwrap()));
@@ -434,7 +657,9 @@ mod tests {
     #[test]
     fn user_text_carries_system_segments() {
         let s = parse_lines(&[user(json!("fix it <system-reminder>be brief</system-reminder>"))]);
-        let ContentBlock::Text { system, .. } = first_block(&s) else { panic!() };
+        let ContentBlock::Text { system, .. } = first_block(&s) else {
+            panic!()
+        };
         assert_eq!(system.as_ref().unwrap().len(), 2);
     }
 
@@ -452,12 +677,22 @@ mod tests {
         }
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/windows");
         let mut files = Vec::new();
-        for projects in [root.join("claude-home/projects"), root.join("crlf/claude-home/projects")] {
+        for projects in [
+            root.join("claude-home/projects"),
+            root.join("crlf/claude-home/projects"),
+        ] {
             walk(&projects, &mut files);
         }
         assert!(files.len() >= 20, "found {} transcripts", files.len());
         for f in files {
-            let loaded = parse(&f, ParseContext { is_sidechain: true, ..CTX }).unwrap();
+            let loaded = parse(
+                &f,
+                ParseContext {
+                    is_sidechain: true,
+                    ..CTX
+                },
+            )
+            .unwrap();
             assert_eq!(loaded.skipped, 0, "{}", f.display());
         }
     }

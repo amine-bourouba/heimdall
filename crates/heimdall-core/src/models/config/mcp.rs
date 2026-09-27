@@ -57,7 +57,14 @@ pub enum McpServerStatus {
 }
 
 impl McpServerStatus {
-    pub const ALL: [Self; 6] = [Self::Connected, Self::NeedsAuth, Self::Failed, Self::Unreachable, Self::Starting, Self::Unknown];
+    pub const ALL: [Self; 6] = [
+        Self::Connected,
+        Self::NeedsAuth,
+        Self::Failed,
+        Self::Unreachable,
+        Self::Starting,
+        Self::Unknown,
+    ];
 
     /// The wire value (`connected`, `needsAuth`, …).
     pub const fn raw_value(self) -> &'static str {
@@ -137,8 +144,16 @@ pub struct McpServer {
 
 impl McpServer {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(id: impl Into<String>, name: impl Into<String>, raw_name: impl Into<String>, scope: ConfigScope,
-               source: McpServerSource, def: &McpServerDefinition, tools: Vec<String>, is_wildcard: bool) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        raw_name: impl Into<String>,
+        scope: ConfigScope,
+        source: McpServerSource,
+        def: &McpServerDefinition,
+        tools: Vec<String>,
+        is_wildcard: bool,
+    ) -> Self {
         let env = def.env.clone().unwrap_or_default();
         let headers = def.headers.clone().unwrap_or_default();
         Self {
@@ -169,7 +184,9 @@ impl McpServer {
 pub enum SecretInput {
     Keep,
     /// The raw typed value; wrapped in a [`Secret`] only once the write command stores it.
-    Set { value: String },
+    Set {
+        value: String,
+    },
     Remove,
 }
 
@@ -200,8 +217,19 @@ mod tests {
     use super::*;
 
     fn server() -> McpServer {
-        let def: McpServerDefinition = serde_json::from_str(r#"{"type": "stdio", "command": "node", "args": [], "env": {"API_KEY": "sk-123"}}"#).unwrap();
-        McpServer::new("test-server", "Test", "test", ConfigScope::Global, McpServerSource::User, &def, vec![], false)
+        let def: McpServerDefinition =
+            serde_json::from_str(r#"{"type": "stdio", "command": "node", "args": [], "env": {"API_KEY": "sk-123"}}"#)
+                .unwrap();
+        McpServer::new(
+            "test-server",
+            "Test",
+            "test",
+            ConfigScope::Global,
+            McpServerSource::User,
+            &def,
+            vec![],
+            false,
+        )
     }
 
     // Ported from PoirotTests/Models/MCPServerStatusTests.swift. The SF Symbol cases become
@@ -216,11 +244,24 @@ mod tests {
     }
     #[test]
     fn status_labels() {
-        assert_eq!(McpServerStatus::ALL.map(McpServerStatus::label), ["Connected", "Needs Auth", "Failed", "Unreachable", "Starting", "Unknown"]);
+        assert_eq!(
+            McpServerStatus::ALL.map(McpServerStatus::label),
+            [
+                "Connected",
+                "Needs Auth",
+                "Failed",
+                "Unreachable",
+                "Starting",
+                "Unknown"
+            ]
+        );
     }
     #[test]
     fn status_raw_values() {
-        assert_eq!(McpServerStatus::ALL.map(McpServerStatus::raw_value), ["connected", "needsAuth", "failed", "unreachable", "starting", "unknown"]);
+        assert_eq!(
+            McpServerStatus::ALL.map(McpServerStatus::raw_value),
+            ["connected", "needsAuth", "failed", "unreachable", "starting", "unknown"]
+        );
         for s in McpServerStatus::ALL {
             assert_eq!(serde_json::to_value(s).unwrap(), s.raw_value());
         }
@@ -231,7 +272,10 @@ mod tests {
     }
     #[test]
     fn server_explicit_status() {
-        let s = McpServer { status: McpServerStatus::Connected, ..server() };
+        let s = McpServer {
+            status: McpServerStatus::Connected,
+            ..server()
+        };
         assert_eq!(s.status, McpServerStatus::Connected);
     }
     #[test]
@@ -251,9 +295,14 @@ mod tests {
 
     #[test]
     fn definitions_keep_type_url_and_headers() {
-        let def: McpServerDefinition =
-            serde_json::from_str(r#"{"type": "http", "url": "https://x", "headers": {"Authorization": "Bearer t"}, "extra": 1}"#).unwrap();
-        assert_eq!((def.transport.as_deref(), def.url.as_deref()), (Some("http"), Some("https://x")));
+        let def: McpServerDefinition = serde_json::from_str(
+            r#"{"type": "http", "url": "https://x", "headers": {"Authorization": "Bearer t"}, "extra": 1}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            (def.transport.as_deref(), def.url.as_deref()),
+            (Some("http"), Some("https://x"))
+        );
         assert_eq!(def.headers.unwrap()["Authorization"].expose(), "Bearer t");
     }
 }

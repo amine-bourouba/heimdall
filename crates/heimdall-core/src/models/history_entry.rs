@@ -34,7 +34,13 @@ impl HistoryEntry {
 
     /// The first three non-empty lines joined by spaces, for previews.
     pub fn snippet(&self) -> String {
-        self.display.lines().map(str::trim).filter(|l| !l.is_empty()).take(3).collect::<Vec<_>>().join(" ")
+        self.display
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.is_empty())
+            .take(3)
+            .collect::<Vec<_>>()
+            .join(" ")
     }
 }
 
@@ -43,17 +49,29 @@ mod tests {
     use super::*;
 
     fn entry(id: &str, display: &str, project: &str) -> HistoryEntry {
-        HistoryEntry { id: id.into(), display: display.into(), pasted_contents: BTreeMap::new(), timestamp: DateTime::UNIX_EPOCH, project: project.into() }
+        HistoryEntry {
+            id: id.into(),
+            display: display.into(),
+            pasted_contents: BTreeMap::new(),
+            timestamp: DateTime::UNIX_EPOCH,
+            project: project.into(),
+        }
     }
 
     // Ported from PoirotTests/Models/HistoryEntryTests.swift (bucket and timeAgo cases moved to Vitest).
     #[test]
     fn project_name_extracts_last_path_component() {
-        assert_eq!(entry("1-0", "test prompt", "/Users/test/Dev/my-project").project_name(), "my-project");
+        assert_eq!(
+            entry("1-0", "test prompt", "/Users/test/Dev/my-project").project_name(),
+            "my-project"
+        );
     }
     #[test]
     fn snippet_truncates_multiple_lines() {
-        assert_eq!(entry("1-0", "Line one\nLine two\nLine three\nLine four\nLine five", "/test").snippet(), "Line one Line two Line three");
+        assert_eq!(
+            entry("1-0", "Line one\nLine two\nLine three\nLine four\nLine five", "/test").snippet(),
+            "Line one Line two Line three"
+        );
     }
     #[test]
     fn snippet_skips_empty_lines() {

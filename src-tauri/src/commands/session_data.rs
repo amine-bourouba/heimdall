@@ -4,7 +4,7 @@
 use heimdall_core::data::{debug_log, facets, file_history, todos};
 use heimdall_core::diff::{self, DiffResult};
 use heimdall_core::models::debug_log_entry::LogLevel;
-use heimdall_core::models::file_version::{file_history as to_file_history, FileHistory, FileVersionContent};
+use heimdall_core::models::file_version::{FileHistory, FileVersionContent, file_history as to_file_history};
 use heimdall_core::models::session_facets::SessionFacets;
 use heimdall_core::models::session_todo::{TodoGroup, TodoList};
 use heimdall_core::paths::TargetOs;
@@ -13,7 +13,7 @@ use heimdall_core::{AppError, Result};
 use tauri::{AppHandle, Manager};
 
 use super::sessions::project_dir;
-use crate::state::{blocking, AppState};
+use crate::state::{AppState, blocking};
 
 fn parse_level(level: Option<&str>) -> Result<Option<LogLevel>> {
     match level {
@@ -46,16 +46,23 @@ fn list_all_todos_inner(state: &AppState) -> Result<Vec<TodoGroup>> {
     }
 
     let all = todos::load_all_lists(&claude_home.todos_dir())?.value;
-    let mut groups: std::collections::BTreeMap<Option<(String, String)>, Vec<TodoList>> = std::collections::BTreeMap::new();
+    let mut groups: std::collections::BTreeMap<Option<(String, String)>, Vec<TodoList>> =
+        std::collections::BTreeMap::new();
     for (session_id, lists) in all {
-        let key = project_of.get(session_id.as_str()).map(|(id, name)| (id.to_string(), name.to_string()));
+        let key = project_of
+            .get(session_id.as_str())
+            .map(|(id, name)| (id.to_string(), name.to_string()));
         groups.entry(key).or_default().extend(lists);
     }
     Ok(groups
         .into_iter()
         .map(|(key, lists)| {
             let (project_id, project_name) = key.map_or((None, None), |(id, name)| (Some(id), Some(name)));
-            TodoGroup { project_id, project_name, lists }
+            TodoGroup {
+                project_id,
+                project_name,
+                lists,
+            }
         })
         .collect())
 }
@@ -85,7 +92,10 @@ fn version_content(state: &AppState, session_id: &str, version_id: &str) -> Resu
 
 fn get_file_version_inner(state: &AppState, session_id: &str, version_id: &str) -> Result<FileVersionContent> {
     let content = version_content(state, session_id, version_id)?;
-    Ok(FileVersionContent { version_id: version_id.to_string(), content })
+    Ok(FileVersionContent {
+        version_id: version_id.to_string(),
+        content,
+    })
 }
 
 #[tauri::command]
@@ -94,7 +104,12 @@ pub async fn get_file_version(app: AppHandle, session_id: String, version_id: St
     blocking(move || get_file_version_inner(&app.state::<AppState>(), &session_id, &version_id)).await
 }
 
-fn diff_file_versions_inner(state: &AppState, session_id: &str, from_version_id: &str, to_version_id: &str) -> Result<DiffResult> {
+fn diff_file_versions_inner(
+    state: &AppState,
+    session_id: &str,
+    from_version_id: &str,
+    to_version_id: &str,
+) -> Result<DiffResult> {
     let old = version_content(state, session_id, from_version_id)?;
     let new = version_content(state, session_id, to_version_id)?;
     Ok(diff::diff(&old, &new))
@@ -102,8 +117,14 @@ fn diff_file_versions_inner(state: &AppState, session_id: &str, from_version_id:
 
 #[tauri::command]
 #[specta::specta]
-pub async fn diff_file_versions(app: AppHandle, session_id: String, from_version_id: String, to_version_id: String) -> Result<DiffResult> {
-    blocking(move || diff_file_versions_inner(&app.state::<AppState>(), &session_id, &from_version_id, &to_version_id)).await
+pub async fn diff_file_versions(
+    app: AppHandle,
+    session_id: String,
+    from_version_id: String,
+    to_version_id: String,
+) -> Result<DiffResult> {
+    blocking(move || diff_file_versions_inner(&app.state::<AppState>(), &session_id, &from_version_id, &to_version_id))
+        .await
 }
 
 #[tauri::command]
@@ -112,14 +133,33 @@ pub async fn diff_lines(old_text: String, new_text: String) -> Result<DiffResult
     blocking(move || Ok(diff::diff(&old_text, &new_text))).await
 }
 
-fn get_debug_log_page_inner(state: &AppState, session_id: &str, offset: u32, limit: u32, level: Option<&str>) -> Result<heimdall_core::data::debug_log::DebugLogPage> {
-    debug_log::page(&state.claude_home.debug_dir(), session_id, offset, limit, parse_level(level)?)
+fn get_debug_log_page_inner(
+    state: &AppState,
+    session_id: &str,
+    offset: u32,
+    limit: u32,
+    level: Option<&str>,
+) -> Result<heimdall_core::data::debug_log::DebugLogPage> {
+    debug_log::page(
+        &state.claude_home.debug_dir(),
+        session_id,
+        offset,
+        limit,
+        parse_level(level)?,
+    )
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_debug_log_page(app: AppHandle, session_id: String, offset: u32, limit: u32, level: Option<String>) -> Result<debug_log::DebugLogPage> {
-    blocking(move || get_debug_log_page_inner(&app.state::<AppState>(), &session_id, offset, limit, level.as_deref())).await
+pub async fn get_debug_log_page(
+    app: AppHandle,
+    session_id: String,
+    offset: u32,
+    limit: u32,
+    level: Option<String>,
+) -> Result<debug_log::DebugLogPage> {
+    blocking(move || get_debug_log_page_inner(&app.state::<AppState>(), &session_id, offset, limit, level.as_deref()))
+        .await
 }
 
 fn get_session_facets_inner(state: &AppState, session_id: &str) -> Result<Option<SessionFacets>> {
@@ -143,7 +183,10 @@ mod tests {
 
     fn state() -> AppState {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../fixtures/synthetic");
-        AppState { claude_home: ClaudeHome::new(root.join("claude-home"), root.join("claude.json")), cache: crate::state::Cache::default() }
+        AppState {
+            claude_home: ClaudeHome::new(root.join("claude-home"), root.join("claude.json")),
+            cache: crate::state::Cache::default(),
+        }
     }
 
     #[test]
@@ -162,22 +205,40 @@ mod tests {
     #[test]
     fn list_all_todos_groups_the_fixture_session_under_its_real_project() {
         let groups = list_all_todos_inner(&state()).unwrap();
-        let group = groups.iter().find(|g| g.project_id.as_deref() == Some(PROJECT)).expect("fixture project group");
+        let group = groups
+            .iter()
+            .find(|g| g.project_id.as_deref() == Some(PROJECT))
+            .expect("fixture project group");
         assert_eq!(group.project_name.as_deref(), Some("app"));
-        assert_eq!(group.lists.iter().map(|l| l.session_id.as_str()).collect::<std::collections::BTreeSet<_>>().len(), 1);
+        assert_eq!(
+            group
+                .lists
+                .iter()
+                .map(|l| l.session_id.as_str())
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            1
+        );
     }
 
     #[test]
     fn get_file_history_lists_both_versions_of_the_tracked_file() {
         let history = get_file_history_inner(&state(), PROJECT, SESSION).unwrap();
         assert_eq!(history.files.len(), 1);
-        let versions: Vec<_> = history.files[0].versions.iter().map(|v| v.version_id.as_str()).collect();
+        let versions: Vec<_> = history.files[0]
+            .versions
+            .iter()
+            .map(|v| v.version_id.as_str())
+            .collect();
         assert_eq!(versions, ["3f2504e5f2a14f9f@v1", "3f2504e5f2a14f9f@v2"]);
     }
 
     #[test]
     fn get_file_history_rejects_an_unknown_project_as_not_found() {
-        assert!(matches!(get_file_history_inner(&state(), "-Users-nobody-nowhere", SESSION).unwrap_err(), AppError::NotFound { .. }));
+        assert!(matches!(
+            get_file_history_inner(&state(), "-Users-nobody-nowhere", SESSION).unwrap_err(),
+            AppError::NotFound { .. }
+        ));
     }
 
     #[test]
@@ -189,7 +250,10 @@ mod tests {
 
     #[test]
     fn get_file_version_rejects_an_unknown_version_as_not_found() {
-        assert!(matches!(get_file_version_inner(&state(), SESSION, "nope@v9").unwrap_err(), AppError::NotFound { .. }));
+        assert!(matches!(
+            get_file_version_inner(&state(), SESSION, "nope@v9").unwrap_err(),
+            AppError::NotFound { .. }
+        ));
     }
 
     #[test]
@@ -227,7 +291,10 @@ mod tests {
 
     #[test]
     fn get_debug_log_page_rejects_an_unknown_level_as_invalid_input() {
-        assert!(matches!(get_debug_log_page_inner(&state(), SESSION, 0, 10, Some("verbose")).unwrap_err(), AppError::InvalidInput { .. }));
+        assert!(matches!(
+            get_debug_log_page_inner(&state(), SESSION, 0, 10, Some("verbose")).unwrap_err(),
+            AppError::InvalidInput { .. }
+        ));
     }
 
     #[test]

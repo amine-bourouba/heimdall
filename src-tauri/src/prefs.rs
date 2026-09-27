@@ -4,7 +4,7 @@
 //! a path (ADR 0010, rule 5). Never touches `~/.claude` — the Claude home and the app's own
 //! preferences are different roots entirely.
 
-use heimdall_core::models::prefs::{Prefs, PreferredEditor, PreferredTerminal, PrefsPatch};
+use heimdall_core::models::prefs::{PreferredEditor, PreferredTerminal, Prefs, PrefsPatch};
 use heimdall_core::paths::TargetOs;
 use heimdall_core::{AppError, Result, WriteOutcome};
 use tauri::{AppHandle, Manager, Runtime};
@@ -28,7 +28,10 @@ fn store<R: Runtime>(app: &AppHandle<R>) -> Result<std::sync::Arc<tauri_plugin_s
 pub fn load<R: Runtime>(app: &AppHandle<R>) -> Result<Prefs> {
     let store = store(app)?;
     let object: serde_json::Map<String, serde_json::Value> = store.entries().into_iter().collect();
-    Ok(Prefs::from_stored(migrate(serde_json::Value::Object(object)), TargetOs::current()))
+    Ok(Prefs::from_stored(
+        migrate(serde_json::Value::Object(object)),
+        TargetOs::current(),
+    ))
 }
 
 /// Replaces every key in the store with `prefs`'s own fields, so no stale key from an older
@@ -61,7 +64,9 @@ fn validate_patch(patch: &PrefsPatch, os: TargetOs) -> Result<()> {
     if let Some(terminal) = patch.preferred_terminal
         && !PreferredTerminal::options(os).contains(&terminal)
     {
-        return Err(AppError::invalid_input(format!("{terminal:?} is not offered on this OS")));
+        return Err(AppError::invalid_input(format!(
+            "{terminal:?} is not offered on this OS"
+        )));
     }
     Ok(())
 }
@@ -72,7 +77,9 @@ const FONT_SCALE_STEP: f64 = 0.05;
 
 fn validate_font_scale(scale: f64) -> Result<()> {
     if !(FONT_SCALE_MIN..=FONT_SCALE_MAX).contains(&scale) {
-        return Err(AppError::invalid_input(format!("fontScale must be between {FONT_SCALE_MIN} and {FONT_SCALE_MAX}")));
+        return Err(AppError::invalid_input(format!(
+            "fontScale must be between {FONT_SCALE_MIN} and {FONT_SCALE_MAX}"
+        )));
     }
     let steps = (scale - FONT_SCALE_MIN) / FONT_SCALE_STEP;
     if (steps - steps.round()).abs() > 1e-9 {
@@ -172,10 +179,16 @@ fn folder_index(source_id: &str) -> Result<usize> {
 /// `add_memory_folder`: opens a folder picker; a folder already present (compared the same way
 /// Poirot's `standardizedFileURL` de-dup did) is a no-op, matching `MemorySourcesStore.add`.
 pub fn add_memory_folder<R: Runtime>(app: &AppHandle<R>, picked: Option<String>) -> Result<WriteOutcome> {
-    let Some(folder) = picked else { return Ok(WriteOutcome::Cancelled) };
+    let Some(folder) = picked else {
+        return Ok(WriteOutcome::Cancelled);
+    };
     let os = TargetOs::current();
     let mut prefs = load(app)?;
-    if prefs.custom_memory_folders.iter().any(|f| heimdall_core::paths::same_path(f, &folder, os)) {
+    if prefs
+        .custom_memory_folders
+        .iter()
+        .any(|f| heimdall_core::paths::same_path(f, &folder, os))
+    {
         return Ok(WriteOutcome::Unchanged);
     }
     prefs.custom_memory_folders.push(folder);
@@ -210,7 +223,9 @@ fn reregister_watched_folders<R: Runtime>(app: &AppHandle<R>, prefs: &Prefs) {
 /// `pick_config_project`: sets `configProjectPath` to the picked folder, or leaves it unchanged
 /// if the picker is dismissed.
 pub fn pick_config_project<R: Runtime>(app: &AppHandle<R>, picked: Option<String>) -> Result<WriteOutcome> {
-    let Some(folder) = picked else { return Ok(WriteOutcome::Cancelled) };
+    let Some(folder) = picked else {
+        return Ok(WriteOutcome::Cancelled);
+    };
     let mut prefs = load(app)?;
     prefs.config_project_path = Some(folder);
     save(app, &prefs)?;
@@ -221,7 +236,11 @@ pub fn pick_config_project<R: Runtime>(app: &AppHandle<R>, picked: Option<String
 /// the user answers — the command handlers call this via `state::blocking` before calling
 /// `add_memory_folder`/`pick_config_project`, keeping the picked path out of the async event loop.
 pub fn pick_folder<R: Runtime>(app: &AppHandle<R>) -> Option<String> {
-    app.dialog().file().blocking_pick_folder().and_then(|f| f.into_path().ok()).map(|p| p.display().to_string())
+    app.dialog()
+        .file()
+        .blocking_pick_folder()
+        .and_then(|f| f.into_path().ok())
+        .map(|p| p.display().to_string())
 }
 
 #[cfg(test)]
@@ -246,7 +265,11 @@ mod tests {
     #[test]
     fn save_then_load_round_trips() {
         let app = app();
-        let prefs = Prefs { color_theme: ColorThemeId::Solarized, custom_memory_folders: vec!["/tmp/a".into()], ..Default::default() };
+        let prefs = Prefs {
+            color_theme: ColorThemeId::Solarized,
+            custom_memory_folders: vec!["/tmp/a".into()],
+            ..Default::default()
+        };
         save(app.handle(), &prefs).unwrap();
         assert_eq!(load(app.handle()).unwrap(), prefs);
     }
@@ -270,9 +293,15 @@ mod tests {
     #[test]
     fn update_merges_only_the_patched_fields() {
         let app = app();
-        let patch = PrefsPatch { font_scale: Some(1.25), ..Default::default() };
+        let patch = PrefsPatch {
+            font_scale: Some(1.25),
+            ..Default::default()
+        };
         let updated = update(app.handle(), patch).unwrap();
-        assert_eq!((updated.font_scale, updated.color_theme), (1.25, ColorThemeId::default()));
+        assert_eq!(
+            (updated.font_scale, updated.color_theme),
+            (1.25, ColorThemeId::default())
+        );
         assert_eq!(load(app.handle()).unwrap().font_scale, 1.25);
     }
 
@@ -280,16 +309,28 @@ mod tests {
     fn update_rejects_a_font_scale_outside_the_range() {
         let app = app();
         for bad in [0.5, 1.6, -1.0] {
-            let patch = PrefsPatch { font_scale: Some(bad), ..Default::default() };
-            assert!(matches!(update(app.handle(), patch).unwrap_err(), AppError::InvalidInput { .. }));
+            let patch = PrefsPatch {
+                font_scale: Some(bad),
+                ..Default::default()
+            };
+            assert!(matches!(
+                update(app.handle(), patch).unwrap_err(),
+                AppError::InvalidInput { .. }
+            ));
         }
     }
 
     #[test]
     fn update_rejects_a_font_scale_off_the_005_step() {
         let app = app();
-        let patch = PrefsPatch { font_scale: Some(1.03), ..Default::default() };
-        assert!(matches!(update(app.handle(), patch).unwrap_err(), AppError::InvalidInput { .. }));
+        let patch = PrefsPatch {
+            font_scale: Some(1.03),
+            ..Default::default()
+        };
+        assert!(matches!(
+            update(app.handle(), patch).unwrap_err(),
+            AppError::InvalidInput { .. }
+        ));
     }
 
     #[test]
@@ -297,7 +338,10 @@ mod tests {
         let app = app();
         let mut scale = FONT_SCALE_MIN;
         while scale <= FONT_SCALE_MAX + 1e-9 {
-            let patch = PrefsPatch { font_scale: Some(scale), ..Default::default() };
+            let patch = PrefsPatch {
+                font_scale: Some(scale),
+                ..Default::default()
+            };
             update(app.handle(), patch).unwrap();
             scale += FONT_SCALE_STEP;
         }
@@ -309,16 +353,32 @@ mod tests {
             return; // the restriction only bites on the OSes that do not offer Xcode
         }
         let app = app();
-        let patch = PrefsPatch { text_editor: Some(PreferredEditor::Xcode), ..Default::default() };
-        assert!(matches!(update(app.handle(), patch).unwrap_err(), AppError::InvalidInput { .. }));
+        let patch = PrefsPatch {
+            text_editor: Some(PreferredEditor::Xcode),
+            ..Default::default()
+        };
+        assert!(matches!(
+            update(app.handle(), patch).unwrap_err(),
+            AppError::InvalidInput { .. }
+        ));
     }
 
     #[test]
     fn update_leaves_the_store_untouched_when_validation_fails() {
         let app = app();
-        update(app.handle(), PrefsPatch { font_scale: Some(1.0), ..Default::default() }).unwrap();
+        update(
+            app.handle(),
+            PrefsPatch {
+                font_scale: Some(1.0),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         let before = load(app.handle()).unwrap();
-        let bad = PrefsPatch { font_scale: Some(99.0), ..Default::default() };
+        let bad = PrefsPatch {
+            font_scale: Some(99.0),
+            ..Default::default()
+        };
         assert!(update(app.handle(), bad).is_err());
         assert_eq!(load(app.handle()).unwrap(), before);
     }
@@ -367,13 +427,19 @@ mod tests {
     fn pick_config_project_sets_the_path() {
         let app = app();
         pick_config_project(app.handle(), Some("/tmp/proj".into())).unwrap();
-        assert_eq!(load(app.handle()).unwrap().config_project_path, Some("/tmp/proj".to_string()));
+        assert_eq!(
+            load(app.handle()).unwrap().config_project_path,
+            Some("/tmp/proj".to_string())
+        );
     }
 
     #[test]
     fn pick_config_project_cancelled_picker_changes_nothing() {
         let app = app();
-        assert_eq!(pick_config_project(app.handle(), None).unwrap(), WriteOutcome::Cancelled);
+        assert_eq!(
+            pick_config_project(app.handle(), None).unwrap(),
+            WriteOutcome::Cancelled
+        );
         assert_eq!(load(app.handle()).unwrap().config_project_path, None);
     }
 
@@ -385,6 +451,9 @@ mod tests {
         let app = app();
         let path = tauri_plugin_store::resolve_store_path(app.handle(), STORE_FILE).unwrap();
         let text = path.to_string_lossy().to_lowercase();
-        assert!(!text.contains(".claude"), "prefs store path must not be under .claude: {text}");
+        assert!(
+            !text.contains(".claude"),
+            "prefs store path must not be under .claude: {text}"
+        );
     }
 }

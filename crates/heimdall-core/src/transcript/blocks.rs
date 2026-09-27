@@ -28,12 +28,21 @@ pub fn user_blocks(content: Option<&Value>) -> Vec<ContentBlock> {
 
 /// An assistant message's text, thinking and tool-use blocks; other block types are dropped.
 pub fn assistant_blocks(content: Option<&Value>) -> Vec<ContentBlock> {
-    let Some(Value::Array(blocks)) = content else { return Vec::new() };
+    let Some(Value::Array(blocks)) = content else {
+        return Vec::new();
+    };
     blocks
         .iter()
         .filter_map(|b| match kind(b) {
-            Some("text") => non_empty(b, "text").map(|t| ContentBlock::Text { id: String::new(), text: t.into(), system: None }),
-            Some("thinking") => non_empty(b, "thinking").map(|t| ContentBlock::Thinking { id: String::new(), text: t.into() }),
+            Some("text") => non_empty(b, "text").map(|t| ContentBlock::Text {
+                id: String::new(),
+                text: t.into(),
+                system: None,
+            }),
+            Some("thinking") => non_empty(b, "thinking").map(|t| ContentBlock::Thinking {
+                id: String::new(),
+                text: t.into(),
+            }),
             Some("tool_use") => tool_use(b),
             _ => None,
         })
@@ -66,18 +75,27 @@ pub fn usage(v: Option<&Value>) -> Option<TokenUsage> {
 /// StatsComputer.intValue: a JSON number as a count; anything else, or a negative, is 0.
 pub fn int_value(v: Option<&Value>) -> u64 {
     match v {
-        Some(Value::Number(n)) => n.as_u64().or_else(|| n.as_f64().filter(|f| *f > 0.0).map(|f| f as u64)).unwrap_or(0),
+        Some(Value::Number(n)) => n
+            .as_u64()
+            .or_else(|| n.as_f64().filter(|f| *f > 0.0).map(|f| f as u64))
+            .unwrap_or(0),
         _ => 0,
     }
 }
 
 /// An RFC 3339 timestamp such as `2026-01-28T10:00:00.000Z`.
 pub fn timestamp(v: Option<&Value>) -> Option<DateTime<Utc>> {
-    DateTime::parse_from_rfc3339(v?.as_str()?).ok().map(|t| t.with_timezone(&Utc))
+    DateTime::parse_from_rfc3339(v?.as_str()?)
+        .ok()
+        .map(|t| t.with_timezone(&Utc))
 }
 
 fn user_text(text: &str) -> ContentBlock {
-    ContentBlock::Text { id: String::new(), text: text.into(), system: system_content::segments(text) }
+    ContentBlock::Text {
+        id: String::new(),
+        text: text.into(),
+        system: system_content::segments(text),
+    }
 }
 
 fn tool_use(b: &Value) -> Option<ContentBlock> {
@@ -87,19 +105,37 @@ fn tool_use(b: &Value) -> Option<ContentBlock> {
         Some(Value::Object(m)) => m.clone(),
         _ => serde_json::Map::new(),
     };
-    let input: BTreeMap<String, String> = raw.iter().filter_map(|(k, v)| Some((k.clone(), stringify(v)?))).collect();
-    Some(ContentBlock::ToolUse(ToolUse::from_input("", tool_use_id, name, &input, tool_input::pretty(&Value::Object(raw)))))
+    let input: BTreeMap<String, String> = raw
+        .iter()
+        .filter_map(|(k, v)| Some((k.clone(), stringify(v)?)))
+        .collect();
+    Some(ContentBlock::ToolUse(ToolUse::from_input(
+        "",
+        tool_use_id,
+        name,
+        &input,
+        tool_input::pretty(&Value::Object(raw)),
+    )))
 }
 
 fn tool_result(b: &Value) -> ContentBlock {
     let content = match b.get("content") {
         Some(Value::String(s)) => s.clone(),
-        Some(Value::Array(blocks)) => blocks.iter().filter(|c| kind(c) == Some("text")).filter_map(|c| c.get("text")?.as_str()).collect::<Vec<_>>().join("\n"),
+        Some(Value::Array(blocks)) => blocks
+            .iter()
+            .filter(|c| kind(c) == Some("text"))
+            .filter_map(|c| c.get("text")?.as_str())
+            .collect::<Vec<_>>()
+            .join("\n"),
         _ => String::new(),
     };
     ContentBlock::ToolResult(ToolResult {
         id: String::new(),
-        tool_use_id: b.get("tool_use_id").and_then(Value::as_str).unwrap_or_default().to_string(),
+        tool_use_id: b
+            .get("tool_use_id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
         content,
         is_error: b.get("is_error").and_then(Value::as_bool).unwrap_or(false),
     })
@@ -132,13 +168,21 @@ mod tests {
 
     #[test]
     fn stringifies_non_string_inputs_and_drops_null() {
-        assert_eq!(stringify(&json!({"b": [1], "a": true})).as_deref(), Some(r#"{"a":true,"b":[1]}"#));
-        assert_eq!((stringify(&json!(5000)).as_deref(), stringify(&json!(null))), (Some("5000"), None));
+        assert_eq!(
+            stringify(&json!({"b": [1], "a": true})).as_deref(),
+            Some(r#"{"a":true,"b":[1]}"#)
+        );
+        assert_eq!(
+            (stringify(&json!(5000)).as_deref(), stringify(&json!(null))),
+            (Some("5000"), None)
+        );
     }
 
     #[test]
     fn ids_follow_the_message_id_and_index() {
-        let mut b = assistant_blocks(Some(&json!([{"type": "text", "text": "a"}, {"type": "tool_use", "id": "t", "name": "Read", "input": {}}])));
+        let mut b = assistant_blocks(Some(
+            &json!([{"type": "text", "text": "a"}, {"type": "tool_use", "id": "t", "name": "Read", "input": {}}]),
+        ));
         assign_ids("msg_1", &mut b);
         let ContentBlock::ToolUse(t) = &b[1] else { panic!() };
         assert_eq!((t.id.as_str(), t.tool_use_id.as_str()), ("msg_1:1", "t"));
@@ -146,6 +190,9 @@ mod tests {
 
     #[test]
     fn int_value_ignores_non_numbers() {
-        assert_eq!([json!(7), json!(3.9), json!(-2), json!("5"), json!(true)].map(|v| int_value(Some(&v))), [7, 3, 0, 0, 0]);
+        assert_eq!(
+            [json!(7), json!(3.9), json!(-2), json!("5"), json!(true)].map(|v| int_value(Some(&v))),
+            [7, 3, 0, 0, 0]
+        );
     }
 }

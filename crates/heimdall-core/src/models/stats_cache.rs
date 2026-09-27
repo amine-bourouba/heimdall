@@ -81,7 +81,9 @@ pub struct LongestSession {
 
 impl StatsCache {
     pub fn first_session_parsed_date(&self) -> Option<DateTime<Utc>> {
-        DateTime::parse_from_rfc3339(&self.first_session_date).ok().map(|d| d.with_timezone(&Utc))
+        DateTime::parse_from_rfc3339(&self.first_session_date)
+            .ok()
+            .map(|d| d.with_timezone(&Utc))
     }
 
     pub fn total_output_tokens(&self) -> u64 {
@@ -90,7 +92,10 @@ impl StatsCache {
 
     /// Input plus cache reads and cache writes, across all models.
     pub fn total_input_tokens(&self) -> u64 {
-        self.model_usage.values().map(|m| m.input_tokens + m.cache_read_input_tokens + m.cache_creation_input_tokens).sum()
+        self.model_usage
+            .values()
+            .map(|m| m.input_tokens + m.cache_read_input_tokens + m.cache_creation_input_tokens)
+            .sum()
     }
 
     pub fn total_cost_usd(&self) -> f64 {
@@ -103,16 +108,28 @@ impl StatsCache {
 
     /// `(hour, count)` sorted by hour; keys that are not numbers are ignored.
     pub fn sorted_hour_counts(&self) -> Vec<(u32, u64)> {
-        let mut v: Vec<_> = self.hour_counts.iter().filter_map(|(k, &c)| k.parse::<u32>().ok().map(|h| (h, c))).collect();
+        let mut v: Vec<_> = self
+            .hour_counts
+            .iter()
+            .filter_map(|(k, &c)| k.parse::<u32>().ok().map(|h| (h, c)))
+            .collect();
         v.sort_by_key(|&(h, _)| h);
         v
     }
 
     /// StatsCache.friendlyModelName: a short label for the models Poirot knew; anything else unchanged.
     pub fn friendly_model_name(model_id: &str) -> String {
-        const KNOWN: [(&str, &str); 5] =
-            [("opus-4-6", "Opus 4.6"), ("opus-4-5", "Opus 4.5"), ("sonnet-4-5", "Sonnet 4.5"), ("sonnet-4", "Sonnet 4"), ("haiku", "Haiku")];
-        KNOWN.iter().find(|(needle, _)| model_id.contains(needle)).map_or_else(|| model_id.to_string(), |(_, label)| label.to_string())
+        const KNOWN: [(&str, &str); 5] = [
+            ("opus-4-6", "Opus 4.6"),
+            ("opus-4-5", "Opus 4.5"),
+            ("sonnet-4-5", "Sonnet 4.5"),
+            ("sonnet-4", "Sonnet 4"),
+            ("haiku", "Haiku"),
+        ];
+        KNOWN
+            .iter()
+            .find(|(needle, _)| model_id.contains(needle))
+            .map_or_else(|| model_id.to_string(), |(_, label)| label.to_string())
     }
 }
 
@@ -154,33 +171,62 @@ mod tests {
     #[test]
     fn decode_full_json_succeeds() {
         let s = stats();
-        assert_eq!((s.version, s.last_computed_date.as_str(), s.total_sessions, s.total_messages, s.total_speculation_time_saved_ms),
-                   (2, "2026-02-17", 466, 322_626, 0));
+        assert_eq!(
+            (
+                s.version,
+                s.last_computed_date.as_str(),
+                s.total_sessions,
+                s.total_messages,
+                s.total_speculation_time_saved_ms
+            ),
+            (2, "2026-02-17", 466, 322_626, 0)
+        );
     }
     #[test]
     fn decode_daily_activity_parses_correctly() {
         let d = &stats().daily_activity;
         assert_eq!(d.len(), 2);
-        assert_eq!(d[0], DailyActivity { date: "2026-01-01".into(), message_count: 18255, session_count: 11, tool_call_count: 5324 });
+        assert_eq!(
+            d[0],
+            DailyActivity {
+                date: "2026-01-01".into(),
+                message_count: 18255,
+                session_count: 11,
+                tool_call_count: 5324
+            }
+        );
     }
     #[test]
     fn decode_daily_model_tokens_parses_multi_model() {
         let t = &stats().daily_model_tokens[1].tokens_by_model;
         assert_eq!(t.len(), 2);
-        assert_eq!((t["claude-opus-4-5-20251101"], t["claude-sonnet-4-5-20250929"]), (196_417, 99_944));
+        assert_eq!(
+            (t["claude-opus-4-5-20251101"], t["claude-sonnet-4-5-20250929"]),
+            (196_417, 99_944)
+        );
     }
     #[test]
     fn decode_model_usage_parses_token_counts() {
         let s = stats();
         let opus = &s.model_usage["claude-opus-4-5-20251101"];
         assert_eq!(s.model_usage.len(), 2);
-        assert_eq!((opus.input_tokens, opus.output_tokens, opus.cache_read_input_tokens, opus.cache_creation_input_tokens),
-                   (4_020_186, 3_833_943, 7_246_318_082, 325_882_562));
+        assert_eq!(
+            (
+                opus.input_tokens,
+                opus.output_tokens,
+                opus.cache_read_input_tokens,
+                opus.cache_creation_input_tokens
+            ),
+            (4_020_186, 3_833_943, 7_246_318_082, 325_882_562)
+        );
     }
     #[test]
     fn decode_longest_session_parses_all_fields() {
         let l = stats().longest_session;
-        assert_eq!((l.session_id.as_str(), l.duration, l.message_count), ("ce55f01b-e4f4-4c6a-934e-f95ba536935f", 321_972_719, 1504));
+        assert_eq!(
+            (l.session_id.as_str(), l.duration, l.message_count),
+            ("ce55f01b-e4f4-4c6a-934e-f95ba536935f", 321_972_719, 1504)
+        );
     }
     #[test]
     fn decode_hour_counts_parses_string_keys() {
@@ -189,7 +235,10 @@ mod tests {
     }
     #[test]
     fn sorted_hour_counts_sorts_ascending() {
-        assert_eq!(stats().sorted_hour_counts().iter().map(|x| x.0).collect::<Vec<_>>(), [0, 11, 23]);
+        assert_eq!(
+            stats().sorted_hour_counts().iter().map(|x| x.0).collect::<Vec<_>>(),
+            [0, 11, 23]
+        );
     }
     #[test]
     fn total_output_tokens_sums_across_models() {
@@ -199,7 +248,10 @@ mod tests {
     fn friendly_model_name_maps_known_models() {
         assert_eq!(StatsCache::friendly_model_name("claude-opus-4-6"), "Opus 4.6");
         assert_eq!(StatsCache::friendly_model_name("claude-opus-4-5-20251101"), "Opus 4.5");
-        assert_eq!(StatsCache::friendly_model_name("claude-sonnet-4-5-20250929"), "Sonnet 4.5");
+        assert_eq!(
+            StatsCache::friendly_model_name("claude-sonnet-4-5-20250929"),
+            "Sonnet 4.5"
+        );
         assert_eq!(StatsCache::friendly_model_name("unknown-model"), "unknown-model");
     }
     #[test]
@@ -214,7 +266,11 @@ mod tests {
 
     #[test]
     fn cost_usd_keeps_its_exact_key_and_missing_fields_default() {
-        let json = serde_json::to_value(ModelUsage { cost_usd: 1.5, ..Default::default() }).unwrap();
+        let json = serde_json::to_value(ModelUsage {
+            cost_usd: 1.5,
+            ..Default::default()
+        })
+        .unwrap();
         assert_eq!(json["costUSD"], 1.5);
         let partial: StatsCache = serde_json::from_str(r#"{"version": 3}"#).unwrap();
         assert_eq!((partial.version, partial.daily_activity.len()), (3, 0));

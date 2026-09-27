@@ -13,14 +13,21 @@ use heimdall_core::models::catalog::mcp_catalog::{self, McpCatalogEntry};
 use heimdall_core::models::config::mcp::{McpServer, McpServerInput, McpServerStatus};
 use heimdall_core::models::config::scope::ProjectContext;
 use heimdall_core::paths::TargetOs;
-use heimdall_core::{mcp_status, AppError, Loaded, Result, WriteOutcome};
+use heimdall_core::{AppError, Loaded, Result, WriteOutcome, mcp_status};
 use tauri::{AppHandle, Manager};
 
 use super::config_read::resolve_project_scope;
-use crate::state::{blocking, AppState};
+use crate::state::{AppState, blocking};
 
-fn list_mcp_servers_inner<R: tauri::Runtime>(app: &AppHandle<R>, state: &AppState, project: Option<ProjectContext>) -> Result<Loaded<Vec<McpServer>>> {
-    let root = project.as_ref().map(|context| resolve_project_scope(app, state, context)).transpose()?;
+fn list_mcp_servers_inner<R: tauri::Runtime>(
+    app: &AppHandle<R>,
+    state: &AppState,
+    project: Option<ProjectContext>,
+) -> Result<Loaded<Vec<McpServer>>> {
+    let root = project
+        .as_ref()
+        .map(|context| resolve_project_scope(app, state, context))
+        .transpose()?;
     let project_path = root.as_deref().and_then(|p| p.to_str());
     Ok(mcp::load(&state.claude_home, project_path, TargetOs::current()))
 }
@@ -31,7 +38,11 @@ pub async fn list_mcp_servers(app: AppHandle, project: Option<ProjectContext>) -
     blocking(move || list_mcp_servers_inner(&app, &app.state::<AppState>(), project)).await
 }
 
-fn get_mcp_statuses_inner<R: tauri::Runtime>(app: &AppHandle<R>, state: &AppState, project: Option<ProjectContext>) -> Result<BTreeMap<String, McpServerStatus>> {
+fn get_mcp_statuses_inner<R: tauri::Runtime>(
+    app: &AppHandle<R>,
+    state: &AppState,
+    project: Option<ProjectContext>,
+) -> Result<BTreeMap<String, McpServerStatus>> {
     let mut servers = list_mcp_servers_inner(app, state, project)?.value;
     let auth = mcp::auth_cache_names(&state.claude_home);
     let processes = mcp_status::running_command_lines();
@@ -41,7 +52,10 @@ fn get_mcp_statuses_inner<R: tauri::Runtime>(app: &AppHandle<R>, state: &AppStat
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_mcp_statuses(app: AppHandle, project: Option<ProjectContext>) -> Result<BTreeMap<String, McpServerStatus>> {
+pub async fn get_mcp_statuses(
+    app: AppHandle,
+    project: Option<ProjectContext>,
+) -> Result<BTreeMap<String, McpServerStatus>> {
     blocking(move || get_mcp_statuses_inner(&app, &app.state::<AppState>(), project)).await
 }
 
@@ -82,8 +96,14 @@ mod tests {
     fn app_handle() -> AppHandle<tauri::test::MockRuntime> {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../fixtures/synthetic");
         let claude_home = ClaudeHome::new(root.join("claude-home"), root.join("claude.json"));
-        let app = mock_builder().plugin(tauri_plugin_store::Builder::default().build()).build(mock_context(noop_assets())).expect("build mock app");
-        app.manage(AppState { claude_home, cache: crate::state::Cache::default() });
+        let app = mock_builder()
+            .plugin(tauri_plugin_store::Builder::default().build())
+            .build(mock_context(noop_assets()))
+            .expect("build mock app");
+        app.manage(AppState {
+            claude_home,
+            cache: crate::state::Cache::default(),
+        });
         app.handle().clone()
     }
 
@@ -113,7 +133,9 @@ mod tests {
     #[test]
     fn list_mcp_servers_project_scope_adds_the_projects_own_server() {
         let app = app_handle();
-        let project = Some(ProjectContext::Project { project_id: "-Users-fixture-src-app".into() });
+        let project = Some(ProjectContext::Project {
+            project_id: "-Users-fixture-src-app".into(),
+        });
         let loaded = list_mcp_servers_inner(&app, &app.state::<AppState>(), project).unwrap();
         assert!(loaded.value.iter().any(|s| s.raw_name == "local-db"));
     }
@@ -121,14 +143,21 @@ mod tests {
     #[test]
     fn list_mcp_servers_rejects_an_unknown_project_as_invalid_input() {
         let app = app_handle();
-        let project = Some(ProjectContext::Project { project_id: "-Users-nobody-nowhere".into() });
-        assert!(matches!(list_mcp_servers_inner(&app, &app.state::<AppState>(), project).unwrap_err(), AppError::InvalidInput { .. }));
+        let project = Some(ProjectContext::Project {
+            project_id: "-Users-nobody-nowhere".into(),
+        });
+        assert!(matches!(
+            list_mcp_servers_inner(&app, &app.state::<AppState>(), project).unwrap_err(),
+            AppError::InvalidInput { .. }
+        ));
     }
 
     #[test]
     fn get_mcp_statuses_keys_by_server_id_and_covers_every_server() {
         let app = app_handle();
-        let servers = list_mcp_servers_inner(&app, &app.state::<AppState>(), None).unwrap().value;
+        let servers = list_mcp_servers_inner(&app, &app.state::<AppState>(), None)
+            .unwrap()
+            .value;
         let statuses = get_mcp_statuses_inner(&app, &app.state::<AppState>(), None).unwrap();
         assert_eq!(statuses.len(), servers.len());
         for server in &servers {

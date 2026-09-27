@@ -66,7 +66,11 @@ pub fn load_all(path: &Path) -> Result<Loaded<Vec<HistoryEntry>>> {
             }
             Err(e) => return Err(AppError::from_io(&e, path)),
         };
-        let line = if i == 0 { line.strip_prefix('\u{feff}').unwrap_or(&line) } else { &line };
+        let line = if i == 0 {
+            line.strip_prefix('\u{feff}').unwrap_or(&line)
+        } else {
+            &line
+        };
         if line.trim().is_empty() {
             continue;
         }
@@ -85,8 +89,18 @@ pub fn load_all(path: &Path) -> Result<Loaded<Vec<HistoryEntry>>> {
 pub fn page(path: &Path, offset: u32, limit: u32) -> Result<HistoryPage> {
     let loaded = load_all(path)?;
     let total = loaded.value.len() as u32;
-    let entries = loaded.value.into_iter().skip(offset as usize).take(limit as usize).collect();
-    Ok(HistoryPage { entries, offset, total, skipped: loaded.skipped })
+    let entries = loaded
+        .value
+        .into_iter()
+        .skip(offset as usize)
+        .take(limit as usize)
+        .collect();
+    Ok(HistoryPage {
+        entries,
+        offset,
+        total,
+        skipped: loaded.skipped,
+    })
 }
 
 /// Non-empty lines, counted without parsing (HistoryLoader.entryCount), for the sidebar badge.
@@ -101,7 +115,11 @@ pub fn entry_count(path: &Path) -> Result<u32> {
     let mut count = 0;
     loop {
         buf.clear();
-        if reader.read_until(b'\n', &mut buf).map_err(|e| AppError::from_io(&e, path))? == 0 {
+        if reader
+            .read_until(b'\n', &mut buf)
+            .map_err(|e| AppError::from_io(&e, path))?
+            == 0
+        {
             return Ok(count);
         }
         if !buf.iter().all(u8::is_ascii_whitespace) {
@@ -113,7 +131,12 @@ pub fn entry_count(path: &Path) -> Result<u32> {
 /// Distinct project paths, in order of their newest entry.
 pub fn unique_projects(path: &Path) -> Result<Vec<String>> {
     let mut seen = std::collections::HashSet::new();
-    Ok(load_all(path)?.value.into_iter().map(|e| e.project).filter(|p| seen.insert(p.clone())).collect())
+    Ok(load_all(path)?
+        .value
+        .into_iter()
+        .map(|e| e.project)
+        .filter(|p| seen.insert(p.clone()))
+        .collect())
 }
 
 fn parse_line(line: &str, occurrence: u32) -> Option<HistoryEntry> {
@@ -131,7 +154,10 @@ fn parse_line(line: &str, occurrence: u32) -> Option<HistoryEntry> {
             .map(|(k, v)| {
                 let text = match &v {
                     Value::String(s) => s.clone(),
-                    other => other.get("content").and_then(Value::as_str).map_or_else(|| other.to_string(), String::from),
+                    other => other
+                        .get("content")
+                        .and_then(Value::as_str)
+                        .map_or_else(|| other.to_string(), String::from),
                 };
                 (k, text)
             })
@@ -173,23 +199,50 @@ mod tests {
     fn load_all_single_entry_parses_correctly() {
         let (_d, p) = file(&line("hello world", 1_700_000_000_000, "/Users/test/my-project"));
         let e = load_all(&p).unwrap().value;
-        assert_eq!((e.len(), e[0].display.as_str(), e[0].project.as_str(), e[0].project_name()), (1, "hello world", "/Users/test/my-project", "my-project"));
+        assert_eq!(
+            (
+                e.len(),
+                e[0].display.as_str(),
+                e[0].project.as_str(),
+                e[0].project_name()
+            ),
+            (1, "hello world", "/Users/test/my-project", "my-project")
+        );
     }
     #[test]
     fn load_all_multiple_entries_sorted_by_timestamp_descending() {
-        let (_d, p) = file(&[line("first", 1_700_000_000_000, "/a"), line("second", 1_700_000_002_000, "/b"), line("third", 1_700_000_001_000, "/c")].join("\n"));
+        let (_d, p) = file(
+            &[
+                line("first", 1_700_000_000_000, "/a"),
+                line("second", 1_700_000_002_000, "/b"),
+                line("third", 1_700_000_001_000, "/c"),
+            ]
+            .join("\n"),
+        );
         assert_eq!(displays(&load_all(&p).unwrap().value), ["second", "third", "first"]);
     }
     #[test]
     fn load_all_skips_invalid_lines() {
-        let (_d, p) = file(&[line("valid", 1_700_000_000_000, "/a"), "not valid json".into(), line("also valid", 1_700_000_001_000, "/b")].join("\n"));
+        let (_d, p) = file(
+            &[
+                line("valid", 1_700_000_000_000, "/a"),
+                "not valid json".into(),
+                line("also valid", 1_700_000_001_000, "/b"),
+            ]
+            .join("\n"),
+        );
         let loaded = load_all(&p).unwrap();
         assert_eq!((loaded.value.len(), loaded.skipped), (2, 1));
     }
     #[test]
     fn load_all_handles_pasted_contents() {
-        let (_d, p) = file(r#"{"display":"test","pastedContents":{"file.txt":"contents here"},"timestamp":1700000000000,"project":"/a"}"#);
-        assert_eq!(load_all(&p).unwrap().value[0].pasted_contents["file.txt"], "contents here");
+        let (_d, p) = file(
+            r#"{"display":"test","pastedContents":{"file.txt":"contents here"},"timestamp":1700000000000,"project":"/a"}"#,
+        );
+        assert_eq!(
+            load_all(&p).unwrap().value[0].pasted_contents["file.txt"],
+            "contents here"
+        );
     }
     #[test]
     fn load_all_handles_null_pasted_contents() {
@@ -213,7 +266,14 @@ mod tests {
     }
     #[test]
     fn unique_projects_returns_distinct_paths() {
-        let (_d, p) = file(&[line("a", 1_700_000_002_000, "/project-a"), line("b", 1_700_000_001_000, "/project-b"), line("c", 1_700_000_000_000, "/project-a")].join("\n"));
+        let (_d, p) = file(
+            &[
+                line("a", 1_700_000_002_000, "/project-a"),
+                line("b", 1_700_000_001_000, "/project-b"),
+                line("c", 1_700_000_000_000, "/project-a"),
+            ]
+            .join("\n"),
+        );
         assert_eq!(unique_projects(&p).unwrap(), ["/project-a", "/project-b"]);
     }
     #[test]
@@ -229,7 +289,13 @@ mod tests {
         let before: Vec<_> = load_all(&p).unwrap().value.into_iter().map(|e| e.id).collect();
         // A line inserted before them moves their positions but not their ids.
         std::fs::write(&p, format!("{}\n{a}\n{b}\n", line("new", 1_600_000_000_000, "/n"))).unwrap();
-        let after: Vec<_> = load_all(&p).unwrap().value.into_iter().filter(|e| e.display != "new").map(|e| e.id).collect();
+        let after: Vec<_> = load_all(&p)
+            .unwrap()
+            .value
+            .into_iter()
+            .filter(|e| e.display != "new")
+            .map(|e| e.id)
+            .collect();
         assert_eq!(before, after);
         assert!(before[0].starts_with("1700000001000-"));
     }
@@ -245,7 +311,9 @@ mod tests {
 
     #[test]
     fn object_pasted_contents_and_extra_keys_are_accepted() {
-        let (_d, p) = file(r#"{"display":"x","pastedContents":{"1":{"id":1,"type":"text","content":"pasted"},"2":{"id":2,"type":"image"}},"timestamp":1700000000000,"project":"/a","sessionId":"s"}"#);
+        let (_d, p) = file(
+            r#"{"display":"x","pastedContents":{"1":{"id":1,"type":"text","content":"pasted"},"2":{"id":2,"type":"image"}},"timestamp":1700000000000,"project":"/a","sessionId":"s"}"#,
+        );
         let e = &load_all(&p).unwrap().value[0];
         assert_eq!(e.pasted_contents["1"], "pasted");
         assert_eq!(e.pasted_contents["2"], r#"{"id":2,"type":"image"}"#);
@@ -253,16 +321,24 @@ mod tests {
 
     #[test]
     fn pages_are_slices_of_the_newest_first_list() {
-        let lines: Vec<_> = (0..5).map(|i| line(&format!("e{i}"), 1_700_000_000_000 + i * 1000, "/p")).collect();
+        let lines: Vec<_> = (0..5)
+            .map(|i| line(&format!("e{i}"), 1_700_000_000_000 + i * 1000, "/p"))
+            .collect();
         let (_d, p) = file(&lines.join("\n"));
         let pg = page(&p, 1, 2).unwrap();
-        assert_eq!((displays(&pg.entries), pg.offset, pg.total, pg.skipped), (vec!["e3", "e2"], 1, 5, 0));
+        assert_eq!(
+            (displays(&pg.entries), pg.offset, pg.total, pg.skipped),
+            (vec!["e3", "e2"], 1, 5, 0)
+        );
     }
 
     #[test]
     fn windows_fixture_history_parses_fully() {
         let p = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/windows/claude-home/history.jsonl");
         let loaded = load_all(&p).unwrap();
-        assert_eq!((loaded.value.len() as u32, loaded.skipped), (entry_count(&p).unwrap(), 0));
+        assert_eq!(
+            (loaded.value.len() as u32, loaded.skipped),
+            (entry_count(&p).unwrap(), 0)
+        );
     }
 }

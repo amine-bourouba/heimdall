@@ -9,10 +9,10 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use heimdall_core::classify::{classify, Area, DataChange};
-use heimdall_core::paths::{compare_key, ClaudeHome, TargetOs};
+use heimdall_core::classify::{Area, DataChange, classify};
+use heimdall_core::paths::{ClaudeHome, TargetOs, compare_key};
 use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode};
-use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, RecommendedCache};
+use notify_debouncer_full::{DebounceEventResult, Debouncer, RecommendedCache, new_debouncer};
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 
@@ -61,24 +61,45 @@ fn classify_path(path: &Path, claude_home: &ClaudeHome, custom_folders: &[String
         let folder_key = compare_key(f, os);
         path_key == folder_key || path_key.starts_with(&format!("{folder_key}/"))
     }) {
-        return vec![DataChange { area: Area::Memory, key: Some(format!("folder:{index}")) }];
+        return vec![DataChange {
+            area: Area::Memory,
+            key: Some(format!("folder:{index}")),
+        }];
     }
-    classify(&path_str, &claude_home.root().display().to_string(), &claude_home.config_file().display().to_string(), os)
+    classify(
+        &path_str,
+        &claude_home.root().display().to_string(),
+        &claude_home.config_file().display().to_string(),
+        os,
+    )
 }
 
 fn emit_status<R: tauri::Runtime>(app: &AppHandle<R>, mode: WatcherMode, detail: Option<String>) {
     let _ = WatcherStatus { mode, detail }.emit(app);
 }
 
-fn handle_events<R: tauri::Runtime>(app: &AppHandle<R>, claude_home: &ClaudeHome, custom_folders: &Mutex<Vec<String>>, os: TargetOs, result: DebounceEventResult) {
+fn handle_events<R: tauri::Runtime>(
+    app: &AppHandle<R>,
+    claude_home: &ClaudeHome,
+    custom_folders: &Mutex<Vec<String>>,
+    os: TargetOs,
+    result: DebounceEventResult,
+) {
     // A per-path watch error (a file vanished between the event firing and the debounce window
     // closing, say) is not actionable here; there is nothing to invalidate or tell the UI.
     let Ok(events) = result else { return };
 
     // A rescan notice means events since the last one may be incomplete; treat the whole home as
     // changed rather than trust a partial batch (ADR 0006 decision 6, the Windows/overflow half).
-    if events.iter().any(|e| e.flag() == Some(notify_debouncer_full::notify::event::Flag::Rescan)) {
-        let _ = DataChanged(vec![DataChange { area: Area::All, key: None }]).emit(app);
+    if events
+        .iter()
+        .any(|e| e.flag() == Some(notify_debouncer_full::notify::event::Flag::Rescan))
+    {
+        let _ = DataChanged(vec![DataChange {
+            area: Area::All,
+            key: None,
+        }])
+        .emit(app);
         return;
     }
 
@@ -116,7 +137,9 @@ fn register_root(debouncer: &mut AppDebouncer, root: &Path) -> Result<(), String
         if !watched_any {
             return Err(format!("could not register any watch under {}: {e}", root.display()));
         }
-        return Err(format!("recursive registration failed ({e}); watching known subfolders individually"));
+        return Err(format!(
+            "recursive registration failed ({e}); watching known subfolders individually"
+        ));
     }
     Ok(())
 }
@@ -125,11 +148,14 @@ pub fn init<R: tauri::Runtime>(app: &mut tauri::App<R>) -> tauri::Result<()> {
     let app_handle = app.handle().clone();
     let claude_home = app.state::<AppState>().claude_home.clone();
     let os = TargetOs::current();
-    let custom_folders = crate::prefs::load(&app_handle).map(|p| p.custom_memory_folders).unwrap_or_default();
+    let custom_folders = crate::prefs::load(&app_handle)
+        .map(|p| p.custom_memory_folders)
+        .unwrap_or_default();
 
     let debouncer_home = claude_home.clone();
     let debouncer_app = app_handle.clone();
-    let custom_folders_cell: std::sync::Arc<Mutex<Vec<String>>> = std::sync::Arc::new(Mutex::new(custom_folders.clone()));
+    let custom_folders_cell: std::sync::Arc<Mutex<Vec<String>>> =
+        std::sync::Arc::new(Mutex::new(custom_folders.clone()));
     let handler_folders = custom_folders_cell.clone();
     let mut debouncer = new_debouncer(DEBOUNCE, None, move |result: DebounceEventResult| {
         handle_events(&debouncer_app, &debouncer_home, &handler_folders, os, result);
@@ -154,7 +180,10 @@ pub fn init<R: tauri::Runtime>(app: &mut tauri::App<R>) -> tauri::Result<()> {
     // *and* replaces its own list under one lock, then the callback's clone is refreshed on the
     // handle's next read — a race window of at most one debounce tick, acceptable since a missed
     // event only makes data late, never wrong (ADR 0006 decision 4).
-    app.manage(WatcherHandle { debouncer: Mutex::new(debouncer), custom_folders: Mutex::new(custom_folders) });
+    app.manage(WatcherHandle {
+        debouncer: Mutex::new(debouncer),
+        custom_folders: Mutex::new(custom_folders),
+    });
     Ok(())
 }
 
@@ -169,7 +198,13 @@ mod tests {
         let folder = dir.path().join("notes");
         let folders = vec![folder.display().to_string()];
         let changed = classify_path(&folder.join("MEMORY.md"), &claude_home, &folders, TargetOs::current());
-        assert_eq!(changed, [DataChange { area: Area::Memory, key: Some("folder:0".to_string()) }]);
+        assert_eq!(
+            changed,
+            [DataChange {
+                area: Area::Memory,
+                key: Some("folder:0".to_string())
+            }]
+        );
     }
 
     #[test]
@@ -178,7 +213,13 @@ mod tests {
         let root = dir.path().join(".claude");
         let claude_home = ClaudeHome::new(&root, dir.path().join(".claude.json"));
         let changed = classify_path(&root.join("plans").join("x.md"), &claude_home, &[], TargetOs::current());
-        assert_eq!(changed, [DataChange { area: Area::Plans, key: None }]);
+        assert_eq!(
+            changed,
+            [DataChange {
+                area: Area::Plans,
+                key: None
+            }]
+        );
     }
 
     #[test]

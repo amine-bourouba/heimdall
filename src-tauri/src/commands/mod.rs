@@ -188,7 +188,9 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("heimdall-bindings-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("temp dir");
         let path = dir.join("bindings.ts");
-        builder().export(specta_typescript::Typescript::default(), &path).expect("export bindings");
+        builder()
+            .export(specta_typescript::Typescript::default(), &path)
+            .expect("export bindings");
         let text = std::fs::read_to_string(&path).expect("read generated bindings");
         std::fs::remove_dir_all(&dir).ok();
         text
@@ -197,9 +199,15 @@ mod tests {
     #[test]
     fn registered_commands_match_the_contract_table() {
         let text = generated_bindings();
-        let missing: Vec<&str> =
-            CONTRACT_COMMAND_NAMES.iter().copied().filter(|name| !text.contains(&format!("\"{name}\""))).collect();
-        assert!(missing.is_empty(), "commands missing from the generated bindings: {missing:?}");
+        let missing: Vec<&str> = CONTRACT_COMMAND_NAMES
+            .iter()
+            .copied()
+            .filter(|name| !text.contains(&format!("\"{name}\"")))
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "commands missing from the generated bindings: {missing:?}"
+        );
     }
 
     /// `build.rs` cannot depend on this crate's own compiled output (it runs *to produce* that
@@ -215,7 +223,11 @@ mod tests {
             .split("];")
             .next()
             .expect("COMMANDS list must be closed with `];`");
-        let mut from_build_rs: Vec<&str> = list_text.lines().filter_map(|line| line.trim().trim_end_matches(',').strip_prefix('"')).filter_map(|s| s.strip_suffix('"')).collect();
+        let mut from_build_rs: Vec<&str> = list_text
+            .lines()
+            .filter_map(|line| line.trim().trim_end_matches(',').strip_prefix('"'))
+            .filter_map(|s| s.strip_suffix('"'))
+            .collect();
         from_build_rs.sort_unstable();
         let mut expected: Vec<&str> = CONTRACT_COMMAND_NAMES.to_vec();
         expected.sort_unstable();

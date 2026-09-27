@@ -56,7 +56,9 @@ impl Searchable {
     }
 
     fn push(&mut self, piece: Option<&str>) {
-        let Some(piece) = piece.filter(|p| !p.is_empty()) else { return };
+        let Some(piece) = piece.filter(|p| !p.is_empty()) else {
+            return;
+        };
         if self.is_full() {
             return;
         }
@@ -94,7 +96,12 @@ fn flatten_tool_result(content: Option<&Value>) -> Option<String> {
     match content? {
         Value::String(s) => Some(s.clone()),
         Value::Array(blocks) => Some(
-            blocks.iter().filter(|b| block_type(b) == Some("text")).filter_map(|b| str_field(b, "text")).collect::<Vec<_>>().join(" "),
+            blocks
+                .iter()
+                .filter(|b| block_type(b) == Some("text"))
+                .filter_map(|b| str_field(b, "text"))
+                .collect::<Vec<_>>()
+                .join(" "),
         ),
         _ => None,
     }

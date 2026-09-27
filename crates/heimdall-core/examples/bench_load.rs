@@ -44,7 +44,12 @@ fn main() {
     println!("== generated single transcript: ~50 MB ==");
     let big_path = tmp.path().join("bench-50mb.jsonl");
     let bytes = generate_large_transcript(&big_path, 50 * 1024 * 1024);
-    let ctx = ParseContext { project_path: "/bench", session_id: "bench-50mb", index_started_at: None, is_sidechain: false };
+    let ctx = ParseContext {
+        project_path: "/bench",
+        session_id: "bench-50mb",
+        index_started_at: None,
+        is_sidechain: false,
+    };
     let (loaded, elapsed) = time(|| full::parse(&big_path, ctx).expect("full parse should not error"));
     println!(
         "  full parse of {bytes} bytes: {elapsed:?} ({} messages, {} skipped)",
@@ -59,7 +64,12 @@ fn bench_claude_home(claude_home: &Path) {
 
     match largest_transcript(&projects_dir) {
         Some((path, bytes)) => {
-            let ctx = ParseContext { project_path: "/bench", session_id: "bench", index_started_at: None, is_sidechain: false };
+            let ctx = ParseContext {
+                project_path: "/bench",
+                session_id: "bench",
+                index_started_at: None,
+                is_sidechain: false,
+            };
             let start = Instant::now();
             let loaded = full::parse(&path, ctx).expect("full parse should not error");
             let elapsed = start.elapsed();
@@ -79,7 +89,10 @@ fn bench_discover(projects_dir: &Path) {
     let warm = time(|| discovery::discover(projects_dir, TargetOs::current()).expect("discover should not error"));
     let (project_count, session_count) = {
         let loaded = discovery::discover(projects_dir, TargetOs::current()).unwrap();
-        (loaded.value.len(), loaded.value.iter().map(|p| p.sessions.len()).sum::<usize>())
+        (
+            loaded.value.len(),
+            loaded.value.iter().map(|p| p.sessions.len()).sum::<usize>(),
+        )
     };
     println!("  discover(): {project_count} projects, {session_count} sessions");
     println!("  cold: {:?}   warm (same-process repeat): {:?}", cold.1, warm.1);

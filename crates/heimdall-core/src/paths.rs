@@ -47,12 +47,18 @@ impl ClaudeHome {
     /// The layout Claude Code uses by default for a user whose home folder is `user_home`.
     pub fn for_user_home(user_home: impl AsRef<Path>) -> Self {
         let home = user_home.as_ref();
-        Self { root: home.join(".claude"), config_file: home.join(".claude.json") }
+        Self {
+            root: home.join(".claude"),
+            config_file: home.join(".claude.json"),
+        }
     }
 
     /// Explicit roots, used by tests and fixture trees.
     pub fn new(root: impl Into<PathBuf>, config_file: impl Into<PathBuf>) -> Self {
-        Self { root: root.into(), config_file: config_file.into() }
+        Self {
+            root: root.into(),
+            config_file: config_file.into(),
+        }
     }
 
     /// Resolve from the environment. Claude Code 2.1.282 treats `CLAUDE_CONFIG_DIR` as its
@@ -64,7 +70,10 @@ impl ClaudeHome {
 
     fn resolve(config_dir: Option<PathBuf>, user_home: Option<PathBuf>) -> Result<Self> {
         match config_dir.filter(|d| !d.as_os_str().is_empty()) {
-            Some(dir) if dir.is_absolute() => Ok(Self { config_file: dir.join(".claude.json"), root: dir }),
+            Some(dir) if dir.is_absolute() => Ok(Self {
+                config_file: dir.join(".claude.json"),
+                root: dir,
+            }),
             Some(dir) => Err(AppError::invalid_input("CLAUDE_CONFIG_DIR must be an absolute path").with_path(dir)),
             None => user_home
                 .map(Self::for_user_home)
@@ -210,7 +219,9 @@ pub fn is_absolute(path: &str, os: TargetOs) -> bool {
 /// Claude Code's project folder name: every character that is not an ASCII letter or digit
 /// becomes `-` (`C:\Users\me\app` → `C--Users-me-app`, `/Users/me/app` → `-Users-me-app`).
 pub fn encode_project_dir_name(path: &str) -> String {
-    path.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect()
+    path.chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect()
 }
 
 /// True when `path`, encoded, is the project folder `dir_name`. Compared case-insensitively
@@ -263,19 +274,29 @@ pub fn decode_project_dir_name(encoded: &str, os: TargetOs, exists: impl Fn(&str
 fn windows_drive_prefix(encoded: &str) -> Option<(char, &str)> {
     let mut chars = encoded.chars();
     let drive = chars.next().filter(|c| c.is_ascii_alphabetic())?;
-    encoded.get(1..3).filter(|s| *s == "--").map(|_| (drive.to_ascii_uppercase(), &encoded[3..]))
+    encoded
+        .get(1..3)
+        .filter(|s| *s == "--")
+        .map(|_| (drive.to_ascii_uppercase(), &encoded[3..]))
 }
 
 /// The last component of a path in either separator style.
 pub fn last_component(path: &str) -> &str {
-    path.trim_end_matches(['/', '\\']).rsplit(['/', '\\']).next().unwrap_or(path)
+    path.trim_end_matches(['/', '\\'])
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or(path)
 }
 
 /// Accepts `name` only if it can be joined to a folder as a single file name: not empty, not `.`
 /// or `..`, and free of separators, drive colons and NUL. Session ids reach file paths this way.
 pub fn plain_file_name(name: &str) -> Result<&str> {
     let bad = name.is_empty() || name == "." || name == ".." || name.contains(['/', '\\', ':', '\0']);
-    if bad { Err(AppError::invalid_input(format!("not a plain file name: {name:?}"))) } else { Ok(name) }
+    if bad {
+        Err(AppError::invalid_input(format!("not a plain file name: {name:?}")))
+    } else {
+        Ok(name)
+    }
 }
 
 #[cfg(test)]
@@ -309,7 +330,10 @@ mod tests {
         assert!(same_file("src/a.rs", r"C:\proj\src\a.rs", Windows));
         assert!(same_file("/Users/me/proj/src/a.swift", "src/a.swift", Macos));
         assert!(same_file("x.rs", "x.rs", Linux));
-        assert!(!same_file("b.rs", "/proj/src/ab.rs", Linux), "suffix must start at a separator");
+        assert!(
+            !same_file("b.rs", "/proj/src/ab.rs", Linux),
+            "suffix must start at a separator"
+        );
         assert!(!same_file("Src/A.rs", "/p/src/a.rs", Linux));
         assert!(same_file("Src/A.rs", "/p/src/a.rs", Windows));
     }
@@ -329,22 +353,40 @@ mod tests {
 
     #[test]
     fn encodes_project_folder_names_like_claude_code() {
-        assert_eq!(encode_project_dir_name(r"C:\Users\me\Desktop\tech"), "C--Users-me-Desktop-tech");
+        assert_eq!(
+            encode_project_dir_name(r"C:\Users\me\Desktop\tech"),
+            "C--Users-me-Desktop-tech"
+        );
         assert_eq!(encode_project_dir_name("/Users/me/src/my app"), "-Users-me-src-my-app");
-        assert_eq!(encode_project_dir_name(r"C:\Users\me\FreePro - SI - test"), "C--Users-me-FreePro---SI---test");
-        assert!(encodes_to(r"c:\Users\fixture\Desktop\tech\proj-11", "C--Users-fixture-Desktop-tech-proj-11"));
+        assert_eq!(
+            encode_project_dir_name(r"C:\Users\me\FreePro - SI - test"),
+            "C--Users-me-FreePro---SI---test"
+        );
+        assert!(encodes_to(
+            r"c:\Users\fixture\Desktop\tech\proj-11",
+            "C--Users-fixture-Desktop-tech-proj-11"
+        ));
     }
 
     #[test]
     fn decodes_folder_names_by_probing_like_poirot() {
         let dirs = ["/Users", "/Users/me", "/Users/me/my-app"];
         let exists = |p: &str| dirs.contains(&p);
-        assert_eq!(decode_project_dir_name("-Users-me-my-app", Macos, exists), "/Users/me/my-app");
+        assert_eq!(
+            decode_project_dir_name("-Users-me-my-app", Macos, exists),
+            "/Users/me/my-app"
+        );
         // A missing tail keeps its hyphens joined, as SessionLoader.swift:341-346 does.
-        assert_eq!(decode_project_dir_name("-Users-me-gone-app", Macos, exists), "/Users/me/gone-app");
+        assert_eq!(
+            decode_project_dir_name("-Users-me-gone-app", Macos, exists),
+            "/Users/me/gone-app"
+        );
         let win = [r"C:\Users", r"C:\Users\pc", r"C:\Users\pc\Desktop"];
         let wexists = |p: &str| win.contains(&p);
-        assert_eq!(decode_project_dir_name("c--Users-pc-Desktop-tech", Windows, wexists), r"C:\Users\pc\Desktop\tech");
+        assert_eq!(
+            decode_project_dir_name("c--Users-pc-Desktop-tech", Windows, wexists),
+            r"C:\Users\pc\Desktop\tech"
+        );
         assert_eq!(last_component(r"C:\Users\pc\Desktop\tech"), "tech");
         assert_eq!(last_component("/Users/me/my-app/"), "my-app");
     }
@@ -365,8 +407,14 @@ mod tests {
             ClaudeHome::resolve(Some(PathBuf::from("relative/cfg")), None),
             Err(AppError::InvalidInput { .. })
         ));
-        assert!(ClaudeHome::resolve(Some(PathBuf::new()), Some(PathBuf::from("/h"))).is_ok(), "empty override is ignored");
-        assert!(matches!(ClaudeHome::resolve(None, None), Err(AppError::NotFound { .. })));
+        assert!(
+            ClaudeHome::resolve(Some(PathBuf::new()), Some(PathBuf::from("/h"))).is_ok(),
+            "empty override is ignored"
+        );
+        assert!(matches!(
+            ClaudeHome::resolve(None, None),
+            Err(AppError::NotFound { .. })
+        ));
     }
 
     #[test]

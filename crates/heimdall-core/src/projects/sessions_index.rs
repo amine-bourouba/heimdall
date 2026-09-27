@@ -50,7 +50,11 @@ fn parse(json: &Value) -> Option<SessionsIndex> {
         })
         .collect();
     let top = |k: &str| json.get(k).and_then(Value::as_str).map(String::from);
-    let project_path = entries.first().and_then(|e| e.project_path.clone()).or_else(|| top("projectPath")).or_else(|| top("originalPath"));
+    let project_path = entries
+        .first()
+        .and_then(|e| e.project_path.clone())
+        .or_else(|| top("projectPath"))
+        .or_else(|| top("originalPath"));
     Some(SessionsIndex { project_path, entries })
 }
 
@@ -62,9 +66,22 @@ mod tests {
     #[test]
     fn reads_entries_and_the_project_path_from_any_known_key() {
         let idx = parse(&json!({"entries": [{"sessionId": "a", "created": "2026-01-01T00:00:00.000Z", "projectPath": "/p", "agentId": "x"}, {"sessionId": "no-created"}]})).unwrap();
-        assert_eq!((idx.entries.len(), idx.project_path.as_deref(), idx.entries[0].agent_id.as_deref()), (1, Some("/p"), Some("x")));
-        assert_eq!(parse(&json!({"projectPath": "/q"})).unwrap().project_path.as_deref(), Some("/q"));
-        assert_eq!(parse(&json!({"originalPath": "/r"})).unwrap().project_path.as_deref(), Some("/r"));
+        assert_eq!(
+            (
+                idx.entries.len(),
+                idx.project_path.as_deref(),
+                idx.entries[0].agent_id.as_deref()
+            ),
+            (1, Some("/p"), Some("x"))
+        );
+        assert_eq!(
+            parse(&json!({"projectPath": "/q"})).unwrap().project_path.as_deref(),
+            Some("/q")
+        );
+        assert_eq!(
+            parse(&json!({"originalPath": "/r"})).unwrap().project_path.as_deref(),
+            Some("/r")
+        );
         assert!(parse(&json!([1])).is_none());
     }
 }

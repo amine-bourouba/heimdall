@@ -24,7 +24,11 @@ static XML_TAG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[^>]+>").expect
 pub fn strip_xml_tags(s: &str) -> String {
     let stripped = XML_TAG.replace_all(s, "");
     let trimmed = stripped.trim();
-    if trimmed.is_empty() { s.to_string() } else { trimmed.to_string() }
+    if trimmed.is_empty() {
+        s.to_string()
+    } else {
+        trimmed.to_string()
+    }
 }
 
 /// A parsed session. `cached_*` fields come from the summary tier or the sessions index and win
@@ -64,9 +68,23 @@ impl PartialEq for Session {
 }
 
 impl Session {
-    pub fn new(id: impl Into<String>, project_path: impl Into<String>, messages: Vec<Message>,
-               started_at: DateTime<Utc>, model: Option<String>, total_tokens: u64) -> Self {
-        Self { id: id.into(), project_path: project_path.into(), messages, started_at, model, total_tokens, ..Self::default() }
+    pub fn new(
+        id: impl Into<String>,
+        project_path: impl Into<String>,
+        messages: Vec<Message>,
+        started_at: DateTime<Utc>,
+        model: Option<String>,
+        total_tokens: u64,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            project_path: project_path.into(),
+            messages,
+            started_at,
+            model,
+            total_tokens,
+            ..Self::default()
+        }
     }
 
     pub fn project_name(&self) -> &str {
@@ -74,18 +92,36 @@ impl Session {
     }
 
     pub fn title(&self) -> String {
-        let first_user = || self.messages.iter().find(|m| m.role == Role::User).map(Message::text_content);
-        let raw = self.cached_title.clone().or_else(first_user).unwrap_or_else(|| UNTITLED_SESSION.to_string());
+        let first_user = || {
+            self.messages
+                .iter()
+                .find(|m| m.role == Role::User)
+                .map(Message::text_content)
+        };
+        let raw = self
+            .cached_title
+            .clone()
+            .or_else(first_user)
+            .unwrap_or_else(|| UNTITLED_SESSION.to_string());
         strip_xml_tags(&raw)
     }
 
     pub fn preview(&self) -> Option<String> {
-        let first_assistant = || self.messages.iter().find(|m| m.role == Role::Assistant).map(Message::text_content);
-        self.cached_preview.clone().or_else(first_assistant).map(|p| strip_xml_tags(&p))
+        let first_assistant = || {
+            self.messages
+                .iter()
+                .find(|m| m.role == Role::Assistant)
+                .map(Message::text_content)
+        };
+        self.cached_preview
+            .clone()
+            .or_else(first_assistant)
+            .map(|p| strip_xml_tags(&p))
     }
 
     pub fn turn_count(&self) -> u32 {
-        self.cached_turn_count.unwrap_or_else(|| self.messages.iter().filter(|m| m.role == Role::User).count() as u32)
+        self.cached_turn_count
+            .unwrap_or_else(|| self.messages.iter().filter(|m| m.role == Role::User).count() as u32)
     }
 
     pub fn is_sub_agent(&self) -> bool {
@@ -169,11 +205,17 @@ mod tests {
     // Ported from PoirotTests/Models/SessionTests.swift.
     #[test]
     fn title_with_user_message_returns_first_user_message_text() {
-        assert_eq!(session("1", "/Users/dev/my-project", vec![user("Hello world")]).title(), "Hello world");
+        assert_eq!(
+            session("1", "/Users/dev/my-project", vec![user("Hello world")]).title(),
+            "Hello world"
+        );
     }
     #[test]
     fn title_with_no_user_message_returns_untitled() {
-        assert_eq!(session("2", "/path", vec![assistant("Hi there")]).title(), UNTITLED_SESSION);
+        assert_eq!(
+            session("2", "/path", vec![assistant("Hi there")]).title(),
+            UNTITLED_SESSION
+        );
     }
     #[test]
     fn title_with_empty_messages_returns_untitled() {
@@ -181,12 +223,27 @@ mod tests {
     }
     #[test]
     fn project_name_returns_last_path_component() {
-        assert_eq!(session("4", "/Users/dev/my-project", vec![]).project_name(), "my-project");
-        assert_eq!(session("4w", r"C:\Users\dev\my-project", vec![]).project_name(), "my-project");
+        assert_eq!(
+            session("4", "/Users/dev/my-project", vec![]).project_name(),
+            "my-project"
+        );
+        assert_eq!(
+            session("4w", r"C:\Users\dev\my-project", vec![]).project_name(),
+            "my-project"
+        );
     }
     #[test]
     fn turn_count_counts_only_user_messages() {
-        let s = session("5", "/path", vec![user("a"), assistant("b"), user("c"), message("m4", Role::System, vec![text("d")])]);
+        let s = session(
+            "5",
+            "/path",
+            vec![
+                user("a"),
+                assistant("b"),
+                user("c"),
+                message("m4", Role::System, vec![text("d")]),
+            ],
+        );
         assert_eq!(s.turn_count(), 2);
     }
     #[test]
@@ -203,7 +260,10 @@ mod tests {
     }
     #[test]
     fn title_with_nil_cached_title_falls_back_to_messages() {
-        assert_eq!(session("c2", "/path", vec![user("From messages")]).title(), "From messages");
+        assert_eq!(
+            session("c2", "/path", vec![user("From messages")]).title(),
+            "From messages"
+        );
     }
     #[test]
     fn turn_count_with_cached_turn_count_prefers_cached() {
@@ -213,7 +273,10 @@ mod tests {
     }
     #[test]
     fn turn_count_with_nil_cached_turn_count_falls_back_to_messages() {
-        assert_eq!(session("c4", "/path", vec![user("a"), assistant("b"), user("c")]).turn_count(), 2);
+        assert_eq!(
+            session("c4", "/path", vec![user("a"), assistant("b"), user("c")]).turn_count(),
+            2
+        );
     }
     #[test]
     fn file_url_defaults_to_nil() {
@@ -236,7 +299,10 @@ mod tests {
     }
     #[test]
     fn first_prompt_preserves_value() {
-        assert_eq!(with_first_prompt(Some("Fix the login bug")).as_deref(), Some("Fix the login bug"));
+        assert_eq!(
+            with_first_prompt(Some("Fix the login bug")).as_deref(),
+            Some("Fix the login bug")
+        );
     }
     #[test]
     fn first_prompt_preserves_nil_explicitly() {
@@ -253,7 +319,10 @@ mod tests {
     }
     #[test]
     fn title_strips_tag_markers_preserves_inner_text() {
-        assert_eq!(titled("<system-reminder>ignored</system-reminder>Fix the bug"), "ignoredFix the bug");
+        assert_eq!(
+            titled("<system-reminder>ignored</system-reminder>Fix the bug"),
+            "ignoredFix the bug"
+        );
     }
     #[test]
     fn title_strips_multiple_tag_markers() {
@@ -261,7 +330,10 @@ mod tests {
     }
     #[test]
     fn title_strips_nested_tag_markers() {
-        assert_eq!(titled("<outer><inner>content</inner></outer>Clean text"), "contentClean text");
+        assert_eq!(
+            titled("<outer><inner>content</inner></outer>Clean text"),
+            "contentClean text"
+        );
     }
     #[test]
     fn title_preserves_plain_text() {
@@ -295,11 +367,21 @@ mod tests {
     }
     #[test]
     fn preview_strips_tag_markers_preserves_content() {
-        assert_eq!(session("t", "/path", vec![assistant("<system>ctx</system>Here is the answer")]).preview().as_deref(), Some("ctxHere is the answer"));
+        assert_eq!(
+            session("t", "/path", vec![assistant("<system>ctx</system>Here is the answer")])
+                .preview()
+                .as_deref(),
+            Some("ctxHere is the answer")
+        );
     }
     #[test]
     fn preview_plain_text_unchanged() {
-        assert_eq!(session("t", "/path", vec![assistant("Simple response")]).preview().as_deref(), Some("Simple response"));
+        assert_eq!(
+            session("t", "/path", vec![assistant("Simple response")])
+                .preview()
+                .as_deref(),
+            Some("Simple response")
+        );
     }
     #[test]
     fn preview_nil_when_no_assistant_message() {

@@ -22,7 +22,12 @@ pub struct ExportOptions {
 
 impl Default for ExportOptions {
     fn default() -> Self {
-        Self { timestamps: true, tool_results: true, thinking: false, token_usage: false }
+        Self {
+            timestamps: true,
+            tool_results: true,
+            thinking: false,
+            token_usage: false,
+        }
     }
 }
 
@@ -40,7 +45,11 @@ pub fn to_markdown_in<Tz: TimeZone>(session: &Session, options: &ExportOptions, 
 where
     Tz::Offset: Display,
 {
-    let mut lines = vec![format!("# {}", session.title()), String::new(), format!("**Project:** {}", session.project_name())];
+    let mut lines = vec![
+        format!("# {}", session.title()),
+        String::new(),
+        format!("**Project:** {}", session.project_name()),
+    ];
     if let Some(model) = &session.model {
         lines.push(format!("**Model:** {model}"));
     }
@@ -77,8 +86,16 @@ fn message_to_markdown_in<Tz: TimeZone>(message: &Message, turn_number: u32, opt
 where
     Tz::Offset: Display,
 {
-    let role_label = if message.role == Role::User { "User" } else { "Assistant" };
-    let turn_tag = if turn_number > 0 { format!(" {turn_number}") } else { String::new() };
+    let role_label = if message.role == Role::User {
+        "User"
+    } else {
+        "Assistant"
+    };
+    let turn_tag = if turn_number > 0 {
+        format!(" {turn_number}")
+    } else {
+        String::new()
+    };
     let mut lines = vec![format!("## Turn{turn_tag} — {role_label}")];
 
     // Poirot's Message.timestamp always has a value (missing ones default to `.distantPast`);
@@ -105,7 +122,15 @@ where
                 if !options.thinking {
                     continue;
                 }
-                lines.extend(["<details>".into(), "<summary>Thinking</summary>".into(), String::new(), text.clone(), String::new(), "</details>".into(), String::new()]);
+                lines.extend([
+                    "<details>".into(),
+                    "<summary>Thinking</summary>".into(),
+                    String::new(),
+                    text.clone(),
+                    String::new(),
+                    "</details>".into(),
+                    String::new(),
+                ]);
             }
             ContentBlock::ToolUse(tool) => {
                 lines.extend(tool_block_lines(tool));
@@ -169,15 +194,28 @@ fn tool_block_lines(tool: &ToolUse) -> Vec<String> {
 
 fn tool_result_lines(result: &ToolResult) -> Vec<String> {
     let label = if result.is_error { "Error" } else { "Output" };
-    vec![format!("**{label}:**"), "```".into(), truncate_chars(&result.content, RESULT_TRUNCATE), "```".into()]
+    vec![
+        format!("**{label}:**"),
+        "```".into(),
+        truncate_chars(&result.content, RESULT_TRUNCATE),
+        "```".into(),
+    ]
 }
 
 fn truncate_chars(s: &str, max: usize) -> String {
-    if s.chars().count() > max { format!("{}...", s.chars().take(max).collect::<String>()) } else { s.to_string() }
+    if s.chars().count() > max {
+        format!("{}...", s.chars().take(max).collect::<String>())
+    } else {
+        s.to_string()
+    }
 }
 
 fn format_token_count(count: u64) -> String {
-    if count >= 1000 { format!("{:.1}k", count as f64 / 1000.0) } else { count.to_string() }
+    if count >= 1000 {
+        format!("{:.1}k", count as f64 / 1000.0)
+    } else {
+        count.to_string()
+    }
 }
 
 /// A fixed, English long-date format ("September 26, 2026 at 2:30 PM" in `tz`) standing in for
@@ -193,13 +231,19 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transcript::full::{parse, ParseContext};
+    use crate::transcript::full::{ParseContext, parse};
     use chrono::FixedOffset;
     use std::path::Path;
 
     fn conv_session() -> Session {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/screenshot/claude-home/projects/-Users-fixture-Dev-poirot/conv-001.jsonl");
-        let ctx = ParseContext { project_path: "/test", session_id: "conv-001", index_started_at: None, is_sidechain: false };
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/screenshot/claude-home/projects/-Users-fixture-Dev-poirot/conv-001.jsonl");
+        let ctx = ParseContext {
+            project_path: "/test",
+            session_id: "conv-001",
+            index_started_at: None,
+            is_sidechain: false,
+        };
         parse(&path, ctx).unwrap().value.unwrap()
     }
     fn utc() -> FixedOffset {
@@ -222,17 +266,44 @@ mod tests {
     #[test]
     fn timestamps_toggle_controls_the_per_message_time_line() {
         let s = conv_session();
-        let on = md(&s, &ExportOptions { timestamps: true, ..Default::default() });
-        let off = md(&s, &ExportOptions { timestamps: false, ..Default::default() });
+        let on = md(
+            &s,
+            &ExportOptions {
+                timestamps: true,
+                ..Default::default()
+            },
+        );
+        let off = md(
+            &s,
+            &ExportOptions {
+                timestamps: false,
+                ..Default::default()
+            },
+        );
         assert!(on.contains('*') && on.lines().any(|l| l.starts_with('*') && l.trim_matches('*').len() == 8));
-        assert!(!off.lines().any(|l| l.starts_with('*') && l.trim_matches('*').len() == 8));
+        assert!(
+            !off.lines()
+                .any(|l| l.starts_with('*') && l.trim_matches('*').len() == 8)
+        );
     }
 
     #[test]
     fn tool_results_toggle_controls_output_blocks() {
         let s = conv_session();
-        let on = md(&s, &ExportOptions { tool_results: true, ..Default::default() });
-        let off = md(&s, &ExportOptions { tool_results: false, ..Default::default() });
+        let on = md(
+            &s,
+            &ExportOptions {
+                tool_results: true,
+                ..Default::default()
+            },
+        );
+        let off = md(
+            &s,
+            &ExportOptions {
+                tool_results: false,
+                ..Default::default()
+            },
+        );
         assert!(on.contains("**Output:**") && on.contains("Successfully edited"));
         assert!(!off.contains("**Output:**") && !off.contains("Successfully edited"));
     }
@@ -240,8 +311,20 @@ mod tests {
     #[test]
     fn thinking_toggle_controls_the_details_block() {
         let s = conv_session();
-        let on = md(&s, &ExportOptions { thinking: true, ..Default::default() });
-        let off = md(&s, &ExportOptions { thinking: false, ..Default::default() });
+        let on = md(
+            &s,
+            &ExportOptions {
+                thinking: true,
+                ..Default::default()
+            },
+        );
+        let off = md(
+            &s,
+            &ExportOptions {
+                thinking: false,
+                ..Default::default()
+            },
+        );
         assert!(on.contains("<summary>Thinking</summary>") && on.contains("session count badges in the sidebar"));
         assert!(!off.contains("<summary>Thinking</summary>"));
     }
@@ -249,8 +332,20 @@ mod tests {
     #[test]
     fn token_usage_toggle_controls_the_per_message_tokens_line() {
         let s = conv_session();
-        let on = md(&s, &ExportOptions { token_usage: true, ..Default::default() });
-        let off = md(&s, &ExportOptions { token_usage: false, ..Default::default() });
+        let on = md(
+            &s,
+            &ExportOptions {
+                token_usage: true,
+                ..Default::default()
+            },
+        );
+        let off = md(
+            &s,
+            &ExportOptions {
+                token_usage: false,
+                ..Default::default()
+            },
+        );
         assert!(on.contains("*Tokens: "));
         assert!(!off.contains("*Tokens: "));
     }
@@ -265,37 +360,75 @@ mod tests {
         assert!(out.contains("+ Text(project.name)"), "{out}");
         // Exact indentation isn't asserted here (it is the fixture's own, "+ " plus whatever
         // leading whitespace that line already had); just that the added line is present.
-        assert!(out.lines().any(|l| l.strip_prefix('+').is_some_and(|rest| rest.trim() == "Spacer()")), "{out}");
+        assert!(
+            out.lines()
+                .any(|l| l.strip_prefix('+').is_some_and(|rest| rest.trim() == "Spacer()")),
+            "{out}"
+        );
     }
 
     #[test]
     fn a_non_edit_non_bash_tool_lists_its_input_sorted_by_key() {
-        let tool = ToolUse::from_input("id", "id", "Grep", &[("pattern".into(), "foo".into()), ("path".into(), "/x".into()), ("glob".into(), "*.rs".into())].into(), "");
+        let tool = ToolUse::from_input(
+            "id",
+            "id",
+            "Grep",
+            &[
+                ("pattern".into(), "foo".into()),
+                ("path".into(), "/x".into()),
+                ("glob".into(), "*.rs".into()),
+            ]
+            .into(),
+            "",
+        );
         let lines = tool_block_lines(&tool);
         assert_eq!(lines[0], "### Tool: Grep");
         assert_eq!(lines[1], "`/x`"); // shown once, from file_path/path, before the input list
         // "path" is excluded from the input list itself; the rest come out key-sorted (Poirot's
         // Swift dictionary had no defined order at all).
-        assert_eq!(lines[2..], ["**glob:** `*.rs`".to_string(), "**pattern:** `foo`".to_string()]);
+        assert_eq!(
+            lines[2..],
+            ["**glob:** `*.rs`".to_string(), "**pattern:** `foo`".to_string()]
+        );
     }
 
     #[test]
     fn long_values_are_truncated() {
-        assert_eq!(truncate_chars(&"a".repeat(600), INPUT_TRUNCATE), format!("{}...", "a".repeat(500)));
+        assert_eq!(
+            truncate_chars(&"a".repeat(600), INPUT_TRUNCATE),
+            format!("{}...", "a".repeat(500))
+        );
         assert_eq!(truncate_chars("short", INPUT_TRUNCATE), "short");
     }
 
     #[test]
     fn tool_block_to_markdown_matches_the_in_message_rendering() {
         let tool = ToolUse::from_input("id", "id", "Bash", &[("command".into(), "ls -la".into())].into(), "");
-        let result = ToolResult { id: "r".into(), tool_use_id: "id".into(), content: "file1\nfile2".into(), is_error: false };
+        let result = ToolResult {
+            id: "r".into(),
+            tool_use_id: "id".into(),
+            content: "file1\nfile2".into(),
+            is_error: false,
+        };
         let out = tool_block_to_markdown(&tool, Some(&result));
-        assert!(out.contains("### Tool: Bash") && out.contains("ls -la") && out.contains("**Output:**") && out.contains("file1\nfile2"));
+        assert!(
+            out.contains("### Tool: Bash")
+                && out.contains("ls -la")
+                && out.contains("**Output:**")
+                && out.contains("file1\nfile2")
+        );
         assert!(!tool_block_to_markdown(&tool, None).contains("Output"));
     }
 
     #[test]
     fn format_token_count_matches_poirot() {
-        assert_eq!((format_token_count(999), format_token_count(1000), format_token_count(12_345)), ("999".into(), "1.0k".into(), "12.3k".into()));
+        assert_eq!(
+            (
+                format_token_count(999),
+                format_token_count(1000),
+                format_token_count(12_345)
+            ),
+            ("999".into(), "1.0k".into(), "12.3k".into())
+        );
     }
 }

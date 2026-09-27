@@ -47,7 +47,9 @@ pub fn summarize(records: impl Iterator<Item = Value>, ctx: ParseContext) -> Opt
         if let Some(cwd) = record.get("cwd").and_then(Value::as_str) {
             *cwds.entry(cwd.to_string()).or_default() += 1;
         }
-        let Some(kind @ ("user" | "assistant")) = record.get("type").and_then(Value::as_str) else { continue };
+        let Some(kind @ ("user" | "assistant")) = record.get("type").and_then(Value::as_str) else {
+            continue;
+        };
         if !ctx.is_sidechain && record.get("isSidechain") == Some(&Value::Bool(true)) {
             continue;
         }
@@ -75,7 +77,10 @@ pub fn summarize(records: impl Iterator<Item = Value>, ctx: ParseContext) -> Opt
         }
         // Records of one API message repeat its usage and output grows while it streams, so the
         // last record's usage counts, once per message id (D5).
-        let id = message.get("id").and_then(Value::as_str).map_or_else(|| format!("record-{n}"), String::from);
+        let id = message
+            .get("id")
+            .and_then(Value::as_str)
+            .map_or_else(|| format!("record-{n}"), String::from);
         if let Some(u) = blocks::usage(message.get("usage")) {
             usage_by_id.insert(id.clone(), u);
         }
@@ -95,7 +100,14 @@ pub fn summarize(records: impl Iterator<Item = Value>, ctx: ParseContext) -> Opt
         is_sidechain: ctx.is_sidechain,
         searchable_text: searchable.finish(),
         cwds,
-        ..Session::new(ctx.session_id, ctx.project_path, Vec::new(), earliest.or(ctx.index_started_at).unwrap_or(DateTime::UNIX_EPOCH), model, tokens.total())
+        ..Session::new(
+            ctx.session_id,
+            ctx.project_path,
+            Vec::new(),
+            earliest.or(ctx.index_started_at).unwrap_or(DateTime::UNIX_EPOCH),
+            model,
+            tokens.total(),
+        )
     })
 }
 
@@ -107,7 +119,12 @@ mod tests {
     use crate::transcript::searchable::SEARCHABLE_TEXT_CAP;
     use serde_json::json;
 
-    const CTX: ParseContext = ParseContext { project_path: "/test", session_id: "s1", index_started_at: None, is_sidechain: false };
+    const CTX: ParseContext = ParseContext {
+        project_path: "/test",
+        session_id: "s1",
+        index_started_at: None,
+        is_sidechain: false,
+    };
 
     fn run(lines: &[String]) -> Option<Session> {
         summarize(Records::<_, Value>::new(lines.join("\n").as_bytes()), CTX)
@@ -121,10 +138,17 @@ mod tests {
     fn assistant(content: Value, msg_id: &str, model: &str, timestamp: &str, tokens: (u64, u64)) -> String {
         json!({"type": "assistant", "uuid": "a", "timestamp": timestamp, "isSidechain": false,
                "message": {"id": msg_id, "role": "assistant", "model": model, "content": content,
-                           "usage": {"input_tokens": tokens.0, "output_tokens": tokens.1}}}).to_string()
+                           "usage": {"input_tokens": tokens.0, "output_tokens": tokens.1}}})
+        .to_string()
     }
     fn a(text: &str) -> String {
-        assistant(json!([{"type": "text", "text": text}]), "msg_123", "claude-opus-4-6", "2026-01-28T10:01:00.000Z", (100, 50))
+        assistant(
+            json!([{"type": "text", "text": text}]),
+            "msg_123",
+            "claude-opus-4-6",
+            "2026-01-28T10:01:00.000Z",
+            (100, 50),
+        )
     }
 
     // Ported from PoirotTests/Services/TranscriptParserTests.swift (parseSummary cases).
@@ -146,14 +170,29 @@ mod tests {
     fn parse_summary_extracts_turn_count() {
         let lines = [
             user(json!("Q1"), "u1", "2026-01-28T10:00:00.000Z", false),
-            assistant(json!([{"type": "text", "text": "A1"}]), "msg_a1", "m", "2026-01-28T10:01:00.000Z", (1, 1)),
+            assistant(
+                json!([{"type": "text", "text": "A1"}]),
+                "msg_a1",
+                "m",
+                "2026-01-28T10:01:00.000Z",
+                (1, 1),
+            ),
             user(json!("Q2"), "u2", "2026-01-28T10:02:00.000Z", false),
         ];
         assert_eq!(run(&lines).unwrap().turn_count(), 2);
     }
     #[test]
     fn parse_summary_extracts_model() {
-        let lines = [u("Hello"), assistant(json!([{"type": "text", "text": "Hi"}]), "m1", "claude-sonnet-4-6", "2026-01-28T10:01:00.000Z", (1, 1))];
+        let lines = [
+            u("Hello"),
+            assistant(
+                json!([{"type": "text", "text": "Hi"}]),
+                "m1",
+                "claude-sonnet-4-6",
+                "2026-01-28T10:01:00.000Z",
+                (1, 1),
+            ),
+        ];
         assert_eq!(run(&lines).unwrap().model.as_deref(), Some("claude-sonnet-4-6"));
     }
     #[test]
@@ -162,27 +201,66 @@ mod tests {
     fn parse_summary_sums_tokens_per_group() {
         let lines = [
             u("Hi"),
-            assistant(json!([{"type": "text", "text": "A"}]), "msg_1", "m", "2026-01-28T10:01:00.000Z", (100, 50)),
-            assistant(json!([{"type": "tool_use", "id": "t1", "name": "Read", "input": {"path": "/a"}}]), "msg_1", "m", "2026-01-28T10:01:01.000Z", (200, 100)),
-            assistant(json!([{"type": "text", "text": "B"}]), "msg_2", "m", "2026-01-28T10:02:00.000Z", (300, 150)),
+            assistant(
+                json!([{"type": "text", "text": "A"}]),
+                "msg_1",
+                "m",
+                "2026-01-28T10:01:00.000Z",
+                (100, 50),
+            ),
+            assistant(
+                json!([{"type": "tool_use", "id": "t1", "name": "Read", "input": {"path": "/a"}}]),
+                "msg_1",
+                "m",
+                "2026-01-28T10:01:01.000Z",
+                (200, 100),
+            ),
+            assistant(
+                json!([{"type": "text", "text": "B"}]),
+                "msg_2",
+                "m",
+                "2026-01-28T10:02:00.000Z",
+                (300, 150),
+            ),
         ];
         assert_eq!(run(&lines).unwrap().total_tokens, 750);
     }
     #[test]
     fn parse_summary_skips_sidechain_records() {
-        let lines = [user(json!("Sidechain"), "u1", "2026-01-28T10:00:00.000Z", true), user(json!("Real message"), "u2", "2026-01-28T10:00:00.000Z", false)];
+        let lines = [
+            user(json!("Sidechain"), "u1", "2026-01-28T10:00:00.000Z", true),
+            user(json!("Real message"), "u2", "2026-01-28T10:00:00.000Z", false),
+        ];
         let s = run(&lines).unwrap();
         assert_eq!((s.title().as_str(), s.turn_count()), ("Real message", 1));
     }
     #[test]
     fn parse_summary_skips_synthetic_assistant() {
-        let lines = [assistant(json!([{"type": "text", "text": "Synthetic"}]), "m", SYNTHETIC_MODEL, "2026-01-28T10:01:00.000Z", (1, 1)), u("Real user")];
+        let lines = [
+            assistant(
+                json!([{"type": "text", "text": "Synthetic"}]),
+                "m",
+                SYNTHETIC_MODEL,
+                "2026-01-28T10:01:00.000Z",
+                (1, 1),
+            ),
+            u("Real user"),
+        ];
         let s = run(&lines).unwrap();
         assert_eq!((s.model.as_deref(), s.turn_count()), (None, 1));
     }
     #[test]
     fn parse_summary_uses_earliest_timestamp() {
-        let lines = [user(json!("First"), "u", "2026-01-28T09:00:00.000Z", false), assistant(json!([{"type": "text", "text": "Reply"}]), "m", "x", "2026-01-28T10:00:00.000Z", (1, 1))];
+        let lines = [
+            user(json!("First"), "u", "2026-01-28T09:00:00.000Z", false),
+            assistant(
+                json!([{"type": "text", "text": "Reply"}]),
+                "m",
+                "x",
+                "2026-01-28T10:00:00.000Z",
+                (1, 1),
+            ),
+        ];
         let s = run(&lines).unwrap();
         assert_eq!(s.started_at.to_rfc3339(), "2026-01-28T09:00:00+00:00");
         assert_eq!(s.ended_at.unwrap().to_rfc3339(), "2026-01-28T10:00:00+00:00");
@@ -191,15 +269,32 @@ mod tests {
     fn parse_summary_searchable_text_indexes_conversation_content() {
         let lines = [
             u("Deploy to Digital Ocean"),
-            assistant(json!([
-                {"type": "text", "text": "Provisioning a droplet"},
-                {"type": "thinking", "thinking": "The user wants Kubernetes"},
-                {"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "doctl compute droplet create"}},
-            ]), "m", "x", "2026-01-28T10:01:00.000Z", (1, 1)),
-            user(json!([{"type": "tool_result", "tool_use_id": "t1", "content": "droplet 12345 created"}]), "u2", "2026-01-28T10:02:00.000Z", false),
+            assistant(
+                json!([
+                    {"type": "text", "text": "Provisioning a droplet"},
+                    {"type": "thinking", "thinking": "The user wants Kubernetes"},
+                    {"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "doctl compute droplet create"}},
+                ]),
+                "m",
+                "x",
+                "2026-01-28T10:01:00.000Z",
+                (1, 1),
+            ),
+            user(
+                json!([{"type": "tool_result", "tool_use_id": "t1", "content": "droplet 12345 created"}]),
+                "u2",
+                "2026-01-28T10:02:00.000Z",
+                false,
+            ),
         ];
         let text = run(&lines).unwrap().searchable_text;
-        for want in ["digital ocean", "provisioning a droplet", "kubernetes", "doctl compute droplet create", "droplet 12345 created"] {
+        for want in [
+            "digital ocean",
+            "provisioning a droplet",
+            "kubernetes",
+            "doctl compute droplet create",
+            "droplet 12345 created",
+        ] {
             assert!(text.contains(want), "{want}");
         }
         assert!(!text.contains("Digital Ocean"));
@@ -207,7 +302,13 @@ mod tests {
     #[test]
     fn parse_summary_searchable_text_excludes_synthetic_and_sidechain() {
         let lines = [
-            assistant(json!([{"type": "text", "text": "SECRETSYNTH"}]), "m", SYNTHETIC_MODEL, "2026-01-28T10:01:00.000Z", (1, 1)),
+            assistant(
+                json!([{"type": "text", "text": "SECRETSYNTH"}]),
+                "m",
+                SYNTHETIC_MODEL,
+                "2026-01-28T10:01:00.000Z",
+                (1, 1),
+            ),
             user(json!("SECRETSIDE"), "u1", "2026-01-28T10:00:00.000Z", true),
             user(json!("realcontent"), "u2", "2026-01-28T10:05:00.000Z", false),
         ];
@@ -216,7 +317,9 @@ mod tests {
     }
     #[test]
     fn parse_summary_searchable_text_respects_cap() {
-        let text = run(&[u(&"a".repeat(SEARCHABLE_TEXT_CAP + 5000))]).unwrap().searchable_text;
+        let text = run(&[u(&"a".repeat(SEARCHABLE_TEXT_CAP + 5000))])
+            .unwrap()
+            .searchable_text;
         assert!(text.chars().count() <= SEARCHABLE_TEXT_CAP + 1 && text.contains("aaaa"));
     }
 
@@ -234,16 +337,27 @@ mod tests {
         }
         let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
         let mut files = Vec::new();
-        for dir in ["windows/claude-home/projects", "windows/crlf/claude-home/projects", "synthetic", "screenshot"] {
+        for dir in [
+            "windows/claude-home/projects",
+            "windows/crlf/claude-home/projects",
+            "synthetic",
+            "screenshot",
+        ] {
             walk(&fixtures.join(dir), &mut files);
         }
         let mut compared = 0;
-        for f in files.iter().filter(|f| f.components().any(|c| c.as_os_str() == "projects")) {
+        for f in files
+            .iter()
+            .filter(|f| f.components().any(|c| c.as_os_str() == "projects"))
+        {
             for is_sidechain in [false, true] {
                 let ctx = ParseContext { is_sidechain, ..CTX };
                 let full = full::parse(f, ctx).unwrap().value;
                 let summary = parse(f, ctx).unwrap().value;
-                let totals = (full.map(|s| (s.total_tokens, s.tokens)), summary.map(|s| (s.total_tokens, s.tokens)));
+                let totals = (
+                    full.map(|s| (s.total_tokens, s.tokens)),
+                    summary.map(|s| (s.total_tokens, s.tokens)),
+                );
                 if let (Some(full), Some(summary)) = totals {
                     assert_eq!(full, summary, "{} (sidechain {is_sidechain})", f.display());
                     compared += 1;

@@ -17,7 +17,13 @@ pub fn load(claude_home: &Path) -> Loaded<Vec<Plan>> {
             continue;
         };
         let config_ref = config_ref(ConfigKind::Plan, &None, &slug);
-        items.push(Plan { name: Plan::humanize(&slug), content, file: path, config_ref, id: slug });
+        items.push(Plan {
+            name: Plan::humanize(&slug),
+            content,
+            file: path,
+            config_ref,
+            id: slug,
+        });
     }
     sort_by_name(&mut items, |p| &p.name);
     Loaded::new(items, skipped)
@@ -31,7 +37,13 @@ mod tests {
     #[test]
     fn plans_are_humanised_from_file_names() {
         let items = load(&home()).value;
-        assert_eq!(items.iter().map(|p| (p.id.as_str(), p.name.as_str())).collect::<Vec<_>>(), [("refactor-auth-module", "Refactor Auth Module")]);
+        assert_eq!(
+            items
+                .iter()
+                .map(|p| (p.id.as_str(), p.name.as_str()))
+                .collect::<Vec<_>>(),
+            [("refactor-auth-module", "Refactor Auth Module")]
+        );
         assert!(items[0].config_ref.project.is_none() && !items[0].content.is_empty());
     }
 }

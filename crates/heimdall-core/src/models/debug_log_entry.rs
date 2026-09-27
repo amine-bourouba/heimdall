@@ -48,7 +48,12 @@ mod tests {
     use super::*;
 
     fn entry(id: u32, message: &str) -> DebugLogEntry {
-        DebugLogEntry { id, timestamp: DateTime::UNIX_EPOCH, level: LogLevel::Debug, message: message.into() }
+        DebugLogEntry {
+            id,
+            timestamp: DateTime::UNIX_EPOCH,
+            level: LogLevel::Debug,
+            message: message.into(),
+        }
     }
 
     // Ported from PoirotTests/Models/DebugLogEntryTests.swift.

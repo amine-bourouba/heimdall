@@ -36,21 +36,37 @@ mod tests {
 
     #[test]
     fn accepts_ordinary_links() {
-        for ok in ["https://example.com", "http://example.com/path?q=1#frag", "mailto:someone@example.com", "HTTPS://Example.COM"] {
+        for ok in [
+            "https://example.com",
+            "http://example.com/path?q=1#frag",
+            "mailto:someone@example.com",
+            "HTTPS://Example.COM",
+        ] {
             assert!(is_allowed_external_url(ok), "{ok}");
         }
     }
 
     #[test]
     fn rejects_disallowed_schemes() {
-        for bad in ["file:///etc/passwd", "javascript:alert(1)", "data:text/html,<script>alert(1)</script>", "vscode://file/x", "ftp://example.com", "tel:+15551234"] {
+        for bad in [
+            "file:///etc/passwd",
+            "javascript:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "vscode://file/x",
+            "ftp://example.com",
+            "tel:+15551234",
+        ] {
             assert!(!is_allowed_external_url(bad), "{bad}");
         }
     }
 
     #[test]
     fn rejects_backslash_smuggled_unc_hosts() {
-        for bad in [r"https:\\attacker.example\path", r"https://good.example\@attacker.example", r"http:/\attacker.example"] {
+        for bad in [
+            r"https:\\attacker.example\path",
+            r"https://good.example\@attacker.example",
+            r"http:/\attacker.example",
+        ] {
             assert!(!is_allowed_external_url(bad), "{bad}");
         }
     }

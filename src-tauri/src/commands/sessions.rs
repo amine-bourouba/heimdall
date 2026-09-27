@@ -12,13 +12,13 @@ use heimdall_core::models::context_usage::ContextUsage;
 use heimdall_core::models::message::MessagePage;
 use heimdall_core::models::project::{Project, ProjectSummary};
 use heimdall_core::models::session::{Session, SessionDetail, SessionSummary};
-use heimdall_core::paths::{plain_file_name, ClaudeHome, TargetOs};
+use heimdall_core::paths::{ClaudeHome, TargetOs, plain_file_name};
 use heimdall_core::projects::discovery::{discover, load_project};
 use heimdall_core::transcript::full::{self, ParseContext};
 use heimdall_core::{AppError, Loaded, Result, WriteOutcome};
 use tauri::{AppHandle, Manager};
 
-use crate::state::{blocking, AppState};
+use crate::state::{AppState, blocking};
 
 /// Resolves a `ProjectId` to its folder under `~/.claude/projects/`; rejects a malformed id
 /// before it ever becomes a path (ADR 0010) and one that does not exist as `notFound` (contract §4).
@@ -39,7 +39,11 @@ pub(super) fn project_dir(claude_home: &ClaudeHome, project_id: &str) -> Result<
 /// `conv-001` from ScreenshotData.swift) does not.
 fn find_session<'a>(project: &'a Project, session_id: &str) -> Result<&'a Session> {
     plain_file_name(session_id)?;
-    project.sessions.iter().find(|s| s.id == session_id).ok_or_else(|| AppError::not_found(format!("no session: {session_id}")))
+    project
+        .sessions
+        .iter()
+        .find(|s| s.id == session_id)
+        .ok_or_else(|| AppError::not_found(format!("no session: {session_id}")))
 }
 
 fn fill_flags(claude_home: &ClaudeHome, summary: &mut SessionSummary) {
@@ -49,7 +53,8 @@ fn fill_flags(claude_home: &ClaudeHome, summary: &mut SessionSummary) {
 }
 
 fn has_memory(claude_home: &ClaudeHome, project_id: &str) -> bool {
-    heimdall_core::config::read::memory::folder_file_count(&claude_home.projects_dir().join(project_id).join("memory")) > 0
+    heimdall_core::config::read::memory::folder_file_count(&claude_home.projects_dir().join(project_id).join("memory"))
+        > 0
 }
 
 /// The session's full parse, from the cache if a fresh entry exists, else read and cached fresh.
@@ -59,7 +64,9 @@ fn cached_full_parse(state: &AppState, path: &Path, ctx: ParseContext) -> Result
         return Ok(cached);
     }
     let loaded = full::parse(path, ctx)?;
-    let session = loaded.value.ok_or_else(|| AppError::not_found("transcript has no messages"))?;
+    let session = loaded
+        .value
+        .ok_or_else(|| AppError::not_found("transcript has no messages"))?;
     let result = (session, loaded.skipped);
     state.cache.put(path, mtime, size, Area::Transcript, result.clone());
     Ok(result)
@@ -74,17 +81,32 @@ fn metadata(path: &Path) -> Result<(std::time::SystemTime, u64)> {
 fn message_page(messages: &[heimdall_core::models::message::Message], start: u32, count: u32) -> MessagePage {
     let from = (start as usize).min(messages.len());
     let to = from.saturating_add(count as usize).min(messages.len());
-    MessagePage { start, messages: messages[from..to].to_vec(), total: messages.len() as u32 }
+    MessagePage {
+        start,
+        messages: messages[from..to].to_vec(),
+        total: messages.len() as u32,
+    }
 }
 
 fn tool_names(session: &Session) -> Vec<String> {
-    session.messages.iter().flat_map(|m| m.tool_blocks()).map(|t| t.name.clone()).collect::<BTreeSet<_>>().into_iter().collect()
+    session
+        .messages
+        .iter()
+        .flat_map(|m| m.tool_blocks())
+        .map(|t| t.name.clone())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 fn list_projects_inner(state: &AppState) -> Result<Loaded<Vec<ProjectSummary>>> {
     let claude_home = &state.claude_home;
     let loaded = discover(&claude_home.projects_dir(), TargetOs::current())?;
-    let projects = loaded.value.iter().map(|p| p.summary(has_memory(claude_home, &p.id))).collect();
+    let projects = loaded
+        .value
+        .iter()
+        .map(|p| p.summary(has_memory(claude_home, &p.id)))
+        .collect();
     Ok(Loaded::new(projects, loaded.skipped))
 }
 
@@ -94,7 +116,11 @@ pub async fn list_projects(app: AppHandle) -> Result<Loaded<Vec<ProjectSummary>>
     blocking(move || list_projects_inner(&app.state::<AppState>())).await
 }
 
-fn list_sessions_inner(state: &AppState, project_id: &str, include_agents: bool) -> Result<Loaded<Vec<SessionSummary>>> {
+fn list_sessions_inner(
+    state: &AppState,
+    project_id: &str,
+    include_agents: bool,
+) -> Result<Loaded<Vec<SessionSummary>>> {
     let claude_home = &state.claude_home;
     let dir = project_dir(claude_home, project_id)?;
     let loaded = load_project(&dir, TargetOs::current());
@@ -114,7 +140,11 @@ fn list_sessions_inner(state: &AppState, project_id: &str, include_agents: bool)
 
 #[tauri::command]
 #[specta::specta]
-pub async fn list_sessions(app: AppHandle, project_id: String, include_agents: bool) -> Result<Loaded<Vec<SessionSummary>>> {
+pub async fn list_sessions(
+    app: AppHandle,
+    project_id: String,
+    include_agents: bool,
+) -> Result<Loaded<Vec<SessionSummary>>> {
     blocking(move || list_sessions_inner(&app.state::<AppState>(), &project_id, include_agents)).await
 }
 
@@ -123,9 +153,17 @@ fn get_session_inner(state: &AppState, project_id: &str, session_id: &str) -> Re
     let dir = project_dir(claude_home, project_id)?;
     let project = load_project(&dir, TargetOs::current()).value;
     let found = find_session(&project, session_id)?;
-    let path = found.file.clone().ok_or_else(|| AppError::not_found(format!("no transcript for {session_id}")))?;
+    let path = found
+        .file
+        .clone()
+        .ok_or_else(|| AppError::not_found(format!("no transcript for {session_id}")))?;
     let project_path = project.path.clone().unwrap_or_default();
-    let ctx = ParseContext { project_path: &project_path, session_id, index_started_at: Some(found.started_at), is_sidechain: found.is_sidechain };
+    let ctx = ParseContext {
+        project_path: &project_path,
+        session_id,
+        index_started_at: Some(found.started_at),
+        is_sidechain: found.is_sidechain,
+    };
 
     let (full_session, skipped) = cached_full_parse(state, &path, ctx)?;
     let mut summary = full_session.summary(project_id);
@@ -146,14 +184,28 @@ pub async fn get_session(app: AppHandle, project_id: String, session_id: String)
     blocking(move || get_session_inner(&app.state::<AppState>(), &project_id, &session_id)).await
 }
 
-fn get_session_messages_inner(state: &AppState, project_id: &str, session_id: &str, start: u32, count: u32) -> Result<MessagePage> {
+fn get_session_messages_inner(
+    state: &AppState,
+    project_id: &str,
+    session_id: &str,
+    start: u32,
+    count: u32,
+) -> Result<MessagePage> {
     let claude_home = &state.claude_home;
     let dir = project_dir(claude_home, project_id)?;
     let project = load_project(&dir, TargetOs::current()).value;
     let found = find_session(&project, session_id)?;
-    let path = found.file.clone().ok_or_else(|| AppError::not_found(format!("no transcript for {session_id}")))?;
+    let path = found
+        .file
+        .clone()
+        .ok_or_else(|| AppError::not_found(format!("no transcript for {session_id}")))?;
     let project_path = project.path.clone().unwrap_or_default();
-    let ctx = ParseContext { project_path: &project_path, session_id, index_started_at: Some(found.started_at), is_sidechain: found.is_sidechain };
+    let ctx = ParseContext {
+        project_path: &project_path,
+        session_id,
+        index_started_at: Some(found.started_at),
+        is_sidechain: found.is_sidechain,
+    };
 
     let (mtime, size) = metadata(&path)?;
     if let Some((session, _)) = state.cache.get::<(Session, u32)>(&path, mtime, size) {
@@ -163,9 +215,13 @@ fn get_session_messages_inner(state: &AppState, project_id: &str, session_id: &s
     // Fast path: read only as much of the transcript as this page needs, so a huge session's
     // first page renders without waiting on a full parse (M1-41 acceptance criterion).
     let (loaded, reached_eof) = full::parse_bounded(&path, ctx, (start as usize).saturating_add(count as usize))?;
-    let bounded = loaded.value.ok_or_else(|| AppError::not_found("transcript has no messages"))?;
+    let bounded = loaded
+        .value
+        .ok_or_else(|| AppError::not_found("transcript has no messages"))?;
     if reached_eof {
-        state.cache.put(&path, mtime, size, Area::Transcript, (bounded.clone(), loaded.skipped));
+        state
+            .cache
+            .put(&path, mtime, size, Area::Transcript, (bounded.clone(), loaded.skipped));
         return Ok(message_page(&bounded.messages, start, count));
     }
 
@@ -179,17 +235,33 @@ fn get_session_messages_inner(state: &AppState, project_id: &str, session_id: &s
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_session_messages(app: AppHandle, project_id: String, session_id: String, start: u32, count: u32) -> Result<MessagePage> {
+pub async fn get_session_messages(
+    app: AppHandle,
+    project_id: String,
+    session_id: String,
+    start: u32,
+    count: u32,
+) -> Result<MessagePage> {
     blocking(move || get_session_messages_inner(&app.state::<AppState>(), &project_id, &session_id, start, count)).await
 }
 
 fn list_recent_sessions_inner(state: &AppState, limit: u32) -> Result<Vec<RecentSession>> {
     let claude_home = &state.claude_home;
     let projects = discover(&claude_home.projects_dir(), TargetOs::current())?.value;
-    let mut all: Vec<(&Project, &Session)> = projects.iter().flat_map(|p| p.sessions.iter().map(move |s| (p, s))).collect();
+    let mut all: Vec<(&Project, &Session)> = projects
+        .iter()
+        .flat_map(|p| p.sessions.iter().map(move |s| (p, s)))
+        .collect();
     all.sort_by_key(|(_, s)| std::cmp::Reverse(s.started_at));
     all.truncate(limit as usize);
-    Ok(all.into_iter().map(|(p, s)| RecentSession { project_id: p.id.clone(), project_name: p.name.clone(), session: s.summary(p.id.clone()) }).collect())
+    Ok(all
+        .into_iter()
+        .map(|(p, s)| RecentSession {
+            project_id: p.id.clone(),
+            project_name: p.name.clone(),
+            session: s.summary(p.id.clone()),
+        })
+        .collect())
 }
 
 #[tauri::command]
@@ -224,7 +296,10 @@ mod tests {
     // fixture (no mock Tauri app, no runtime) covers the same logic without needing either.
     fn state() -> AppState {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../fixtures/screenshot");
-        AppState { claude_home: ClaudeHome::new(root.join("claude-home"), root.join("claude.json")), cache: crate::state::Cache::default() }
+        AppState {
+            claude_home: ClaudeHome::new(root.join("claude-home"), root.join("claude.json")),
+            cache: crate::state::Cache::default(),
+        }
     }
 
     #[test]
@@ -232,7 +307,15 @@ mod tests {
         let loaded = list_projects_inner(&state()).unwrap();
         let mut ids: Vec<_> = loaded.value.iter().map(|p| p.id.clone()).collect();
         ids.sort();
-        assert_eq!(ids, ["-Users-fixture-Dev-ignio-web", "-Users-fixture-Dev-poirot", "-Users-fixture-Dev-reellette-ios", "-Users-fixture-Dev-swift-openapi"]);
+        assert_eq!(
+            ids,
+            [
+                "-Users-fixture-Dev-ignio-web",
+                "-Users-fixture-Dev-poirot",
+                "-Users-fixture-Dev-reellette-ios",
+                "-Users-fixture-Dev-swift-openapi"
+            ]
+        );
     }
 
     #[test]
@@ -245,18 +328,35 @@ mod tests {
         let loaded = list_sessions_inner(&state(), POIROT, true).unwrap();
         let mut ids: Vec<_> = loaded.value.iter().map(|s| s.id.clone()).collect();
         ids.sort();
-        assert_eq!(ids, ["alltools-001", "conv-001", "diff-001", "sysctx-001", "think-001", "tool-001", "write-001"]);
+        assert_eq!(
+            ids,
+            [
+                "alltools-001",
+                "conv-001",
+                "diff-001",
+                "sysctx-001",
+                "think-001",
+                "tool-001",
+                "write-001"
+            ]
+        );
         assert!(loaded.value.iter().all(|s| s.project_id == POIROT));
     }
 
     #[test]
     fn list_sessions_rejects_an_unknown_project_as_not_found() {
-        assert!(matches!(list_sessions_inner(&state(), "-Users-nobody-nowhere", true).unwrap_err(), AppError::NotFound { .. }));
+        assert!(matches!(
+            list_sessions_inner(&state(), "-Users-nobody-nowhere", true).unwrap_err(),
+            AppError::NotFound { .. }
+        ));
     }
 
     #[test]
     fn list_sessions_rejects_a_path_escaping_project_id_as_invalid_input() {
-        assert!(matches!(list_sessions_inner(&state(), "../etc", true).unwrap_err(), AppError::InvalidInput { .. }));
+        assert!(matches!(
+            list_sessions_inner(&state(), "../etc", true).unwrap_err(),
+            AppError::InvalidInput { .. }
+        ));
     }
 
     #[test]
@@ -269,11 +369,17 @@ mod tests {
 
     #[test]
     fn get_session_rejects_an_unknown_session_as_not_found() {
-        assert!(matches!(get_session_inner(&state(), POIROT, "nonexistent-999").unwrap_err(), AppError::NotFound { .. }));
+        assert!(matches!(
+            get_session_inner(&state(), POIROT, "nonexistent-999").unwrap_err(),
+            AppError::NotFound { .. }
+        ));
     }
 
     fn fixture_transcript(project_id: &str, session_id: &str) -> PathBuf {
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../fixtures/screenshot/claude-home/projects").join(project_id).join(format!("{session_id}.jsonl"))
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../fixtures/screenshot/claude-home/projects")
+            .join(project_id)
+            .join(format!("{session_id}.jsonl"))
     }
 
     #[test]
@@ -305,14 +411,21 @@ mod tests {
 
     #[test]
     fn get_session_messages_rejects_an_unknown_session_as_not_found() {
-        assert!(matches!(get_session_messages_inner(&state(), POIROT, "nope", 0, 10).unwrap_err(), AppError::NotFound { .. }));
+        assert!(matches!(
+            get_session_messages_inner(&state(), POIROT, "nope", 0, 10).unwrap_err(),
+            AppError::NotFound { .. }
+        ));
     }
 
     #[test]
     fn list_recent_sessions_honours_the_limit_and_sorts_by_recency() {
         let recent = list_recent_sessions_inner(&state(), 3).unwrap();
         assert_eq!(recent.len(), 3);
-        assert!(recent.windows(2).all(|w| w[0].session.started_at >= w[1].session.started_at));
+        assert!(
+            recent
+                .windows(2)
+                .all(|w| w[0].session.started_at >= w[1].session.started_at)
+        );
     }
 
     #[test]

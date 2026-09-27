@@ -28,7 +28,9 @@ pub fn humanize(raw: &str) -> String {
         .split(' ')
         .map(|w| {
             let mut c = w.chars();
-            c.next().map_or_else(String::new, |f| f.to_uppercase().chain(c.flat_map(char::to_lowercase)).collect())
+            c.next().map_or_else(String::new, |f| {
+                f.to_uppercase().chain(c.flat_map(char::to_lowercase)).collect()
+            })
         })
         .collect::<Vec<_>>()
         .join(" ")
@@ -50,7 +52,12 @@ impl SessionFacets {
 
     /// Friction items with a non-zero count, highest first.
     pub fn sorted_friction_items(&self) -> Vec<(&str, u64)> {
-        sort_counts(self.friction_counts.iter().filter(|(_, v)| **v > 0).map(|(k, &v)| (k.as_str(), v)))
+        sort_counts(
+            self.friction_counts
+                .iter()
+                .filter(|(_, v)| **v > 0)
+                .map(|(k, &v)| (k.as_str(), v)),
+        )
     }
 
     pub fn outcome_label(&self) -> String {
@@ -88,9 +95,18 @@ fn sort_counts<'a>(it: impl Iterator<Item = (&'a str, u64)>) -> Vec<(&'a str, u6
 mod tests {
     use super::*;
 
-    fn make(outcome: &str, helpfulness: &str, session_type: &str, goals: &[(&str, u64)], friction: &[(&str, u64)]) -> SessionFacets {
+    fn make(
+        outcome: &str,
+        helpfulness: &str,
+        session_type: &str,
+        goals: &[(&str, u64)],
+        friction: &[(&str, u64)],
+    ) -> SessionFacets {
         SessionFacets {
-            session_id: "test".into(), outcome: outcome.into(), claude_helpfulness: helpfulness.into(), session_type: session_type.into(),
+            session_id: "test".into(),
+            outcome: outcome.into(),
+            claude_helpfulness: helpfulness.into(),
+            session_type: session_type.into(),
             goal_categories: goals.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
             friction_counts: friction.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
             ..Default::default()
@@ -114,12 +130,31 @@ mod tests {
           "brief_summary": "Migrated session auth from cookies to JWT.", "session_id": "abc-123"}"#).unwrap();
         assert_eq!(f.session_id, "abc-123");
         assert_eq!(f.underlying_goal, "Refactor auth to JWT");
-        assert_eq!(f.goal_categories, BTreeMap::from([("refactoring".into(), 2), ("security".into(), 1)]));
-        assert_eq!((f.outcome.as_str(), f.claude_helpfulness.as_str(), f.session_type.as_str()), ("success", "very_helpful", "feature_implementation"));
-        assert_eq!(f.friction_counts, BTreeMap::from([("tool_failures".into(), 1), ("misunderstandings".into(), 0)]));
-        assert_eq!((f.friction_detail.as_str(), f.primary_success.as_str()), ("One tool call timed out", "multi_file_changes"));
+        assert_eq!(
+            f.goal_categories,
+            BTreeMap::from([("refactoring".into(), 2), ("security".into(), 1)])
+        );
+        assert_eq!(
+            (
+                f.outcome.as_str(),
+                f.claude_helpfulness.as_str(),
+                f.session_type.as_str()
+            ),
+            ("success", "very_helpful", "feature_implementation")
+        );
+        assert_eq!(
+            f.friction_counts,
+            BTreeMap::from([("tool_failures".into(), 1), ("misunderstandings".into(), 0)])
+        );
+        assert_eq!(
+            (f.friction_detail.as_str(), f.primary_success.as_str()),
+            ("One tool call timed out", "multi_file_changes")
+        );
         assert_eq!(f.brief_summary, "Migrated session auth from cookies to JWT.");
-        assert_eq!(f.user_satisfaction_counts, BTreeMap::from([("likely_satisfied".into(), 1)]));
+        assert_eq!(
+            f.user_satisfaction_counts,
+            BTreeMap::from([("likely_satisfied".into(), 1)])
+        );
     }
     #[test]
     fn decodes_empty_dictionaries() {
@@ -136,46 +171,93 @@ mod tests {
     }
     #[test]
     fn sorted_goal_categories_ordered_by_count_descending() {
-        let f = make("success", "very_helpful", "single_task", &[("security", 1), ("refactoring", 3), ("testing", 2)], &[]);
-        assert_eq!(f.sorted_goal_categories(), [("refactoring", 3), ("testing", 2), ("security", 1)]);
+        let f = make(
+            "success",
+            "very_helpful",
+            "single_task",
+            &[("security", 1), ("refactoring", 3), ("testing", 2)],
+            &[],
+        );
+        assert_eq!(
+            f.sorted_goal_categories(),
+            [("refactoring", 3), ("testing", 2), ("security", 1)]
+        );
     }
     #[test]
     fn total_friction_count_sums_values() {
-        assert_eq!(make("success", "very_helpful", "x", &[], &[("tool_failures", 2), ("misunderstandings", 1)]).total_friction_count(), 3);
+        assert_eq!(
+            make(
+                "success",
+                "very_helpful",
+                "x",
+                &[],
+                &[("tool_failures", 2), ("misunderstandings", 1)]
+            )
+            .total_friction_count(),
+            3
+        );
     }
     #[test]
     fn sorted_friction_items_filters_zero_values() {
-        let f = make("success", "very_helpful", "x", &[], &[("tool_failures", 2), ("misunderstandings", 0), ("buggy_code", 1)]);
+        let f = make(
+            "success",
+            "very_helpful",
+            "x",
+            &[],
+            &[("tool_failures", 2), ("misunderstandings", 0), ("buggy_code", 1)],
+        );
         assert_eq!(f.sorted_friction_items(), [("tool_failures", 2), ("buggy_code", 1)]);
     }
     #[test]
     fn outcome_label_maps_known_values() {
-        for (raw, label) in [("success", "Success"), ("partially_achieved", "Partial"), ("unclear_from_transcript", "Unclear"), ("failure", "Failed"), ("some_other", "Some Other")] {
+        for (raw, label) in [
+            ("success", "Success"),
+            ("partially_achieved", "Partial"),
+            ("unclear_from_transcript", "Unclear"),
+            ("failure", "Failed"),
+            ("some_other", "Some Other"),
+        ] {
             assert_eq!(with_outcome(raw).outcome_label(), label);
         }
     }
     #[test]
     fn helpfulness_label_maps_known_values() {
-        for (raw, label) in [("very_helpful", "Very Helpful"), ("slightly_helpful", "Slightly Helpful"), ("not_helpful", "Not Helpful"), ("harmful", "Harmful")] {
+        for (raw, label) in [
+            ("very_helpful", "Very Helpful"),
+            ("slightly_helpful", "Slightly Helpful"),
+            ("not_helpful", "Not Helpful"),
+            ("harmful", "Harmful"),
+        ] {
             assert_eq!(with_helpfulness(raw).helpfulness_label(), label);
         }
     }
     #[test]
     fn session_type_label_formats_underscores() {
-        assert_eq!(make("success", "very_helpful", "feature_implementation", &[], &[]).session_type_label(), "Feature Implementation");
+        assert_eq!(
+            make("success", "very_helpful", "feature_implementation", &[], &[]).session_type_label(),
+            "Feature Implementation"
+        );
     }
     #[test]
     fn category_label_formats_underscores() {
-        assert_eq!((humanize("fix_bugs").as_str(), humanize("write_tests").as_str()), ("Fix Bugs", "Write Tests"));
+        assert_eq!(
+            (humanize("fix_bugs").as_str(), humanize("write_tests").as_str()),
+            ("Fix Bugs", "Write Tests")
+        );
     }
     #[test]
     fn friction_label_formats_underscores() {
-        assert_eq!((humanize("tool_failures").as_str(), humanize("buggy_code").as_str()), ("Tool Failures", "Buggy Code"));
+        assert_eq!(
+            (humanize("tool_failures").as_str(), humanize("buggy_code").as_str()),
+            ("Tool Failures", "Buggy Code")
+        );
     }
 
     #[test]
     fn serialises_camel_case_for_ipc() {
         let json = serde_json::to_value(with_outcome("success")).unwrap();
-        assert!(json.get("sessionId").is_some() && json.get("briefSummary").is_some() && json.get("session_id").is_none());
+        assert!(
+            json.get("sessionId").is_some() && json.get("briefSummary").is_some() && json.get("session_id").is_none()
+        );
     }
 }

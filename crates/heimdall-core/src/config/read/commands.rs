@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use super::{config_ref, frontmatter, kind_dir, md_files, scope_name, scopes, sort_by_name, ProjectScope};
+use super::{ProjectScope, config_ref, frontmatter, kind_dir, md_files, scope_name, scopes, sort_by_name};
 use crate::error::Loaded;
 use crate::models::config::command::ClaudeCommand;
 use crate::models::config::scope::ConfigKind;
@@ -47,12 +47,32 @@ mod tests {
     #[test]
     fn loads_global_and_project_commands_with_refs() {
         let (repo, ctx) = (repo(), context());
-        let items = load(&home(), Some(ProjectScope { root: &repo, context: &ctx })).value;
+        let items = load(
+            &home(),
+            Some(ProjectScope {
+                root: &repo,
+                context: &ctx,
+            }),
+        )
+        .value;
         let names: Vec<_> = items.iter().map(|c| (c.name.as_str(), c.scope)).collect();
-        assert_eq!(names, [("/deploy", ConfigScope::Project), ("/review", ConfigScope::Global)]);
+        assert_eq!(
+            names,
+            [("/deploy", ConfigScope::Project), ("/review", ConfigScope::Global)]
+        );
         let review = &items[1];
-        assert_eq!((review.id.as_str(), review.argument_hint.as_deref(), review.output_style.as_deref()), ("global-review", Some("<file>"), Some("concise")));
-        assert_eq!((review.config_ref.slug.as_str(), review.config_ref.project.clone()), ("review", None));
+        assert_eq!(
+            (
+                review.id.as_str(),
+                review.argument_hint.as_deref(),
+                review.output_style.as_deref()
+            ),
+            ("global-review", Some("<file>"), Some("concise"))
+        );
+        assert_eq!(
+            (review.config_ref.slug.as_str(), review.config_ref.project.clone()),
+            ("review", None)
+        );
         assert_eq!(items[0].config_ref.project, Some(ctx));
         assert!(review.body.starts_with("Review the diff"));
     }

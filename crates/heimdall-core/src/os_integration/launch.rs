@@ -24,7 +24,12 @@ use crate::projects::discovery::is_uuid;
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum EditorTarget {
     #[serde(rename_all = "camelCase")]
-    ToolBlock { project_id: String, session_id: String, block_id: String, line: Option<u32> },
+    ToolBlock {
+        project_id: String,
+        session_id: String,
+        block_id: String,
+        line: Option<u32>,
+    },
     #[serde(rename_all = "camelCase")]
     ConfigItem { config_ref: ConfigRef },
     #[serde(rename_all = "camelCase")]
@@ -39,9 +44,14 @@ pub enum EditorTarget {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum RevealTarget {
     #[serde(rename_all = "camelCase")]
-    Session { project_id: String, session_id: String },
+    Session {
+        project_id: String,
+        session_id: String,
+    },
     #[serde(rename_all = "camelCase")]
-    ConfigItem { config_ref: ConfigRef },
+    ConfigItem {
+        config_ref: ConfigRef,
+    },
     McpConfigFile,
 }
 
@@ -56,7 +66,11 @@ pub struct Argv {
 
 impl Argv {
     fn new(program: impl Into<String>, args: Vec<String>) -> Self {
-        Self { program: program.into(), args, cwd: None }
+        Self {
+            program: program.into(),
+            args,
+            cwd: None,
+        }
     }
     fn in_dir(mut self, cwd: impl Into<PathBuf>) -> Self {
         self.cwd = Some(cwd.into());
@@ -84,7 +98,9 @@ pub fn validate_cwd(path: &str, os: TargetOs, is_directory: bool) -> Result<()> 
 
 fn validate_target(path: &str, os: TargetOs, exists_as_expected: bool, expected: &str) -> Result<()> {
     if path.starts_with('-') {
-        return Err(AppError::invalid_input(format!("{path:?} looks like a command flag, not a path")));
+        return Err(AppError::invalid_input(format!(
+            "{path:?} looks like a command flag, not a path"
+        )));
     }
     if !paths::is_absolute(path, os) {
         return Err(AppError::invalid_input(format!("{path:?} is not absolute")));
@@ -102,7 +118,12 @@ fn validate_target(path: &str, os: TargetOs, exists_as_expected: bool, expected:
 /// (docs/ipc-contract.md `SessionId`).
 pub fn valid_session_id(id: &str) -> bool {
     match id.strip_prefix("agent-") {
-        Some(rest) => (1..=128).contains(&rest.len()) && rest.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-'),
+        Some(rest) => {
+            (1..=128).contains(&rest.len())
+                && rest
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+        }
         None => is_uuid(id),
     }
 }
@@ -110,7 +131,9 @@ pub fn valid_session_id(id: &str) -> bool {
 /// The clipboard text for "resume this session" (port-plan C-5), after validating the id.
 pub fn resume_command_text(session_id: &str) -> Result<String> {
     if !valid_session_id(session_id) {
-        return Err(AppError::invalid_input(format!("{session_id:?} is not a valid session id")));
+        return Err(AppError::invalid_input(format!(
+            "{session_id:?} is not a valid session id"
+        )));
     }
     Ok(format!("claude --resume {session_id}"))
 }
@@ -121,7 +144,7 @@ pub fn resume_command_text(session_id: &str) -> Result<String> {
 /// would otherwise need its own escaping rules for a string it never actually needs to receive.
 pub fn open_terminal(terminal: PreferredTerminal, cwd: &str, os: TargetOs, is_directory: bool) -> Result<Launch> {
     validate_cwd(cwd, os, is_directory)?;
-    use PreferredTerminal::{Alacritty, Cmd, GnomeTerminal, Konsole, Kitty, Powershell, System, WindowsTerminal};
+    use PreferredTerminal::{Alacritty, Cmd, GnomeTerminal, Kitty, Konsole, Powershell, System, WindowsTerminal};
     let argv = match (terminal, os) {
         (WindowsTerminal, TargetOs::Windows) => Argv::new("wt.exe", vec!["-d".into(), cwd.into()]),
         (Powershell, TargetOs::Windows) => Argv::new("powershell.exe", vec![]).in_dir(cwd),
@@ -157,7 +180,13 @@ fn macos_app_name(terminal: PreferredTerminal) -> Option<&'static str> {
 /// `<scheme>://file/<percent-encoded abs path>[:<line>]` (ADR 0003; exact scheme and encoding
 /// pending M3-54's confirmation against each editor's real handler). `None` for Xcode, which has
 /// no URL scheme; it opens through [`editor_cli_argv`] only.
-pub fn editor_url(editor: PreferredEditor, abs_path: &str, line: Option<u32>, os: TargetOs, is_regular_file: bool) -> Result<Option<String>> {
+pub fn editor_url(
+    editor: PreferredEditor,
+    abs_path: &str,
+    line: Option<u32>,
+    os: TargetOs,
+    is_regular_file: bool,
+) -> Result<Option<String>> {
     if editor == PreferredEditor::Xcode {
         return Ok(None);
     }
@@ -179,13 +208,24 @@ pub fn editor_url(editor: PreferredEditor, abs_path: &str, line: Option<u32>, os
 /// (`EditorLauncher.swift:8-16`). Refuses a `.cmd` shim as the program itself — Windows argument
 /// passing to a `.cmd` goes through `cmd.exe`, which reintroduces the shell-metacharacter risk
 /// argv-only launching exists to avoid; the caller should prefer [`editor_url`] there instead.
-pub fn editor_cli_argv(editor: PreferredEditor, abs_path: &str, line: Option<u32>, cli_path: &Path, os: TargetOs, is_regular_file: bool) -> Result<Argv> {
+pub fn editor_cli_argv(
+    editor: PreferredEditor,
+    abs_path: &str,
+    line: Option<u32>,
+    cli_path: &Path,
+    os: TargetOs,
+    is_regular_file: bool,
+) -> Result<Argv> {
     validate_launch_path(abs_path, os, is_regular_file)?;
     if cli_path.extension().is_some_and(|e| e.eq_ignore_ascii_case("cmd")) {
-        return Err(AppError::invalid_input("refusing to spawn a .cmd shim directly; use the editor's URL scheme instead"));
+        return Err(AppError::invalid_input(
+            "refusing to spawn a .cmd shim directly; use the editor's URL scheme instead",
+        ));
     }
     let args = match (editor, line) {
-        (PreferredEditor::Vscode | PreferredEditor::Cursor, Some(n)) => vec!["--goto".into(), format!("{abs_path}:{n}")],
+        (PreferredEditor::Vscode | PreferredEditor::Cursor, Some(n)) => {
+            vec!["--goto".into(), format!("{abs_path}:{n}")]
+        }
         (PreferredEditor::Zed, Some(n)) => vec![format!("{abs_path}:{n}")],
         (PreferredEditor::Xcode, Some(n)) => vec!["--line".into(), n.to_string(), abs_path.into()],
         (_, None) => vec![abs_path.into()],
@@ -251,7 +291,13 @@ mod tests {
     #[test]
     fn session_ids_accept_uuid_and_agent_forms() {
         assert!(valid_session_id(UUID) && valid_session_id("agent-a1b2_c3-D4"));
-        for bad in ["A1B2C3D4-E5F6-7890-ABCD-EF1234567890", "not-a-uuid", "agent-", "agent-has a space", &format!("agent-{}", "x".repeat(129))] {
+        for bad in [
+            "A1B2C3D4-E5F6-7890-ABCD-EF1234567890",
+            "not-a-uuid",
+            "agent-",
+            "agent-has a space",
+            &format!("agent-{}", "x".repeat(129)),
+        ] {
             assert!(!valid_session_id(bad), "{bad}");
         }
     }
@@ -276,15 +322,38 @@ mod tests {
     fn linux_terminals_use_the_documented_flags() {
         let cwd = "/home/me/proj";
         let cases = [
-            (PreferredTerminal::GnomeTerminal, "gnome-terminal", vec![format!("--working-directory={cwd}")]),
-            (PreferredTerminal::Konsole, "konsole", vec!["--workdir".to_string(), cwd.into()]),
-            (PreferredTerminal::Kitty, "kitty", vec!["--directory".to_string(), cwd.into()]),
-            (PreferredTerminal::Alacritty, "alacritty", vec!["--working-directory".to_string(), cwd.into()]),
+            (
+                PreferredTerminal::GnomeTerminal,
+                "gnome-terminal",
+                vec![format!("--working-directory={cwd}")],
+            ),
+            (
+                PreferredTerminal::Konsole,
+                "konsole",
+                vec!["--workdir".to_string(), cwd.into()],
+            ),
+            (
+                PreferredTerminal::Kitty,
+                "kitty",
+                vec!["--directory".to_string(), cwd.into()],
+            ),
+            (
+                PreferredTerminal::Alacritty,
+                "alacritty",
+                vec!["--working-directory".to_string(), cwd.into()],
+            ),
         ];
         for (terminal, program, args) in cases {
-            assert_eq!(open_terminal(terminal, cwd, TargetOs::Linux, true).unwrap(), Launch::Argv(Argv::new(program, args)), "{terminal:?}");
+            assert_eq!(
+                open_terminal(terminal, cwd, TargetOs::Linux, true).unwrap(),
+                Launch::Argv(Argv::new(program, args)),
+                "{terminal:?}"
+            );
         }
-        assert_eq!(open_terminal(PreferredTerminal::System, cwd, TargetOs::Linux, true).unwrap(), Launch::Argv(Argv::new("x-terminal-emulator", vec![]).in_dir(cwd)));
+        assert_eq!(
+            open_terminal(PreferredTerminal::System, cwd, TargetOs::Linux, true).unwrap(),
+            Launch::Argv(Argv::new("x-terminal-emulator", vec![]).in_dir(cwd))
+        );
     }
     #[test]
     fn macos_terminals_all_go_through_open_dash_a() {
@@ -299,13 +368,25 @@ mod tests {
         ];
         for (terminal, app) in cases {
             let got = open_terminal(terminal, cwd, TargetOs::Macos, true).unwrap();
-            assert_eq!(got, Launch::Argv(Argv::new("open", vec!["-a".into(), app.into(), cwd.into()])), "{terminal:?}");
+            assert_eq!(
+                got,
+                Launch::Argv(Argv::new("open", vec!["-a".into(), app.into(), cwd.into()])),
+                "{terminal:?}"
+            );
         }
     }
     #[test]
     fn a_terminal_not_offered_on_the_given_os_is_rejected() {
         assert!(open_terminal(PreferredTerminal::WindowsTerminal, "/home/me", TargetOs::Linux, true).is_err());
-        assert!(open_terminal(PreferredTerminal::GnomeTerminal, r"C:\Users\me", TargetOs::Windows, true).is_err());
+        assert!(
+            open_terminal(
+                PreferredTerminal::GnomeTerminal,
+                r"C:\Users\me",
+                TargetOs::Windows,
+                true
+            )
+            .is_err()
+        );
     }
     #[test]
     fn an_invalid_cwd_is_rejected_before_any_terminal_specific_logic() {
@@ -319,7 +400,11 @@ mod tests {
         // args into one string, so a `;` inside the cwd stays inside its single argv element,
         // where normal Windows argv quoting (outside this module's scope) keeps it literal.
         let cwd = r"C:\Users\me\weird;name";
-        let Launch::Argv(argv) = open_terminal(PreferredTerminal::WindowsTerminal, cwd, TargetOs::Windows, true).unwrap() else { panic!() };
+        let Launch::Argv(argv) =
+            open_terminal(PreferredTerminal::WindowsTerminal, cwd, TargetOs::Windows, true).unwrap()
+        else {
+            panic!()
+        };
         assert_eq!(argv.args, vec!["-d".to_string(), cwd.to_string()]);
         assert_eq!(argv.args.len(), 2);
     }
@@ -332,13 +417,23 @@ mod tests {
     fn dangerous_characters_survive_as_one_intact_argv_element_on_every_os() {
         let dangerous = [r"C:\Users\me\a b", r#"C:\Users\me\a;b&c|d%e^f""#];
         for cwd in dangerous {
-            let Launch::Argv(argv) = open_terminal(PreferredTerminal::WindowsTerminal, cwd, TargetOs::Windows, true).unwrap() else { panic!() };
+            let Launch::Argv(argv) =
+                open_terminal(PreferredTerminal::WindowsTerminal, cwd, TargetOs::Windows, true).unwrap()
+            else {
+                panic!()
+            };
             assert_eq!(argv.args.last(), Some(&cwd.to_string()));
         }
         for cwd in ["/home/me/a b", "/home/me/a;b&c|d%e^f\""] {
-            let Launch::Argv(argv) = open_terminal(PreferredTerminal::Alacritty, cwd, TargetOs::Linux, true).unwrap() else { panic!() };
+            let Launch::Argv(argv) = open_terminal(PreferredTerminal::Alacritty, cwd, TargetOs::Linux, true).unwrap()
+            else {
+                panic!()
+            };
             assert_eq!(argv.args.last(), Some(&cwd.to_string()));
-            let Launch::Argv(argv) = open_terminal(PreferredTerminal::Alacritty, cwd, TargetOs::Macos, true).unwrap() else { panic!() };
+            let Launch::Argv(argv) = open_terminal(PreferredTerminal::Alacritty, cwd, TargetOs::Macos, true).unwrap()
+            else {
+                panic!()
+            };
             assert_eq!(argv.args.last(), Some(&cwd.to_string()));
         }
     }
@@ -347,25 +442,69 @@ mod tests {
     #[test]
     fn editor_urls_use_the_documented_scheme_with_and_without_a_line() {
         let path = "/Users/me/src/main.rs";
-        assert_eq!(editor_url(PreferredEditor::Vscode, path, Some(42), TargetOs::Macos, true).unwrap().as_deref(), Some("vscode://file/Users/me/src/main.rs:42"));
-        assert_eq!(editor_url(PreferredEditor::Cursor, path, None, TargetOs::Macos, true).unwrap().as_deref(), Some("cursor://file/Users/me/src/main.rs"));
-        assert_eq!(editor_url(PreferredEditor::Zed, path, Some(7), TargetOs::Macos, true).unwrap().as_deref(), Some("zed://file/Users/me/src/main.rs:7"));
+        assert_eq!(
+            editor_url(PreferredEditor::Vscode, path, Some(42), TargetOs::Macos, true)
+                .unwrap()
+                .as_deref(),
+            Some("vscode://file/Users/me/src/main.rs:42")
+        );
+        assert_eq!(
+            editor_url(PreferredEditor::Cursor, path, None, TargetOs::Macos, true)
+                .unwrap()
+                .as_deref(),
+            Some("cursor://file/Users/me/src/main.rs")
+        );
+        assert_eq!(
+            editor_url(PreferredEditor::Zed, path, Some(7), TargetOs::Macos, true)
+                .unwrap()
+                .as_deref(),
+            Some("zed://file/Users/me/src/main.rs:7")
+        );
     }
     #[test]
     fn xcode_has_no_url_scheme() {
-        assert_eq!(editor_url(PreferredEditor::Xcode, "/Users/me/main.swift", Some(1), TargetOs::Macos, true).unwrap(), None);
+        assert_eq!(
+            editor_url(
+                PreferredEditor::Xcode,
+                "/Users/me/main.swift",
+                Some(1),
+                TargetOs::Macos,
+                true
+            )
+            .unwrap(),
+            None
+        );
     }
     #[test]
     fn editor_url_normalises_a_windows_path_and_percent_encodes_unsafe_characters() {
-        let unix = editor_url(PreferredEditor::Vscode, "/Users/me/a b#c", None, TargetOs::Macos, true).unwrap().unwrap();
+        let unix = editor_url(PreferredEditor::Vscode, "/Users/me/a b#c", None, TargetOs::Macos, true)
+            .unwrap()
+            .unwrap();
         assert_eq!(unix, "vscode://file/Users/me/a%20b%23c");
-        let windows = editor_url(PreferredEditor::Vscode, r"C:\Users\me\a b.rs", Some(3), TargetOs::Windows, true).unwrap().unwrap();
+        let windows = editor_url(
+            PreferredEditor::Vscode,
+            r"C:\Users\me\a b.rs",
+            Some(3),
+            TargetOs::Windows,
+            true,
+        )
+        .unwrap()
+        .unwrap();
         assert_eq!(windows, "vscode://file/C:/Users/me/a%20b.rs:3");
     }
     #[test]
     fn editor_url_rejects_an_invalid_path() {
         assert!(editor_url(PreferredEditor::Vscode, "relative.rs", None, TargetOs::Linux, true).is_err());
-        assert!(editor_url(PreferredEditor::Vscode, "/Users/me/gone.rs", None, TargetOs::Macos, false).is_err());
+        assert!(
+            editor_url(
+                PreferredEditor::Vscode,
+                "/Users/me/gone.rs",
+                None,
+                TargetOs::Macos,
+                false
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -373,23 +512,77 @@ mod tests {
         let path = "/Users/me/main.rs";
         let cli = Path::new("/usr/local/bin/code");
         let with_line = editor_cli_argv(PreferredEditor::Vscode, path, Some(9), cli, TargetOs::Macos, true).unwrap();
-        assert_eq!(with_line, Argv::new("/usr/local/bin/code", vec!["--goto".into(), format!("{path}:9")]));
-        let zed = editor_cli_argv(PreferredEditor::Zed, path, Some(9), Path::new("/usr/local/bin/zed"), TargetOs::Macos, true).unwrap();
+        assert_eq!(
+            with_line,
+            Argv::new("/usr/local/bin/code", vec!["--goto".into(), format!("{path}:9")])
+        );
+        let zed = editor_cli_argv(
+            PreferredEditor::Zed,
+            path,
+            Some(9),
+            Path::new("/usr/local/bin/zed"),
+            TargetOs::Macos,
+            true,
+        )
+        .unwrap();
         assert_eq!(zed.args, vec![format!("{path}:9")]);
-        let xed = editor_cli_argv(PreferredEditor::Xcode, path, Some(3), Path::new("/usr/bin/xed"), TargetOs::Macos, true).unwrap();
+        let xed = editor_cli_argv(
+            PreferredEditor::Xcode,
+            path,
+            Some(3),
+            Path::new("/usr/bin/xed"),
+            TargetOs::Macos,
+            true,
+        )
+        .unwrap();
         assert_eq!(xed.args, vec!["--line".to_string(), "3".to_string(), path.to_string()]);
-        let no_line = editor_cli_argv(PreferredEditor::Cursor, path, None, Path::new("/usr/local/bin/cursor"), TargetOs::Macos, true).unwrap();
+        let no_line = editor_cli_argv(
+            PreferredEditor::Cursor,
+            path,
+            None,
+            Path::new("/usr/local/bin/cursor"),
+            TargetOs::Macos,
+            true,
+        )
+        .unwrap();
         assert_eq!(no_line.args, vec![path.to_string()]);
     }
     #[test]
     fn editor_cli_argv_never_spawns_a_cmd_shim() {
-        let err = editor_cli_argv(PreferredEditor::Vscode, r"C:\Users\me\main.rs", Some(1), Path::new(r"C:\tools\code.cmd"), TargetOs::Windows, true);
+        let err = editor_cli_argv(
+            PreferredEditor::Vscode,
+            r"C:\Users\me\main.rs",
+            Some(1),
+            Path::new(r"C:\tools\code.cmd"),
+            TargetOs::Windows,
+            true,
+        );
         assert!(err.is_err());
         // A non-.cmd resolution (an .exe wrapper, or a bare name found without an extension) is fine.
-        assert!(editor_cli_argv(PreferredEditor::Vscode, r"C:\Users\me\main.rs", Some(1), Path::new(r"C:\tools\code.exe"), TargetOs::Windows, true).is_ok());
+        assert!(
+            editor_cli_argv(
+                PreferredEditor::Vscode,
+                r"C:\Users\me\main.rs",
+                Some(1),
+                Path::new(r"C:\tools\code.exe"),
+                TargetOs::Windows,
+                true
+            )
+            .is_ok()
+        );
     }
     #[test]
     fn editor_cli_argv_rejects_an_invalid_path() {
-        assert!(editor_cli_argv(PreferredEditor::Vscode, "relative.rs", None, Path::new("/usr/local/bin/code"), TargetOs::Linux, true).is_err());
+        assert!(
+            editor_cli_argv(
+                PreferredEditor::Vscode,
+                "relative.rs",
+                None,
+                Path::new("/usr/local/bin/code"),
+                TargetOs::Linux,
+                true
+            )
+            .is_err()
+        );
     }
 }

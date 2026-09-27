@@ -29,7 +29,14 @@ pub struct Records<R, T> {
 
 impl<R: BufRead, T: DeserializeOwned> Records<R, T> {
     pub fn new(reader: R) -> Self {
-        Self { reader, buf: Vec::new(), first_line: true, skipped: 0, io_error: None, _t: PhantomData }
+        Self {
+            reader,
+            buf: Vec::new(),
+            first_line: true,
+            skipped: 0,
+            io_error: None,
+            _t: PhantomData,
+        }
     }
 
     /// Lines that were not empty but did not parse as `T`.
@@ -93,7 +100,11 @@ pub fn read_all<T: DeserializeOwned>(path: &Path) -> Result<Loaded<Vec<T>>> {
 
 /// Read records in 8 KiB chunks until `max` of them satisfy `qualifies`, then stop reading.
 /// Used by the header tier, which looks at the first 50 qualifying lines only.
-pub fn read_head<T: DeserializeOwned>(path: &Path, max: usize, mut qualifies: impl FnMut(&T) -> bool) -> Result<Loaded<Vec<T>>> {
+pub fn read_head<T: DeserializeOwned>(
+    path: &Path,
+    max: usize,
+    mut qualifies: impl FnMut(&T) -> bool,
+) -> Result<Loaded<Vec<T>>> {
     let file = File::open(path).map_err(|e| AppError::from_io(&e, path))?;
     head_from(BufReader::with_capacity(HEAD_CHUNK_BYTES, file), max, &mut qualifies)
         .map_err(|e| AppError::from_io(&e, path))
@@ -151,7 +162,11 @@ mod tests {
     #[test]
     fn skips_and_counts_invalid_and_truncated_lines() {
         assert_eq!(parse(b"{\"n\":1}\nnot json\n{\"n\":2}\n{\"n\":"), (vec![1, 2], 2));
-        assert_eq!(parse(b"{\"x\":1}\n{\"n\":2}\n"), (vec![2], 1), "wrong shape counts as skipped");
+        assert_eq!(
+            parse(b"{\"x\":1}\n{\"n\":2}\n"),
+            (vec![2], 1),
+            "wrong shape counts as skipped"
+        );
     }
 
     #[test]
@@ -160,7 +175,12 @@ mod tests {
         for i in 0..1000 {
             text.push_str(&format!("{{\"n\":{i}}}\n"));
         }
-        let loaded = head_from(BufReader::with_capacity(HEAD_CHUNK_BYTES, Cursor::new(text)), 50, &mut |r: &Rec| r.n.is_multiple_of(2)).unwrap();
+        let loaded = head_from(
+            BufReader::with_capacity(HEAD_CHUNK_BYTES, Cursor::new(text)),
+            50,
+            &mut |r: &Rec| r.n.is_multiple_of(2),
+        )
+        .unwrap();
         assert_eq!(loaded.value.len(), 50);
         assert_eq!(loaded.value.last(), Some(&Rec { n: 98 }));
     }

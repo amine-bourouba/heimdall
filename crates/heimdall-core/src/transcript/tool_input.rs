@@ -81,7 +81,11 @@ mod tests {
     #[test]
     fn beautify_sorted_keys_verified() {
         let r = beautify(r#"{"zebra":1,"apple":2,"mango":3}"#);
-        let keys: Vec<_> = r.lines().filter(|l| l.contains(':')).map(|l| l.trim().replace('"', "").split(':').next().unwrap().to_string()).collect();
+        let keys: Vec<_> = r
+            .lines()
+            .filter(|l| l.contains(':'))
+            .map(|l| l.trim().replace('"', "").split(':').next().unwrap().to_string())
+            .collect();
         assert_eq!(keys, ["apple", "mango", "zebra"]);
     }
 }

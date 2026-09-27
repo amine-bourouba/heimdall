@@ -14,7 +14,10 @@ use crate::models::config::sub_agent::{AgentColor, AgentMemory, AgentScope, SubA
 /// Built-in agents first, then custom ones sorted by name.
 pub fn load(claude_home: &Path) -> Loaded<Vec<SubAgent>> {
     let custom = load_custom(claude_home);
-    Loaded::new(SubAgent::built_in().into_iter().chain(custom.value).collect(), custom.skipped)
+    Loaded::new(
+        SubAgent::built_in().into_iter().chain(custom.value).collect(),
+        custom.skipped,
+    )
 }
 
 /// Custom agents only. Tools are the comma-separated `tools` list; unknown colours and memory
@@ -30,7 +33,13 @@ pub fn load_custom(claude_home: &Path) -> Loaded<Vec<SubAgent>> {
         let fm = frontmatter::parse(&text);
         let meta = |k: &str| fm.metadata.get(k).cloned();
         let tools = meta("tools")
-            .map(|t| t.split(',').map(str::trim).filter(|t| !t.is_empty()).map(String::from).collect())
+            .map(|t| {
+                t.split(',')
+                    .map(str::trim)
+                    .filter(|t| !t.is_empty())
+                    .map(String::from)
+                    .collect()
+            })
             .unwrap_or_default();
         items.push(SubAgent {
             id: format!("custom-{stem}"),
@@ -62,10 +71,24 @@ mod tests {
         let ids: Vec<_> = all.iter().map(|a| a.id.as_str()).collect();
         assert_eq!(ids, ["explore", "plan", "bash", "general", "custom-reviewer"]);
         let r = &all[4];
-        assert_eq!((r.tools.clone(), r.color, r.model.as_deref()), (vec!["Read".to_string(), "Grep".into(), "Bash".into()], Some(AgentColor::Blue), Some("claude-opus-4-6")));
+        assert_eq!(
+            (r.tools.clone(), r.color, r.model.as_deref()),
+            (
+                vec!["Read".to_string(), "Grep".into(), "Bash".into()],
+                Some(AgentColor::Blue),
+                Some("claude-opus-4-6")
+            )
+        );
         // `memory: project` is not one Poirot knows, so it is left unset.
-        assert_eq!((r.memory, r.scope, r.config_ref.as_ref().map(|c| c.slug.as_str())), (None, AgentScope::Global, Some("reviewer")));
-        assert!(r.prompt.as_deref().is_some_and(|p| p.starts_with("You are a meticulous")));
+        assert_eq!(
+            (r.memory, r.scope, r.config_ref.as_ref().map(|c| c.slug.as_str())),
+            (None, AgentScope::Global, Some("reviewer"))
+        );
+        assert!(
+            r.prompt
+                .as_deref()
+                .is_some_and(|p| p.starts_with("You are a meticulous"))
+        );
         assert!(all[..4].iter().all(|a| a.config_ref.is_none()));
     }
 }

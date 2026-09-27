@@ -13,7 +13,10 @@ use heimdall_core::paths::{ClaudeHome, TargetOs};
 const SENTINEL: &str = "SENTINEL-SECRET";
 
 fn fixture_path() -> &'static Path {
-    Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../fixtures/security/secrets-claude.json"))
+    Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../fixtures/security/secrets-claude.json"
+    ))
 }
 
 /// A Claude home seeded from the fixture, plus a project-scoped `.mcp.json` (the one disk source
@@ -26,7 +29,11 @@ fn world() -> (tempfile::TempDir, ClaudeHome, String) {
     let project = dir.path().join("project");
     std::fs::create_dir_all(&project).unwrap();
     let project_str = project.display().to_string();
-    std::fs::write(&config_file, fixture.replace("/fixture/project", &project_str.replace('\\', "\\\\"))).unwrap();
+    std::fs::write(
+        &config_file,
+        fixture.replace("/fixture/project", &project_str.replace('\\', "\\\\")),
+    )
+    .unwrap();
     std::fs::write(
         project.join(".mcp.json"),
         serde_json::json!({"mcpServers": {"project-scoped": {
@@ -44,7 +51,11 @@ fn world() -> (tempfile::TempDir, ClaudeHome, String) {
 fn fixture_actually_contains_sentinels() {
     // Guards against a silently-empty or misnamed fixture making every other assertion vacuous.
     let raw = std::fs::read_to_string(fixture_path()).unwrap();
-    assert!(raw.contains(SENTINEL), "fixture at {} carries no sentinel", fixture_path().display());
+    assert!(
+        raw.contains(SENTINEL),
+        "fixture at {} carries no sentinel",
+        fixture_path().display()
+    );
 }
 
 #[test]

@@ -67,7 +67,12 @@ mod tests {
     // Ported from PoirotTests/Models/ProjectTests.swift.
     #[test]
     fn recent_session_returns_most_recent() {
-        let p = Project { id: "p1".into(), name: "test".into(), sessions: vec![session("1", 1000), session("2", 2000)], ..Default::default() };
+        let p = Project {
+            id: "p1".into(),
+            name: "test".into(),
+            sessions: vec![session("1", 1000), session("2", 2000)],
+            ..Default::default()
+        };
         assert_eq!(p.recent_session().map(|s| s.id.as_str()), Some("2"));
     }
     #[test]
@@ -76,15 +81,21 @@ mod tests {
     }
     #[test]
     fn recent_session_with_single_session_returns_that_session() {
-        let p = Project { sessions: vec![session("only", 5)], ..Default::default() };
+        let p = Project {
+            sessions: vec![session("only", 5)],
+            ..Default::default()
+        };
         assert_eq!(p.recent_session().map(|s| s.id.as_str()), Some("only"));
     }
 
     #[test]
     fn summary_reports_path_source_and_last_activity() {
         let p = Project {
-            id: "-Users-me-app".into(), name: "app".into(), path: Some("/Users/me/app".into()),
-            path_source: Some(PathSource::TranscriptCwd), sessions: vec![session("a", 10), session("b", 20)],
+            id: "-Users-me-app".into(),
+            name: "app".into(),
+            path: Some("/Users/me/app".into()),
+            path_source: Some(PathSource::TranscriptCwd),
+            sessions: vec![session("a", 10), session("b", 20)],
         };
         let json = serde_json::to_value(p.summary(true)).unwrap();
         assert_eq!(json["pathSource"], "transcriptCwd");

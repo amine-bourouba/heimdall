@@ -27,7 +27,8 @@ impl Plan {
             .filter(|w| !w.is_empty())
             .map(|w| {
                 let mut c = w.chars();
-                c.next().map_or_else(String::new, |f| f.to_uppercase().chain(c).collect())
+                c.next()
+                    .map_or_else(String::new, |f| f.to_uppercase().chain(c).collect())
             })
             .collect::<Vec<_>>()
             .join(" ")
@@ -41,8 +42,17 @@ mod tests {
     use std::hash::{Hash, Hasher};
 
     fn plan(id: &str, content: &str, file: &str) -> Plan {
-        Plan { id: id.into(), name: Plan::humanize(id), content: content.into(), file: file.into(),
-               config_ref: ConfigRef { kind: crate::models::config::scope::ConfigKind::Plan, project: None, slug: id.into() } }
+        Plan {
+            id: id.into(),
+            name: Plan::humanize(id),
+            content: content.into(),
+            file: file.into(),
+            config_ref: ConfigRef {
+                kind: crate::models::config::scope::ConfigKind::Plan,
+                project: None,
+                slug: id.into(),
+            },
+        }
     }
     fn hash(p: &Plan) -> u64 {
         let mut h = DefaultHasher::new();
@@ -54,7 +64,10 @@ mod tests {
     // (M1-29) and the delete case to config/write/files.rs (M3-42).
     #[test]
     fn humanize_converts_dash_slugs() {
-        assert_eq!(Plan::humanize("abstract-wobbling-mccarthy"), "Abstract Wobbling Mccarthy");
+        assert_eq!(
+            Plan::humanize("abstract-wobbling-mccarthy"),
+            "Abstract Wobbling Mccarthy"
+        );
     }
     #[test]
     fn humanize_converts_underscore_slugs() {

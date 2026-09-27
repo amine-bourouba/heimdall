@@ -43,9 +43,17 @@ impl SessionGroup {
             .map(|parent| {
                 let mut agents = children.remove(&parent.id).unwrap_or_default();
                 agents.sort_by_key(|a| a.started_at);
-                SessionGroup { id: parent.id.clone(), parent, agents }
+                SessionGroup {
+                    id: parent.id.clone(),
+                    parent,
+                    agents,
+                }
             })
-            .chain(orphans.into_iter().map(|o| SessionGroup { id: o.id.clone(), parent: o, agents: Vec::new() }))
+            .chain(orphans.into_iter().map(|o| SessionGroup {
+                id: o.id.clone(),
+                parent: o,
+                agents: Vec::new(),
+            }))
             .collect();
         groups.sort_by_key(|g| std::cmp::Reverse(g.parent.started_at));
         groups
@@ -71,19 +79,33 @@ mod tests {
     // Ported from PoirotTests/Models/SessionGroupTests.swift.
     #[test]
     fn group_parent_with_agents_groups_together() {
-        let g = SessionGroup::group(vec![s("p1", 100, None, false), s("a1", 110, Some("p1"), false), s("a2", 120, Some("p1"), false)]);
+        let g = SessionGroup::group(vec![
+            s("p1", 100, None, false),
+            s("a1", 110, Some("p1"), false),
+            s("a2", 120, Some("p1"), false),
+        ]);
         assert_eq!(g.len(), 1);
         assert_eq!((g[0].parent.id.as_str(), g[0].agent_count()), ("p1", 2));
     }
     #[test]
     fn group_agents_sorted_by_start_time() {
-        let g = SessionGroup::group(vec![s("p1", 100, None, false), s("a2", 300, Some("p1"), false), s("a1", 200, Some("p1"), false)]);
-        assert_eq!(g[0].agents.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(), ["a1", "a2"]);
+        let g = SessionGroup::group(vec![
+            s("p1", 100, None, false),
+            s("a2", 300, Some("p1"), false),
+            s("a1", 200, Some("p1"), false),
+        ]);
+        assert_eq!(
+            g[0].agents.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(),
+            ["a1", "a2"]
+        );
     }
     #[test]
     fn group_multiple_parents_creates_separate_groups() {
         let g = SessionGroup::group(vec![
-            s("p1", 200, None, false), s("p2", 100, None, false), s("a1", 210, Some("p1"), false), s("a2", 110, Some("p2"), false),
+            s("p1", 200, None, false),
+            s("p2", 100, None, false),
+            s("a1", 210, Some("p1"), false),
+            s("a2", 110, Some("p2"), false),
         ]);
         assert_eq!(g.len(), 2);
         assert_eq!((g[0].parent.id.as_str(), g[0].agents.len()), ("p1", 1));
@@ -105,8 +127,15 @@ mod tests {
     }
     #[test]
     fn group_sorted_descending_by_parent_start_time() {
-        let g = SessionGroup::group(vec![s("p1", 100, None, false), s("p2", 300, None, false), s("p3", 200, None, false)]);
-        assert_eq!(g.iter().map(|x| x.parent.id.as_str()).collect::<Vec<_>>(), ["p2", "p3", "p1"]);
+        let g = SessionGroup::group(vec![
+            s("p1", 100, None, false),
+            s("p2", 300, None, false),
+            s("p3", 200, None, false),
+        ]);
+        assert_eq!(
+            g.iter().map(|x| x.parent.id.as_str()).collect::<Vec<_>>(),
+            ["p2", "p3", "p1"]
+        );
     }
     #[test]
     fn all_sessions_includes_parent_and_agents() {

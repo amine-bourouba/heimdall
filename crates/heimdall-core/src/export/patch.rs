@@ -1,7 +1,7 @@
 //! Unified-diff patch export for Edit blocks (`SessionExporter.toPatch`/`buildHunks`), built on
 //! the line diff (M1-35).
 
-use crate::diff::{diff, DiffKind, DiffLine};
+use crate::diff::{DiffKind, DiffLine, diff};
 
 const CONTEXT_SIZE: usize = 3;
 
@@ -12,13 +12,22 @@ pub fn to_patch(old: &str, new: &str, file_path: &str) -> String {
     // A real file's own trailing newline is not a content line; diffing it as one (as a naive
     // split('\n') would) adds a spurious trailing blank line both sides "agree" on, which is
     // enough to make `git apply` reject the hunk's line count against the real file on disk.
-    let result = diff(old.strip_suffix('\n').unwrap_or(old), new.strip_suffix('\n').unwrap_or(new));
+    let result = diff(
+        old.strip_suffix('\n').unwrap_or(old),
+        new.strip_suffix('\n').unwrap_or(new),
+    );
     let mut lines = vec![format!("--- a/{file_path}"), format!("+++ b/{file_path}")];
     for hunk in build_hunks(&result.lines) {
         let old_start = hunk.iter().find_map(|l| l.old_line).unwrap_or(1);
         let new_start = hunk.iter().find_map(|l| l.new_line).unwrap_or(1);
-        let old_count = hunk.iter().filter(|l| matches!(l.kind, DiffKind::Context | DiffKind::Remove)).count();
-        let new_count = hunk.iter().filter(|l| matches!(l.kind, DiffKind::Context | DiffKind::Add)).count();
+        let old_count = hunk
+            .iter()
+            .filter(|l| matches!(l.kind, DiffKind::Context | DiffKind::Remove))
+            .count();
+        let new_count = hunk
+            .iter()
+            .filter(|l| matches!(l.kind, DiffKind::Context | DiffKind::Add))
+            .count();
         lines.push(format!("@@ -{old_start},{old_count} +{new_start},{new_count} @@"));
         for line in hunk {
             let prefix = match line.kind {
@@ -118,26 +127,52 @@ mod tests {
     #[test]
     fn the_patch_applies_cleanly_with_git_apply() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(Command::new("git").args(["init", "-q"]).current_dir(dir.path()).status().unwrap().success());
+        assert!(
+            Command::new("git")
+                .args(["init", "-q"])
+                .current_dir(dir.path())
+                .status()
+                .unwrap()
+                .success()
+        );
         let old = "fn main() {\n    println!(\"a\");\n    println!(\"b\");\n    println!(\"c\");\n}\n";
         let new = "fn main() {\n    println!(\"a\");\n    println!(\"changed\");\n    println!(\"c\");\n}\n";
         std::fs::write(dir.path().join("src.rs"), old).unwrap();
         let patch = to_patch(old, new, "src.rs");
         std::fs::write(dir.path().join("change.patch"), &patch).unwrap();
-        let output = Command::new("git").args(["apply", "--check", "change.patch"]).current_dir(dir.path()).output().unwrap();
-        assert!(output.status.success(), "git apply --check failed:\n{}\n--- patch ---\n{patch}", String::from_utf8_lossy(&output.stderr));
+        let output = Command::new("git")
+            .args(["apply", "--check", "change.patch"])
+            .current_dir(dir.path())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "git apply --check failed:\n{}\n--- patch ---\n{patch}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 
     #[test]
     fn a_patch_with_an_added_and_a_removed_file_line_also_applies() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(Command::new("git").args(["init", "-q"]).current_dir(dir.path()).status().unwrap().success());
+        assert!(
+            Command::new("git")
+                .args(["init", "-q"])
+                .current_dir(dir.path())
+                .status()
+                .unwrap()
+                .success()
+        );
         let old = "one\ntwo\nthree\n";
         let new = "one\ntwo point five\nthree\nfour\n";
         std::fs::write(dir.path().join("f.txt"), old).unwrap();
         let patch = to_patch(old, new, "f.txt");
         std::fs::write(dir.path().join("change.patch"), &patch).unwrap();
-        let output = Command::new("git").args(["apply", "--check", "change.patch"]).current_dir(dir.path()).output().unwrap();
+        let output = Command::new("git")
+            .args(["apply", "--check", "change.patch"])
+            .current_dir(dir.path())
+            .output()
+            .unwrap();
         assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     }
 }

@@ -20,10 +20,20 @@ use crate::paths::TargetOs;
 pub fn running_command_lines() -> Vec<String> {
     use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
     let mut sys = System::new();
-    sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing().with_cmd(UpdateKind::Always));
+    sys.refresh_processes_specifics(
+        ProcessesToUpdate::All,
+        true,
+        ProcessRefreshKind::nothing().with_cmd(UpdateKind::Always),
+    );
     sys.processes()
         .values()
-        .map(|p| p.cmd().iter().map(|a| a.to_string_lossy()).collect::<Vec<_>>().join(" "))
+        .map(|p| {
+            p.cmd()
+                .iter()
+                .map(|a| a.to_string_lossy())
+                .collect::<Vec<_>>()
+                .join(" ")
+        })
         .filter(|line| !line.is_empty())
         .collect()
 }
@@ -35,8 +45,14 @@ pub fn resolve_statuses(servers: &mut [McpServer], auth: &BTreeSet<String>, proc
         s.status = status(s, auth, processes, os);
     }
     let user_stdio = |s: &McpServer| s.source == McpServerSource::User && s.command.is_some();
-    if servers.iter().any(|s| user_stdio(s) && s.status == McpServerStatus::Connected) {
-        for s in servers.iter_mut().filter(|s| user_stdio(s) && s.status == McpServerStatus::Unknown) {
+    if servers
+        .iter()
+        .any(|s| user_stdio(s) && s.status == McpServerStatus::Connected)
+    {
+        for s in servers
+            .iter_mut()
+            .filter(|s| user_stdio(s) && s.status == McpServerStatus::Unknown)
+        {
             s.status = McpServerStatus::Failed;
         }
     }
@@ -51,7 +67,9 @@ pub fn status(server: &McpServer, auth: &BTreeSet<String>, processes: &[String],
     }
     if server.source == McpServerSource::Plugin {
         // `plugin:<name>:<server>`: running when `<name>` appears in a command line.
-        let Some(name) = server.raw_name.split(':').nth(1) else { return McpServerStatus::Unknown };
+        let Some(name) = server.raw_name.split(':').nth(1) else {
+            return McpServerStatus::Unknown;
+        };
         return running(&[name.to_string()], processes, os);
     }
     let transport = server.transport.as_deref();
@@ -75,10 +93,20 @@ pub fn status(server: &McpServer, auth: &BTreeSet<String>, processes: &[String],
 /// package as the runner then the package. Version suffixes (`@latest`) are dropped. Other
 /// commands match the executable followed by their non-flag arguments.
 pub fn process_pattern(command: &str, args: &[String]) -> Vec<String> {
-    let executable = Path::new(command).file_name().and_then(|n| n.to_str()).unwrap_or(command).to_string();
+    let executable = Path::new(command)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or(command)
+        .to_string();
     // `npx.cmd` and `uvx.exe` on Windows are the same runners.
-    let stem = Path::new(&executable).file_stem().and_then(|s| s.to_str()).unwrap_or(&executable).to_ascii_lowercase();
-    let Some(package) = args.iter().find(|a| !a.starts_with('-')) else { return vec![executable] };
+    let stem = Path::new(&executable)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(&executable)
+        .to_ascii_lowercase();
+    let Some(package) = args.iter().find(|a| !a.starts_with('-')) else {
+        return vec![executable];
+    };
     if stem == "npx" || stem == "uvx" {
         let cleaned = match package.split_once('/') {
             Some((scope, rest)) => format!("{scope}/{}", rest.split('@').next().unwrap_or(rest)),
@@ -90,13 +118,22 @@ pub fn process_pattern(command: &str, args: &[String]) -> Vec<String> {
         };
     }
     let significant: Vec<String> = args.iter().filter(|a| !a.starts_with('-')).cloned().collect();
-    std::iter::once(executable).chain(if significant.is_empty() { args.to_vec() } else { significant }).collect()
+    std::iter::once(executable)
+        .chain(if significant.is_empty() {
+            args.to_vec()
+        } else {
+            significant
+        })
+        .collect()
 }
 
 /// `part1.*part2.*…` with each part matched literally; case-insensitive on Windows, where paths are.
 pub fn pattern_regex(parts: &[String], os: TargetOs) -> Option<Regex> {
     let joined = parts.iter().map(|p| regex::escape(p)).collect::<Vec<_>>().join(".*");
-    RegexBuilder::new(&joined).case_insensitive(os == TargetOs::Windows).build().ok()
+    RegexBuilder::new(&joined)
+        .case_insensitive(os == TargetOs::Windows)
+        .build()
+        .ok()
 }
 
 fn running(parts: &[String], processes: &[String], os: TargetOs) -> McpServerStatus {
@@ -112,7 +149,14 @@ mod tests {
     use crate::models::config::mcp::McpServerDefinition;
     use crate::models::config::scope::ConfigScope;
 
-    fn server(name: &str, transport: Option<&str>, command: Option<&str>, args: &[&str], url: Option<&str>, source: McpServerSource) -> McpServer {
+    fn server(
+        name: &str,
+        transport: Option<&str>,
+        command: Option<&str>,
+        args: &[&str],
+        url: Option<&str>,
+        source: McpServerSource,
+    ) -> McpServer {
         let def = McpServerDefinition {
             transport: transport.map(String::from),
             command: command.map(String::from),
@@ -120,7 +164,16 @@ mod tests {
             url: url.map(String::from),
             ..Default::default()
         };
-        McpServer::new(format!("global-{name}"), name, name, ConfigScope::Global, source, &def, vec![], false)
+        McpServer::new(
+            format!("global-{name}"),
+            name,
+            name,
+            ConfigScope::Global,
+            source,
+            &def,
+            vec![],
+            false,
+        )
     }
     fn user(name: &str, transport: Option<&str>, command: Option<&str>, args: &[&str], url: Option<&str>) -> McpServer {
         server(name, transport, command, args, url, McpServerSource::User)
@@ -138,92 +191,213 @@ mod tests {
     // Ported from PoirotTests/Services/MCPServerStatusCheckerTests.swift (process list injected).
     #[test]
     fn auth_cache_detection() {
-        assert_eq!(check(&user("sentry", Some("http"), None, &[], Some("https://sentry.io/mcp")), &["sentry", "github"]), McpServerStatus::NeedsAuth);
+        assert_eq!(
+            check(
+                &user("sentry", Some("http"), None, &[], Some("https://sentry.io/mcp")),
+                &["sentry", "github"]
+            ),
+            McpServerStatus::NeedsAuth
+        );
     }
     #[test]
     fn server_not_in_auth_cache() {
-        assert_ne!(check(&user("myserver", Some("http"), None, &[], Some("https://example.com/mcp")), &["sentry", "github"]), McpServerStatus::NeedsAuth);
+        assert_ne!(
+            check(
+                &user("myserver", Some("http"), None, &[], Some("https://example.com/mcp")),
+                &["sentry", "github"]
+            ),
+            McpServerStatus::NeedsAuth
+        );
     }
     #[test]
     fn http_server_connected() {
-        assert_eq!(check(&user("api", Some("http"), None, &[], Some("https://api.example.com/mcp")), &[]), McpServerStatus::Connected);
+        assert_eq!(
+            check(
+                &user("api", Some("http"), None, &[], Some("https://api.example.com/mcp")),
+                &[]
+            ),
+            McpServerStatus::Connected
+        );
     }
     #[test]
     fn http_server_no_url() {
-        assert_eq!(check(&user("broken-http", Some("http"), None, &[], None), &[]), McpServerStatus::Unreachable);
+        assert_eq!(
+            check(&user("broken-http", Some("http"), None, &[], None), &[]),
+            McpServerStatus::Unreachable
+        );
     }
     #[test]
     fn sse_server_connected() {
-        assert_eq!(check(&user("stream", Some("sse"), None, &[], Some("https://stream.example.com/events")), &[]), McpServerStatus::Connected);
+        assert_eq!(
+            check(
+                &user(
+                    "stream",
+                    Some("sse"),
+                    None,
+                    &[],
+                    Some("https://stream.example.com/events")
+                ),
+                &[]
+            ),
+            McpServerStatus::Connected
+        );
     }
     #[test]
     fn url_inferred_http() {
-        assert_eq!(check(&user("notion", None, None, &[], Some("https://mcp.notion.com/mcp")), &[]), McpServerStatus::Connected);
+        assert_eq!(
+            check(
+                &user("notion", None, None, &[], Some("https://mcp.notion.com/mcp")),
+                &[]
+            ),
+            McpServerStatus::Connected
+        );
     }
     #[test]
     fn stdio_no_command() {
-        assert_eq!(check(&user("empty", Some("stdio"), None, &[], None), &[]), McpServerStatus::Unknown);
+        assert_eq!(
+            check(&user("empty", Some("stdio"), None, &[], None), &[]),
+            McpServerStatus::Unknown
+        );
     }
     #[test]
     fn no_transport_info() {
-        assert_eq!(check(&user("mystery", None, None, &[], None), &[]), McpServerStatus::Unknown);
+        assert_eq!(
+            check(&user("mystery", None, None, &[], None), &[]),
+            McpServerStatus::Unknown
+        );
     }
     #[test]
     fn bulk_resolution() {
         let mut servers = [
             user("http-ok", Some("http"), None, &[], Some("https://example.com/mcp")),
             user("unknown-server", None, None, &[], None),
-            user("auth-needed", Some("http"), None, &[], Some("https://auth.example.com/mcp")),
+            user(
+                "auth-needed",
+                Some("http"),
+                None,
+                &[],
+                Some("https://auth.example.com/mcp"),
+            ),
         ];
         resolve_statuses(&mut servers, &auth(&["auth-needed"]), &[], TargetOs::Macos);
-        assert_eq!(servers.map(|s| s.status), [McpServerStatus::Connected, McpServerStatus::Unknown, McpServerStatus::NeedsAuth]);
+        assert_eq!(
+            servers.map(|s| s.status),
+            [
+                McpServerStatus::Connected,
+                McpServerStatus::Unknown,
+                McpServerStatus::NeedsAuth
+            ]
+        );
     }
     #[test]
     fn auth_cache_precedence() {
-        assert_eq!(check(&user("github", Some("http"), None, &[], Some("https://api.github.com/mcp")), &["github"]), McpServerStatus::NeedsAuth);
+        assert_eq!(
+            check(
+                &user("github", Some("http"), None, &[], Some("https://api.github.com/mcp")),
+                &["github"]
+            ),
+            McpServerStatus::NeedsAuth
+        );
     }
     #[test]
     fn auth_cache_precedence_stdio() {
-        assert_eq!(check(&user("my-stdio", Some("stdio"), Some("node"), &["server.js"], None), &["my-stdio"]), McpServerStatus::NeedsAuth);
+        assert_eq!(
+            check(
+                &user("my-stdio", Some("stdio"), Some("node"), &["server.js"], None),
+                &["my-stdio"]
+            ),
+            McpServerStatus::NeedsAuth
+        );
     }
     #[test]
     fn cloud_integration_preserves_status() {
-        let mut s = server("claude.ai Gmail", None, None, &[], None, McpServerSource::CloudIntegration);
+        let mut s = server(
+            "claude.ai Gmail",
+            None,
+            None,
+            &[],
+            None,
+            McpServerSource::CloudIntegration,
+        );
         s.status = McpServerStatus::NeedsAuth;
         assert_eq!(check(&s, &[]), McpServerStatus::NeedsAuth);
     }
     #[test]
     fn cloud_integration_ignores_auth_cache() {
-        let mut s = server("claude.ai Gmail", None, None, &[], None, McpServerSource::CloudIntegration);
+        let mut s = server(
+            "claude.ai Gmail",
+            None,
+            None,
+            &[],
+            None,
+            McpServerSource::CloudIntegration,
+        );
         s.status = McpServerStatus::NeedsAuth;
         assert_eq!(check(&s, &["some-other-server"]), McpServerStatus::NeedsAuth);
     }
     #[test]
     fn plugin_server_no_process() {
-        assert_eq!(check(&server("plugin:nonexistent-plugin:nonexistent-plugin", None, None, &[], None, McpServerSource::Plugin), &[]), McpServerStatus::Unknown);
+        assert_eq!(
+            check(
+                &server(
+                    "plugin:nonexistent-plugin:nonexistent-plugin",
+                    None,
+                    None,
+                    &[],
+                    None,
+                    McpServerSource::Plugin
+                ),
+                &[]
+            ),
+            McpServerStatus::Unknown
+        );
     }
 
     #[test]
     fn patterns_follow_the_runner_rules() {
         let p = |cmd: &str, args: &[&str]| process_pattern(cmd, &strings(args));
-        assert_eq!(p("npx", &["-y", "@modelcontextprotocol/server-filesystem"]), ["modelcontextprotocol", "server-filesystem"]);
+        assert_eq!(
+            p("npx", &["-y", "@modelcontextprotocol/server-filesystem"]),
+            ["modelcontextprotocol", "server-filesystem"]
+        );
         assert_eq!(p("npx", &["-y", "@playwright/mcp@latest"]), ["playwright", "mcp"]);
-        assert_eq!(p("/usr/local/bin/uvx", &["perplexity-mcp@1.2"]), ["uvx", "perplexity-mcp"]);
-        assert_eq!(p("node", &["server.js", "--port", "3000"]), ["node", "server.js", "3000"]);
+        assert_eq!(
+            p("/usr/local/bin/uvx", &["perplexity-mcp@1.2"]),
+            ["uvx", "perplexity-mcp"]
+        );
+        assert_eq!(
+            p("node", &["server.js", "--port", "3000"]),
+            ["node", "server.js", "3000"]
+        );
         assert_eq!(p("python", &[]), ["python"]);
         assert_eq!(p("npx", &["--yes"]), ["npx"]);
     }
 
     #[test]
     fn windows_npx_cmd_matches_the_node_process_it_starts() {
-        let s = user("fs", Some("stdio"), Some(r"C:\Program Files\nodejs\npx.cmd"), &["-y", "@modelcontextprotocol/server-filesystem", r"C:\work"], None);
+        let s = user(
+            "fs",
+            Some("stdio"),
+            Some(r"C:\Program Files\nodejs\npx.cmd"),
+            &["-y", "@modelcontextprotocol/server-filesystem", r"C:\work"],
+            None,
+        );
         let processes = strings(&[
             r"C:\Windows\System32\conhost.exe 0x4",
             r#""C:\Program Files\nodejs\node.exe" C:\Users\me\AppData\Local\npm-cache\_npx\9f2c\node_modules\.bin\..\@ModelContextProtocol\server-filesystem\dist\index.js C:\work"#,
         ]);
-        assert_eq!(process_pattern(s.command.as_deref().unwrap(), &s.args), ["modelcontextprotocol", "server-filesystem"]);
-        assert_eq!(status(&s, &BTreeSet::new(), &processes, TargetOs::Windows), McpServerStatus::Connected);
-        assert_eq!(status(&s, &BTreeSet::new(), &processes[..1], TargetOs::Windows), McpServerStatus::Unknown);
+        assert_eq!(
+            process_pattern(s.command.as_deref().unwrap(), &s.args),
+            ["modelcontextprotocol", "server-filesystem"]
+        );
+        assert_eq!(
+            status(&s, &BTreeSet::new(), &processes, TargetOs::Windows),
+            McpServerStatus::Connected
+        );
+        assert_eq!(
+            status(&s, &BTreeSet::new(), &processes[..1], TargetOs::Windows),
+            McpServerStatus::Unknown
+        );
     }
 
     #[test]
@@ -233,15 +407,30 @@ mod tests {
             user("idle", Some("stdio"), Some("node"), &["beta.js"], None),
             user("remote", Some("http"), None, &[], Some("https://x.example/mcp")),
         ];
-        resolve_statuses(&mut servers, &BTreeSet::new(), &strings(&["node /srv/alpha.js"]), TargetOs::Linux);
-        assert_eq!(servers.map(|s| s.status), [McpServerStatus::Connected, McpServerStatus::Failed, McpServerStatus::Connected]);
+        resolve_statuses(
+            &mut servers,
+            &BTreeSet::new(),
+            &strings(&["node /srv/alpha.js"]),
+            TargetOs::Linux,
+        );
+        assert_eq!(
+            servers.map(|s| s.status),
+            [
+                McpServerStatus::Connected,
+                McpServerStatus::Failed,
+                McpServerStatus::Connected
+            ]
+        );
     }
 
     #[test]
     fn literal_parts_do_not_act_as_regex() {
         // Poirot passed arguments to pgrep unescaped, so `server.js` also matched `serverXjs`.
         let s = user("x", Some("stdio"), Some("node"), &["server.js"], None);
-        assert_eq!(status(&s, &BTreeSet::new(), &strings(&["node serverXjs"]), TargetOs::Linux), McpServerStatus::Unknown);
+        assert_eq!(
+            status(&s, &BTreeSet::new(), &strings(&["node serverXjs"]), TargetOs::Linux),
+            McpServerStatus::Unknown
+        );
     }
 
     #[test]

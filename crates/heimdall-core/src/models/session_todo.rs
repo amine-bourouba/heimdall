@@ -72,29 +72,47 @@ mod tests {
     #[test]
     fn decodes_completed_status() {
         let t = one(r#"{"content": "Fix the bug", "status": "completed", "activeForm": "Fixing the bug"}"#);
-        assert_eq!((t.content.as_str(), t.status, t.active_form.as_str()), ("Fix the bug", TodoStatus::Completed, "Fixing the bug"));
+        assert_eq!(
+            (t.content.as_str(), t.status, t.active_form.as_str()),
+            ("Fix the bug", TodoStatus::Completed, "Fixing the bug")
+        );
     }
     #[test]
     fn decodes_in_progress_status() {
-        assert_eq!(one(r#"{"content": "Write tests", "status": "in_progress", "activeForm": "Writing tests"}"#).status, TodoStatus::InProgress);
+        assert_eq!(
+            one(r#"{"content": "Write tests", "status": "in_progress", "activeForm": "Writing tests"}"#).status,
+            TodoStatus::InProgress
+        );
     }
     #[test]
     fn decodes_pending_status() {
-        assert_eq!(one(r#"{"content": "Deploy", "status": "pending", "activeForm": "Deploying"}"#).status, TodoStatus::Pending);
+        assert_eq!(
+            one(r#"{"content": "Deploy", "status": "pending", "activeForm": "Deploying"}"#).status,
+            TodoStatus::Pending
+        );
     }
     #[test]
     fn decodes_array_of_todos() {
-        let list = TodoItem::list_from_json(r#"[
+        let list = TodoItem::list_from_json(
+            r#"[
             {"content": "Task A", "status": "completed", "activeForm": "Completing A"},
             {"content": "Task B", "status": "in_progress", "activeForm": "Working on B"},
-            {"content": "Task C", "status": "pending", "activeForm": "Starting C"}]"#).unwrap();
+            {"content": "Task C", "status": "pending", "activeForm": "Starting C"}]"#,
+        )
+        .unwrap();
         let statuses: Vec<_> = list.value.iter().map(|t| t.status).collect();
-        assert_eq!(statuses, [TodoStatus::Completed, TodoStatus::InProgress, TodoStatus::Pending]);
+        assert_eq!(
+            statuses,
+            [TodoStatus::Completed, TodoStatus::InProgress, TodoStatus::Pending]
+        );
     }
     #[test]
     fn identifiable_id_derived_from_content() {
         let t = one(r#"{"content": "Do something", "status": "pending", "activeForm": "Doing something"}"#);
-        assert_eq!(t.id(), one(r#"{"content": "Do something", "status": "completed", "activeForm": "x"}"#).id());
+        assert_eq!(
+            t.id(),
+            one(r#"{"content": "Do something", "status": "completed", "activeForm": "x"}"#).id()
+        );
     }
     #[test]
     fn hashable_todos_with_same_content_are_equal() {
@@ -109,8 +127,11 @@ mod tests {
 
     #[test]
     fn unknown_status_is_skipped_not_fatal_and_ipc_uses_camel_case() {
-        let list = TodoItem::list_from_json(r#"[{"content": "a", "status": "blocked", "activeForm": "x"},
-            {"content": "b", "status": "in_progress", "activeForm": "y"}]"#).unwrap();
+        let list = TodoItem::list_from_json(
+            r#"[{"content": "a", "status": "blocked", "activeForm": "x"},
+            {"content": "b", "status": "in_progress", "activeForm": "y"}]"#,
+        )
+        .unwrap();
         assert_eq!((list.value.len(), list.skipped), (1, 1));
         assert_eq!(serde_json::to_value(&list.value[0]).unwrap()["status"], "inProgress");
     }

@@ -61,7 +61,7 @@ fn rename_with_retries(temp: &Path, target: &Path) -> Result<()> {
             Err(_) => {
                 return replace_file(temp, target).map_err(|_| {
                     AppError::busy("the file is in use by another program; close it or try again").with_path(target)
-                })
+                });
             }
         }
     }
@@ -75,8 +75,8 @@ fn is_sharing_violation(e: &std::io::Error) -> bool {
 
 #[cfg(windows)]
 fn replace_file(temp: &Path, target: &Path) -> std::io::Result<()> {
+    use windows::Win32::Storage::FileSystem::{REPLACE_FILE_FLAGS, ReplaceFileW};
     use windows::core::{HSTRING, PCWSTR};
-    use windows::Win32::Storage::FileSystem::{ReplaceFileW, REPLACE_FILE_FLAGS};
     let (target_w, temp_w) = (HSTRING::from(target.as_os_str()), HSTRING::from(temp.as_os_str()));
     // SAFETY: both arguments are valid NUL-terminated wide strings that outlive the call; the
     // backup name, exclude and reserved pointers are null as the API allows.
@@ -94,7 +94,11 @@ mod tests {
     use super::*;
 
     fn names(dir: &Path) -> Vec<String> {
-        let mut v: Vec<_> = std::fs::read_dir(dir).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+        let mut v: Vec<_> = std::fs::read_dir(dir)
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
         v.sort();
         v
     }
@@ -139,7 +143,11 @@ mod tests {
         use std::os::windows::fs::OpenOptionsExt;
         const FILE_SHARE_READ: u32 = 1;
         const FILE_SHARE_WRITE: u32 = 2;
-        OpenOptions::new().read(true).share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE).open(p).unwrap()
+        OpenOptions::new()
+            .read(true)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+            .open(p)
+            .unwrap()
     }
 
     #[cfg(windows)]
