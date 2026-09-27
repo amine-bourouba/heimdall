@@ -39,6 +39,24 @@ fn candidate_names(name: &str, pathext: &str, os: TargetOs) -> Vec<String> {
         .collect()
 }
 
+/// Joins `dir` and `name` with the separator `os` uses, not the host's native one. `Path::join`
+/// always uses the *host's* separator, which silently mixes `/` and `\` when testing a
+/// `TargetOs` other than the host's own (exactly the cross-host CI run ADR 0003 asks every OS
+/// branch to support) — confirmed by a real `ubuntu-22.04`/`macos-latest` CI failure on this
+/// module's own Windows-path tests, which passed only on Windows before M1-59's gate review
+/// actually ran CI cross-platform for the first time. `os` always matches the host in the real,
+/// shipped app, so this changes nothing there — it only makes a *foreign* `TargetOs`'s behaviour
+/// host-independent, which is what these functions' own doc comments already claimed.
+fn join_for_os(dir: &Path, name: &str, os: TargetOs) -> PathBuf {
+    let sep = if os == TargetOs::Windows { '\\' } else { '/' };
+    let mut s = dir.to_string_lossy().into_owned();
+    if !s.is_empty() && !s.ends_with(sep) {
+        s.push(sep);
+    }
+    s.push_str(name);
+    PathBuf::from(s)
+}
+
 fn search_dirs(
     dirs: impl Iterator<Item = PathBuf>,
     name: &str,
@@ -49,7 +67,7 @@ fn search_dirs(
     let candidates = candidate_names(name, pathext, os);
     for dir in dirs {
         for candidate in &candidates {
-            let path = dir.join(candidate);
+            let path = join_for_os(&dir, candidate, os);
             if exists(&path) {
                 return Some(path);
             }
@@ -71,13 +89,15 @@ pub fn find_on_path(
 
 /// Directories checked for `claude` after `PATH` comes up empty (the table above).
 pub fn claude_fallback_dirs(home: &Path, os: TargetOs) -> Vec<PathBuf> {
+    let j = |dir: &Path, name: &str| join_for_os(dir, name, os);
+    let j2 = |a: &str, b: &str| j(&j(home, a), b);
     match os {
-        TargetOs::Windows => vec![home.join("AppData").join("Roaming").join("npm")],
-        TargetOs::Linux => vec![home.join(".local").join("bin"), home.join(".npm-global").join("bin")],
+        TargetOs::Windows => vec![j(&j2("AppData", "Roaming"), "npm")],
+        TargetOs::Linux => vec![j2(".local", "bin"), j2(".npm-global", "bin")],
         TargetOs::Macos => vec![
             PathBuf::from("/opt/homebrew/bin"),
             PathBuf::from("/usr/local/bin"),
-            home.join(".local").join("bin"),
+            j2(".local", "bin"),
         ],
     }
 }

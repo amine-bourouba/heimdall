@@ -211,10 +211,12 @@ mod tests {
             TargetOs::Linux,
             &|p| p == Path::new("/fake/bin/claude"),
         );
-        assert_eq!(
-            status.cli_path,
-            Some(Path::new("/fake/bin").join("claude").display().to_string())
-        );
+        // A literal, not `Path::new("/fake/bin").join("claude")`: that join uses the *host's*
+        // separator, which only happens to be "/" when this test itself runs on a non-Windows
+        // host — exactly the cross-host CI mismatch a real ubuntu-22.04/macos-latest run caught
+        // in cli_locate.rs's own tests (M1-59's gate review). `os` here is hardcoded to Linux, so
+        // the expected separator is always "/", regardless of what host runs this test.
+        assert_eq!(status.cli_path, Some("/fake/bin/claude".to_string()));
         assert!(status.sessions_exist); // fixtures/synthetic/claude-home/projects has one project
     }
 

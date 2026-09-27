@@ -8,7 +8,6 @@
 //! stdio servers are connected when their command pattern matches a running process.
 
 use std::collections::BTreeSet;
-use std::path::Path;
 
 use regex::{Regex, RegexBuilder};
 
@@ -93,16 +92,15 @@ pub fn status(server: &McpServer, auth: &BTreeSet<String>, processes: &[String],
 /// package as the runner then the package. Version suffixes (`@latest`) are dropped. Other
 /// commands match the executable followed by their non-flag arguments.
 pub fn process_pattern(command: &str, args: &[String]) -> Vec<String> {
-    let executable = Path::new(command)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or(command)
-        .to_string();
+    // `crate::paths::last_component` splits on both `/` and `\`, unlike `Path::file_name`, which
+    // only recognises the *host's* separator — a Windows-style `command` like `npx.cmd` needs to
+    // resolve the same way when this runs on a non-Windows CI host as it does on the real,
+    // deployed app (confirmed by a real macos-latest/ubuntu-22.04 CI failure on this exact case).
+    let executable = crate::paths::last_component(command).to_string();
     // `npx.cmd` and `uvx.exe` on Windows are the same runners.
-    let stem = Path::new(&executable)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or(&executable)
+    let stem = executable
+        .rsplit_once('.')
+        .map_or(executable.as_str(), |(stem, _)| stem)
         .to_ascii_lowercase();
     let Some(package) = args.iter().find(|a| !a.starts_with('-')) else {
         return vec![executable];
