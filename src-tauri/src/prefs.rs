@@ -19,7 +19,20 @@ fn migrate(stored: serde_json::Value) -> serde_json::Value {
     stored
 }
 
+/// In test builds only, an app that `.manage()`s this gets its own isolated store file instead of
+/// the real, shared `STORE_FILE` under `BaseDirectory::AppData` — every `prefs.rs` test otherwise
+/// resolves to the exact same real on-disk path (`mock_context` always uses the same identifier),
+/// so cargo's default parallel test runner corrupts one test's expectations with another's writes.
+/// Confirmed by a real cross-OS CI run: this crate's own tests had never actually executed before
+/// (an earlier, now-fixed heimdall-core bug always aborted `cargo test --workspace` first).
+#[cfg(test)]
+struct TestStorePath(std::path::PathBuf);
+
 fn store<R: Runtime>(app: &AppHandle<R>) -> Result<std::sync::Arc<tauri_plugin_store::Store<R>>> {
+    #[cfg(test)]
+    if let Some(path) = app.try_state::<TestStorePath>() {
+        return app.store(path.0.clone()).map_err(|e| AppError::io(e.to_string()));
+    }
     app.store(STORE_FILE).map_err(|e| AppError::io(e.to_string()))
 }
 
@@ -250,10 +263,16 @@ mod tests {
     use tauri::test::{mock_builder, mock_context, noop_assets};
 
     fn app() -> tauri::App<tauri::test::MockRuntime> {
-        mock_builder()
+        let app = mock_builder()
             .plugin(tauri_plugin_store::Builder::default().build())
             .build(mock_context(noop_assets()))
-            .expect("build mock app")
+            .expect("build mock app");
+        static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let id = NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        app.manage(TestStorePath(
+            std::env::temp_dir().join(format!("heimdall-test-prefs-{id}.json")),
+        ));
+        app
     }
 
     #[test]

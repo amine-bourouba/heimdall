@@ -328,9 +328,20 @@ mod tests {
         let loaded = list_sessions_inner(&state(), POIROT, true).unwrap();
         let mut ids: Vec<_> = loaded.value.iter().map(|s| s.id.clone()).collect();
         ids.sort();
+        // include_agents: true also surfaces conv-001's four real subagent transcripts
+        // (conv-001/subagents/agent-*.jsonl) as their own sidechain sessions — matching
+        // SessionLoader.swift's own isSidechain: true synthesis and AppState.swift's
+        // showAgentSessions filter, confirmed by reading both directly. This test's own
+        // expected list predates those four fixture files and never actually ran to catch the
+        // drift: this crate's tests had never executed on any OS until a real cross-OS CI run
+        // found this (an earlier heimdall-core bug always aborted `cargo test --workspace` first).
         assert_eq!(
             ids,
             [
+                "agent-a5984cda07de98171",
+                "agent-a7e39e5ee252c7f4e",
+                "agent-acb7b6172385db44c",
+                "agent-af4e08a895ed07f7c",
                 "alltools-001",
                 "conv-001",
                 "diff-001",
