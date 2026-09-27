@@ -56,15 +56,18 @@ nonisolated private struct FixtureSet {
 
     init(root: String, name: String) {
         self.name = name
-        let home = (root as NSString).appendingPathComponent(name).appending("/claude-home")
+        // Plain "/"-joining, not NSString path bridging — this only ever runs on macOS, so there
+        // is no separator ambiguity to resolve, and it sidesteps Foundation's evolving
+        // (and, on Xcode 26, sometimes overload-ambiguous) String/NSString path-component APIs.
+        let home = "\(root)/\(name)/claude-home"
         claudeHome = home
-        projectsPath = home.appending("/projects")
-        historyFilePath = home.appending("/history.jsonl")
-        todosPath = home.appending("/todos")
-        debugPath = home.appending("/debug")
-        facetsPath = home.appending("/usage-data/facets")
-        fileHistoryPath = home.appending("/file-history")
-        statsCachePath = home.appending("/stats-cache.json")
+        projectsPath = "\(home)/projects"
+        historyFilePath = "\(home)/history.jsonl"
+        todosPath = "\(home)/todos"
+        debugPath = "\(home)/debug"
+        facetsPath = "\(home)/usage-data/facets"
+        fileHistoryPath = "\(home)/file-history"
+        statsCachePath = "\(home)/stats-cache.json"
     }
 
     static func discover(root: String) -> [FixtureSet] {
@@ -89,8 +92,12 @@ nonisolated(unsafe) private let isoFractional: ISO8601DateFormatter = {
     return f // defaults to UTC — ISO8601DateFormatter's timeZone is GMT unless set otherwise
 }()
 
+// Two distinct names, not one `iso` overloaded on Date/Date?: a call like `iso(nonOptionalDate)`
+// assigned into a `String?`-typed property is genuinely ambiguous between "promote the Date
+// argument to Date?" and "promote the String return value to String?" — both single-promotion,
+// both viable. Confirmed by a real compiler, not a hypothetical: Xcode 26 rejected exactly this.
 nonisolated private func iso(_ date: Date) -> String { isoFractional.string(from: date) }
-nonisolated private func iso(_ date: Date?) -> String? { date.map(isoFractional.string(from:)) }
+nonisolated private func isoOrNil(_ date: Date?) -> String? { date.map(isoFractional.string(from:)) }
 
 /// Encodes with sorted keys (canonical byte order) and unescaped slashes. Every "Golden*" wrapper
 /// type below is written by hand rather than reusing a Poirot model's own `Codable` conformance,
@@ -207,7 +214,7 @@ nonisolated private struct GoldenSession: Encodable {
         id = s.id; projectPath = s.projectPath
         title = s.cachedTitle
         preview = s.cachedPreview
-        startedAt = iso(s.startedAt); endedAt = iso(s.endedAt)
+        startedAt = iso(s.startedAt); endedAt = isoOrNil(s.endedAt)
         model = s.model
         totalTokens = s.totalTokens
         turnCount = s.cachedTurnCount ?? s.messages.count { $0.role == .user }
@@ -381,7 +388,7 @@ private struct GoldenOracleTests {
     }
 
     func outPath(_ set: FixtureSet, _ relative: String) -> String {
-        (outRoot as NSString).appendingPathComponent(set.name).appendingPathComponent(relative)
+        "\(outRoot)/\(set.name)/\(relative)"
     }
 
     /// AC1: "projects and summaries" — `SessionLoader.discoverProjects()`, which itself builds
