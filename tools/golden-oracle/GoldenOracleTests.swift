@@ -135,9 +135,14 @@ nonisolated private func writeJSON<T: Encodable>(_ value: T, to path: String) th
     try write(try canonicalJSON(value), to: path)
 }
 
+/// Every character `actions/upload-artifact` rejects (confirmed by a real upload failure on a
+/// Windows-fixture file-history entry whose `fileName` is a full `C:\Users\...\MEMORY.md` path,
+/// not a bare name — `FileHistoryLoader.canonicalFileName` keeps the longest observed form, which
+/// for Windows can be the whole absolute path) — not just the two path separators this originally
+/// handled, which missed the colon after a drive letter.
 nonisolated private func safeName(_ s: String) -> String {
-    // File/directory names must not carry path separators a fixture's own data might contain.
-    s.replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "\\", with: "_")
+    let invalid = CharacterSet(charactersIn: "\"\\/:<>|*?\r\n")
+    return String(s.unicodeScalars.map { invalid.contains($0) ? "_" : Character($0) })
 }
 
 // MARK: - Golden wrapper types
