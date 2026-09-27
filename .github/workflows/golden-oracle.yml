@@ -1,0 +1,234 @@
+name: Golden Oracle
+
+# Manually dispatched only (task M1-51): runs the Swift reference app's golden-output harness
+# (tools/golden-oracle/GoldenOracleTests.swift, task M1-50) against this repo's own fixture trees
+# inside a throwaway checkout of upstream Poirot, and uploads the resulting JSON as a workflow
+# artifact. Retired entirely once M1's parity condition is met (ADR 0001 point 4) — a condition,
+# not a date, so this workflow stays manual-only rather than running on every push.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_screenshot_capture:
+        description: >-
+          Also run Poirot's ScreenshotTests suites in record mode and upload the PNGs as a
+          reference artifact. These are never committed to this repo — Playwright visual tests
+          (M2-24, M3-18) get their own committed Linux baselines separately (port-plan §8).
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # docs/adr/0001-repo-layout-and-swift-reference.md: the pinned upstream commit. Moving it is a
+  # deliberate change (architect-reviewer approval, oracle re-run) — never bump it here casually.
+  POIROT_SHA: a29dd6ee0e0133ef26bd067c164c66b160e13d86
+  POIROT_REPO: a7t-ai/poirot
+
+jobs:
+  golden-json:
+    name: Run golden-output harness
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Heimdall (harness source + fixtures)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout Poirot at the pinned SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.POIROT_REPO }}
+          ref: ${{ env.POIROT_SHA }}
+          path: poirot-checkout
+          persist-credentials: false
+
+      # Mirrors Poirot's own .github/workflows/unit-tests.yml exactly (proven to work against
+      # this same project.yml / scheme) rather than guessing a different Xcode selection.
+      - name: Setup Xcode
+        run: |
+          XCODE_PATH="/Applications/Xcode_26.0.app"
+          if [ -d "$XCODE_PATH" ]; then
+            echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
+            echo "Using Xcode: $XCODE_PATH"
+          else
+            echo "::error::Xcode not found at $XCODE_PATH — check the current macos-latest runner image's installed Xcode versions and update this path"
+            ls /Applications | grep -i xcode || echo "No Xcode installations found"
+            exit 1
+          fi
+
+      - name: Setup Homebrew
+        run: |
+          if [ -f /opt/homebrew/bin/brew ]; then
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+          elif [ -f /usr/local/bin/brew ]; then
+            eval "$(/usr/local/bin/brew shellenv)"
+          else
+            echo "::error::Homebrew not found"
+            exit 1
+          fi
+          echo "$(brew --prefix)/bin" >> "$GITHUB_PATH"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # tools/golden-oracle/README.md's "copy-in procedure": the harness is never added to
+      # $POIROT (the read-only reference checked out locally elsewhere) — only to this
+      # throwaway clone, which is discarded at the end of the job.
+      - name: Copy the harness into PoirotTests
+        run: cp tools/golden-oracle/GoldenOracleTests.swift poirot-checkout/PoirotTests/GoldenOracleTests.swift
+
+      # PoirotTests' target in project.yml globs `path: PoirotTests` — regenerating picks up the
+      # file just copied in without editing project.yml. The committed .xcodeproj (used as-is by
+      # Poirot's own unit-tests.yml) predates this file and would not reference it.
+      - name: Generate the Xcode project
+        working-directory: poirot-checkout
+        run: xcodegen generate
+
+      - name: Build for testing
+        working-directory: poirot-checkout
+        run: |
+          xcodebuild -scheme Poirot \
+            -destination 'platform=macOS' \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            build-for-testing
+
+      - name: Run the golden-output harness
+        working-directory: poirot-checkout
+        env:
+          # fixtures/ is laid out exactly as FixtureSet.discover(root:) expects: <root>/<set>/claude-home.
+          GOLDEN_FIXTURES: ${{ github.workspace }}/fixtures
+          GOLDEN_OUT: ${{ runner.temp }}/golden-out
+          # tools/golden-oracle/README.md's "Known gaps": SessionExporter's `**Date:**` header line
+          # renders via Locale.current/TimeZone.current, not a fixed formatter. TZ is reliably
+          # respected by Foundation on macOS; LANG/LC_ALL's effect on Locale.current in an
+          # unconfigured CI process (no real logged-in user with AppleLocale preferences) has not
+          # been independently confirmed against a real run — if export.md still varies between
+          # runs, check this first.
+          TZ: UTC
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        run: |
+          mkdir -p "$GOLDEN_OUT"
+          xcodebuild -scheme Poirot \
+            -destination 'platform=macOS' \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            -only-testing:PoirotTests/GoldenOracleTests \
+            test-without-building
+
+      # Uploaded as an artifact only — committing this to fixtures/golden/ is M1-52's job, done
+      # by hand after a human reviews the diff, not automatically from this workflow.
+      - name: Upload golden JSON
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: golden-oracle-output
+          path: ${{ runner.temp }}/golden-out
+          retention-days: 14
+          if-no-files-found: error
+
+  screenshot-reference:
+    name: Capture reference screenshots (record mode)
+    if: ${{ inputs.run_screenshot_capture }}
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Poirot at the pinned SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.POIROT_REPO }}
+          ref: ${{ env.POIROT_SHA }}
+          persist-credentials: false
+
+      - name: Setup Xcode
+        run: |
+          XCODE_PATH="/Applications/Xcode_26.0.app"
+          if [ -d "$XCODE_PATH" ]; then
+            echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
+          else
+            echo "::error::Xcode not found at $XCODE_PATH"
+            ls /Applications | grep -i xcode || echo "No Xcode installations found"
+            exit 1
+          fi
+
+      - name: Setup Homebrew
+        run: |
+          if [ -f /opt/homebrew/bin/brew ]; then
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+          elif [ -f /usr/local/bin/brew ]; then
+            eval "$(/usr/local/bin/brew shellenv)"
+          else
+            echo "::error::Homebrew not found"
+            exit 1
+          fi
+          echo "$(brew --prefix)/bin" >> "$GITHUB_PATH"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        run: xcodegen generate
+
+      - name: Build for testing
+        run: |
+          xcodebuild -scheme Poirot \
+            -destination 'platform=macOS' \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            build-for-testing
+
+      # SNAPSHOT_TESTING_RECORD=all (swift-snapshot-testing >= 1.17.0, pinned in project.yml)
+      # overrides every call site's own `record isRecording: Bool = false` default globally, so
+      # no PoirotTests/Screenshots/*.swift file needs editing to force record mode for this run.
+      # `-only-testing:` takes Target/Class[/method], not a folder path, so every screenshot test
+      # class is listed explicitly — the same 18 classes Poirot's own unit-tests.yml already
+      # enumerates (there, as -skip-testing, to exclude them from the regular run).
+      - name: Run ScreenshotTests in record mode
+        env:
+          SNAPSHOT_TESTING_RECORD: all
+        run: |
+          xcodebuild -scheme Poirot \
+            -destination 'platform=macOS' \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            -only-testing:PoirotTests/ScreenshotTests_Analytics \
+            -only-testing:PoirotTests/ScreenshotTests_ConfigScreens \
+            -only-testing:PoirotTests/ScreenshotTests_DebugLog \
+            -only-testing:PoirotTests/ScreenshotTests_EditDiff \
+            -only-testing:PoirotTests/ScreenshotTests_Facets \
+            -only-testing:PoirotTests/ScreenshotTests_FileHistory \
+            -only-testing:PoirotTests/ScreenshotTests_FullViews \
+            -only-testing:PoirotTests/ScreenshotTests_History \
+            -only-testing:PoirotTests/ScreenshotTests_Memory \
+            -only-testing:PoirotTests/ScreenshotTests_Plans \
+            -only-testing:PoirotTests/ScreenshotTests_SessionDetail \
+            -only-testing:PoirotTests/ScreenshotTests_Sidebar \
+            -only-testing:PoirotTests/ScreenshotTests_Standalone \
+            -only-testing:PoirotTests/ScreenshotTests_ThinkingBlocks \
+            -only-testing:PoirotTests/ScreenshotTests_Todos \
+            -only-testing:PoirotTests/ScreenshotTests_ToolBlocks \
+            -only-testing:PoirotTests/ScreenshotTests_Usage \
+            -only-testing:PoirotTests/ScreenshotTests_Windows \
+            test-without-building
+
+      # Reference only — never committed to this repo (Playwright/Linux baselines are the real
+      # visual regression tests, port-plan §8). swift-snapshot-testing's default layout puts each
+      # test file's snapshots in a sibling __Snapshots__/ folder, which is exactly what
+      # project.yml's own PoirotTests target already excludes from compilation.
+      - name: Upload reference screenshots (never committed)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: screenshot-reference-pngs
+          path: PoirotTests/**/__Snapshots__/**/*.png
+          retention-days: 14
+          if-no-files-found: warn

@@ -15,13 +15,20 @@
 // ponytail: one flat file, not a mini-framework — this only ever runs once per CI job, by design
 // (ADR 0001 point 4: retired entirely once parity is reached), so there is no second call site to
 // justify splitting these helpers into their own module.
+//
+// Every private helper type/function below is explicitly `nonisolated` — required, not stylistic:
+// `project.yml` sets `SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor`, so anything left unmarked in this
+// module becomes implicitly @MainActor-isolated, and every Poirot type these helpers wrap
+// (`Session`, `Message`, `TokenUsage`, ...) is itself `nonisolated` for the same reason. Only
+// `GoldenOracleTests` itself is left unmarked, so it inherits whatever isolation `XCTestCase`'s own
+// lifecycle methods expect rather than risking an override mismatch.
 
 import Foundation
 import XCTest
 
 // MARK: - Environment
 
-private enum Env {
+nonisolated private enum Env {
     static var fixtures: String? { ProcessInfo.processInfo.environment["GOLDEN_FIXTURES"] }
     static var out: String? { ProcessInfo.processInfo.environment["GOLDEN_OUT"] }
 }
@@ -29,7 +36,7 @@ private enum Env {
 /// One fixture set under `$GOLDEN_FIXTURES`. Every set in `fixtures/README.md`'s table that has a
 /// `claude-home/` + `claude.json` pair (i.e. every set except `fixtures/golden/`, `fixtures/dto/`
 /// and `fixtures/security/`, none of which this harness touches).
-private struct FixtureSet {
+nonisolated private struct FixtureSet {
     let name: String
     let claudeHome: String // "<root>/<name>/claude-home"
     let projectsPath: String
@@ -75,31 +82,31 @@ nonisolated(unsafe) private let isoFractional: ISO8601DateFormatter = {
     return f // defaults to UTC — ISO8601DateFormatter's timeZone is GMT unless set otherwise
 }()
 
-private func iso(_ date: Date) -> String { isoFractional.string(from: date) }
-private func iso(_ date: Date?) -> String? { date.map(isoFractional.string(from:)) }
+nonisolated private func iso(_ date: Date) -> String { isoFractional.string(from: date) }
+nonisolated private func iso(_ date: Date?) -> String? { date.map(isoFractional.string(from:)) }
 
 /// Encodes with sorted keys (canonical byte order) and unescaped slashes. Every "Golden*" wrapper
 /// type below is written by hand rather than reusing a Poirot model's own `Codable` conformance,
 /// because several on-disk models (`SessionFacets`, `SessionTodo.Status`) have snake_case
 /// `CodingKeys` for their *disk* format — re-encoding through that conformance would leak
 /// snake_case into what must be camelCase golden output.
-private func canonicalJSON<T: Encodable>(_ value: T) throws -> Data {
+nonisolated private func canonicalJSON<T: Encodable>(_ value: T) throws -> Data {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes, .prettyPrinted]
     return try encoder.encode(value)
 }
 
-private func write(_ data: Data, to path: String) throws {
+nonisolated private func write(_ data: Data, to path: String) throws {
     let url = URL(fileURLWithPath: path)
     try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
     try data.write(to: url)
 }
 
-private func writeJSON<T: Encodable>(_ value: T, to path: String) throws {
+nonisolated private func writeJSON<T: Encodable>(_ value: T, to path: String) throws {
     try write(try canonicalJSON(value), to: path)
 }
 
-private func safeName(_ s: String) -> String {
+nonisolated private func safeName(_ s: String) -> String {
     // File/directory names must not carry path separators a fixture's own data might contain.
     s.replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "\\", with: "_")
 }
@@ -112,7 +119,7 @@ private func safeName(_ s: String) -> String {
 // `hasTodos`, `toolNames`, `skipped`, the `system` segments on a text block) are omitted rather
 // than guessed at; see README.md's "Known gaps" section.
 
-private struct GoldenTokenUsage: Encodable {
+nonisolated private struct GoldenTokenUsage: Encodable {
     let input: Int, output: Int, cacheRead: Int, cacheCreation: Int
     init(_ u: TokenUsage?) {
         input = u?.input ?? 0; output = u?.output ?? 0
@@ -123,7 +130,7 @@ private struct GoldenTokenUsage: Encodable {
 /// Flattens `ContentBlock` (a Swift enum) into one shape covering every case, matching
 /// ipc-contract's tagged union but with `edit` inlined as `oldString`/`newString` rather than a
 /// nested object — same information, simpler to encode from an `enum` case by case.
-private struct GoldenContentBlock: Encodable {
+nonisolated private struct GoldenContentBlock: Encodable {
     let kind: String
     var id: String? = nil
     var text: String? = nil
@@ -158,7 +165,7 @@ private struct GoldenContentBlock: Encodable {
     }
 }
 
-private struct GoldenMessage: Encodable {
+nonisolated private struct GoldenMessage: Encodable {
     let id: String, role: String, timestamp: String?, model: String?
     let usage: GoldenTokenUsage?, blocks: [GoldenContentBlock]
 
@@ -174,7 +181,7 @@ private struct GoldenMessage: Encodable {
 
 /// The header/summary tiers (`Session` built with `messages: []`) and the full-parse tier (built
 /// with real `messages`) share this shape; `messageCount`/`blocks` distinguish them at a glance.
-private struct GoldenSession: Encodable {
+nonisolated private struct GoldenSession: Encodable {
     let id: String, projectPath: String, title: String?, preview: String?
     let startedAt: String, endedAt: String?, model: String?
     /// Always accurate at every tier — `Session.totalTokens` itself is a plain `Int` even at the
@@ -216,11 +223,11 @@ private struct GoldenSession: Encodable {
     }
 }
 
-private struct GoldenProjectSummary: Encodable {
+nonisolated private struct GoldenProjectSummary: Encodable {
     let id: String, name: String, path: String, sessionCount: Int, lastActivity: String?
 }
 
-private struct GoldenContextUsage: Encodable {
+nonisolated private struct GoldenContextUsage: Encodable {
     let current: Int, peak: Int, window: Int
     let inputTokens: Int, outputTokens: Int, cacheReadTokens: Int, cacheCreationTokens: Int
     let series: [Int]
@@ -233,7 +240,7 @@ private struct GoldenContextUsage: Encodable {
     }
 }
 
-private struct GoldenDiffLine: Encodable {
+nonisolated private struct GoldenDiffLine: Encodable {
     let kind: String, oldLine: Int?, newLine: Int?, text: String
     init(_ l: DiffLine) {
         kind = l.kind == .context ? "context" : (l.kind == .added ? "add" : "remove")
@@ -241,7 +248,7 @@ private struct GoldenDiffLine: Encodable {
     }
 }
 
-private struct GoldenDiffResult: Encodable {
+nonisolated private struct GoldenDiffResult: Encodable {
     let lines: [GoldenDiffLine], truncated: Bool, maxLineNumber: Int
     init(_ lines: [DiffLine]) {
         self.lines = lines.map(GoldenDiffLine.init)
@@ -250,7 +257,7 @@ private struct GoldenDiffResult: Encodable {
     }
 }
 
-private struct GoldenTodoItem: Encodable {
+nonisolated private struct GoldenTodoItem: Encodable {
     let content: String, activeForm: String, status: String
     init(_ t: SessionTodo) {
         content = t.content; activeForm = t.activeForm
@@ -262,7 +269,7 @@ private struct GoldenTodoItem: Encodable {
     }
 }
 
-private struct GoldenFacets: Encodable {
+nonisolated private struct GoldenFacets: Encodable {
     let sessionId: String, underlyingGoal: String, goalCategories: [String: Int], outcome: String
     let userSatisfactionCounts: [String: Int], claudeHelpfulness: String, sessionType: String
     let frictionCounts: [String: Int], frictionDetail: String, primarySuccess: String, briefSummary: String
@@ -275,7 +282,7 @@ private struct GoldenFacets: Encodable {
     }
 }
 
-private struct GoldenHistoryEntry: Encodable {
+nonisolated private struct GoldenHistoryEntry: Encodable {
     let id: String, display: String, pastedContents: [String: String], timestamp: String, project: String
     init(_ e: HistoryEntry) {
         id = e.id; display = e.display; pastedContents = e.pastedContents
@@ -283,7 +290,7 @@ private struct GoldenHistoryEntry: Encodable {
     }
 }
 
-private struct GoldenDebugLogEntry: Encodable {
+nonisolated private struct GoldenDebugLogEntry: Encodable {
     let id: Int, timestamp: String, level: String, message: String
     init(_ e: DebugLogEntry) {
         id = e.id; timestamp = iso(e.timestamp)
@@ -292,21 +299,21 @@ private struct GoldenDebugLogEntry: Encodable {
     }
 }
 
-private struct GoldenDebugLogPage: Encodable {
+nonisolated private struct GoldenDebugLogPage: Encodable {
     let entries: [GoldenDebugLogEntry], offset: Int, total: Int
 }
 
-private struct GoldenFileVersion: Encodable {
+nonisolated private struct GoldenFileVersion: Encodable {
     let versionId: String, version: Int, backupTime: String // versionId ← backupFileName (README)
     init(_ v: FileVersion) { versionId = v.backupFileName; version = v.version; backupTime = iso(v.backupTime) }
 }
 
-private struct GoldenFileHistoryEntry: Encodable {
+nonisolated private struct GoldenFileHistoryEntry: Encodable {
     let fileName: String, versions: [GoldenFileVersion]
     init(_ e: FileHistoryEntry) { fileName = e.fileName; versions = e.versions.map(GoldenFileVersion.init) }
 }
 
-private struct GoldenStats: Encodable {
+nonisolated private struct GoldenStats: Encodable {
     let computed: StatsCache?
     let cached: StatsCache?
     let latestSessionDay: String?
@@ -316,7 +323,7 @@ private struct GoldenStats: Encodable {
 
 // MARK: - Session walking
 
-private struct SessionFile {
+nonisolated private struct SessionFile {
     let projectId: String // Project.id == the raw claude-home/projects/<dirName>
     let projectPath: String
     let sessionId: String
@@ -331,7 +338,7 @@ private struct SessionFile {
 /// Every top-level (non-subagent) `.jsonl` transcript directly under a project directory —
 /// deliberately not the nested `<session>/subagents/*.jsonl` files, which `discoverProjects()`
 /// already covers as part of each project's own `sessions` array (see README's "Known gaps").
-private func topLevelSessionFiles(projectsPath: String) -> [SessionFile] {
+nonisolated private func topLevelSessionFiles(projectsPath: String) -> [SessionFile] {
     let fm = FileManager.default
     guard let projectDirs = try? fm.contentsOfDirectory(at: URL(fileURLWithPath: projectsPath), includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) else {
         return []
