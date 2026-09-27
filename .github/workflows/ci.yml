@@ -8,6 +8,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # M1-59 (the M1 gate review) needs a real, per-OS CI run as evidence before feature/m1-data-core
+  # has ever been merged into main or opened as a PR — manual dispatch gets that without either.
+  workflow_dispatch:
 
 permissions:
   contents: read
