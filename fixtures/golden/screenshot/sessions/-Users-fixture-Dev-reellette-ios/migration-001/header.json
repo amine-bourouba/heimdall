@@ -1,0 +1,10 @@
+{
+  "id" : "migration-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "projectPath" : "//Users/fixture/Dev/reellette/ios",
+  "startedAt" : "2026-09-20T00:00:00.000Z",
+  "title" : "Migrate the Catalog module from RxSwift to Combine + async/await",
+  "totalTokens" : 0,
+  "turnCount" : 0
+}

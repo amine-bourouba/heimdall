@@ -1,0 +1,11 @@
+{
+  "id" : "write-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "preview" : "I'll create a `FileWatcher` using `DispatchSource.makeFileSystemObjectSource` to monitor the projects directory.",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T11:30:00.000Z",
+  "title" : "Create a FileWatcher service that monitors ~/.claude/projects/ for new session files and triggers a refresh",
+  "totalTokens" : 0,
+  "turnCount" : 0
+}

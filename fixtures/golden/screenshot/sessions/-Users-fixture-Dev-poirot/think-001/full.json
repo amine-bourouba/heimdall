@@ -1,0 +1,51 @@
+{
+  "id" : "think-001",
+  "isSidechain" : false,
+  "messageCount" : 2,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Session loading is slow when there are 100+ sessions per project. Can we optimize it?"
+        }
+      ],
+      "id" : "d8468c41-43a9-587d-a07f-e56c21332568",
+      "role" : "user",
+      "timestamp" : "2026-09-20T07:00:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "thinking",
+          "text" : "The user is reporting performance issues with session loading. Let me trace through the current implementation:\n\nCurrent flow in SessionLoader:\n1. `projectDirectoryURLs()` scans ~/.claude/projects/ for subdirectories\n2. For each directory, `loadProject()` calls `sessionsForProject()`\n3. `sessionsForProject()` iterates every .jsonl file and calls `TranscriptParser.parse()`\n4. `TranscriptParser.parse()` reads the ENTIRE file line-by-line, deserializes every JSON object\n5. Each line becomes a Message with content blocks, token usage, etc.\n\nThe problem: For a project with 100 sessions averaging 2MB each, we're reading ~200MB of JSON and constructing thousands of Message objects — all before the user sees anything.\n\nBottleneck analysis:\n- **File I/O**: ~40% — sequential reads of large .jsonl files\n- **JSON decoding**: ~35% — JSONDecoder for each line\n- **Object allocation**: ~25% — Message, ToolUse, ToolResult instances\n\nBest approach: Two-phase loading\nPhase 1 (fast): Read only the first 5 lines of each .jsonl for metadata (session ID, timestamp, model, first user message for title). This is what the sidebar needs.\nPhase 2 (lazy): Full parse only when the user actually opens a session.\n\nThis means I need to split `TranscriptParser` into:\n- `parseSummary(fileURL:) -> SessionSummary` — reads first few lines\n- `parseFull(fileURL:) -> Session` — existing full parse\n\nCombined with batch loading (groups of 5 projects at a time), this should make the sidebar appear near-instantly."
+        },
+        {
+          "kind" : "text",
+          "text" : "Looking at the current `SessionLoader` and `TranscriptParser`, I can see the bottleneck clearly:\n\n## Performance Analysis\n\nEvery session file (~2MB average) is fully parsed on launch. For 100+ sessions, that's **200+ MB of JSON** decoded before anything renders.\n\n## Recommended Approach: Two-Phase Loading\n\n### Phase 1 — Fast Metadata Scan\nRead only the first 5 lines of each `.jsonl` for the sidebar summary (title, timestamp, model, turn count). This gives us **~50x speedup** for initial load.\n\n```swift\nfunc parseSummary(fileURL: URL) -> SessionSummary {\n    // Read first 5 lines only — enough for metadata\n    let head = readLines(fileURL, count: 5)\n    return SessionSummary(\n        id: extractSessionId(head),\n        title: extractFirstUserMessage(head),\n        startedAt: extractTimestamp(head),\n        model: extractModel(head)\n    )\n}\n```\n\n### Phase 2 — Lazy Full Parse\nOnly parse the complete transcript when the user selects a session. Cache the 50 most recent.\n\n### Phase 3 — Batch Loading\nLoad projects in groups of 5, updating the UI between batches for progressive rendering.\n\nShall I implement this?"
+        }
+      ],
+      "id" : "msg_th2",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T07:00:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 4800,
+        "output" : 4200
+      }
+    }
+  ],
+  "model" : "claude-opus-4-6",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T07:00:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 4800,
+    "output" : 4200
+  },
+  "totalTokens" : 9000,
+  "turnCount" : 1
+}

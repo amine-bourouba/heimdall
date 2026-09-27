@@ -1,0 +1,566 @@
+{
+  "id" : "604186db-8b2e-40ef-a6f6-6b47aa5cca5e",
+  "isSidechain" : false,
+  "messageCount" : 40,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsecteturadipiscingelitseddoeiusm\nodtemporincididuntutlaboreloremipsumdolorsitametcons"
+        }
+      ],
+      "id" : "1472cb21-5c26-4a70-a2d2-f11df94e7444",
+      "role" : "user",
+      "timestamp" : "2026-09-24T12:05:37.095Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "lore mipsumdol ors itam etcons ecteturadipiscingelitseddoeiusmodtemporincididuntutlaboreloremipsumdolorsitametconse\n\nctetu radipiscin gelitsed doeiusmo dt empori ncid i duntutlabor eloremi psumdo\r\nlor sitamet con sectetu radip isci ngelitse ddoe iusm odt empori nc i diduntut\r\nlabor eloremi psumdo lorsitamet\r\n\r\nco nsec\r\n\r\ntetu rad ipis cin gelitse ddoeiusm odtempor incididuntutlab orelore mip sumdo\r\nlorsita\r\n\r\nmetco nsec teturad ipiscingeli ts  eddo eiusm odtempo rincidid un tutl abore lore mipsu\r\n\r\nmdol ors it ame tconse ctet ura dipisci ngelit seddo eiusm odte mporin cididunt\r\nutl aborelorem ips um dol orsitam\r\n\r\net consec\r\n\r\ntet ura dip iscinge litsedd oe iusmo\r\n\r\ndtemporincididu ntutl abo reloremipsum dolorsit amet conse ctetura dipiscin geli tseddoe iu smodtempor\r\n\r\ninc ididuntutl ab oreloremip sumdolorsi tametcon sectetu ra dipi sci ngelits\r\nedd oei usmodte mporinci didu ntu tlaborel orem ip sumdo lor sit amet con\r\nsect etura dipiscingelitsedd\r\n\r\noeiu smo dte mpori nci diduntutlab orelore mips umdol or sitamet cons ec\r\nteturad ipis c ingelitseddo eius modte mpo rin cidi dunt utlabore lore\r\n\r\nmip sumd olor sitametc ons ecte tu radipisci ngelits eddoei usm odtempori ncidi duntu tlaborel\r\n\r\nor emipsumdol\r\n\r\norsit ame tconsec tetur adipisc ingelits ed doeiusm odt emp ori nc ididun tut\r\nlabore lo r emip sumdo lorsitametconsectetu radipisci ngeli tseddoeiusmodt em\r\nporinci didun tu tlabore\r\n"
+        }
+      ],
+      "id" : "bdcf2e69-a2a9-4e6c-879a-974750d84a32",
+      "role" : "user",
+      "timestamp" : "2026-09-24T12:05:37.095Z"
+    },
+    {
+      "blocks" : [
+        {
+          "id" : "toolu_01BVcQMSC3u8tsBZVEabVed6",
+          "inputPretty" : "glob=loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodt\noutput_mode=loremip\npattern=loremipsumdolorsit ametconsec",
+          "kind" : "toolUse",
+          "name" : "Grep",
+          "toolUseId" : "toolu_01BVcQMSC3u8tsBZVEabVed6"
+        }
+      ],
+      "id" : "msg_011CfNEZ45tpAabc6njHHk1R",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-24T12:05:39.503Z",
+      "usage" : {
+        "cacheCreation" : 19445,
+        "cacheRead" : 34595,
+        "input" : 2,
+        "output" : 228
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "lo remipsu mdolo",
+          "id" : "F44B2D77-CFB7-4588-A492-290AB4C99D42",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "toolu_01BVcQMSC3u8tsBZVEabVed6"
+        }
+      ],
+      "id" : "db3472f3-c513-496c-887f-fece4623ed00",
+      "role" : "user",
+      "timestamp" : "2026-09-24T12:05:41.248Z"
+    },
+    {
+      "blocks" : [
+        {
+          "id" : "toolu_01Lqw35QA1AzdSosd4yGiVF9",
+          "inputPretty" : "-i=true\noutput_mode=loremip\npattern=loremips",
+          "kind" : "toolUse",
+          "name" : "Grep",
+          "toolUseId" : "toolu_01Lqw35QA1AzdSosd4yGiVF9"
+        }
+      ],
+      "id" : "msg_011CfNEZMCY21sWBapboXqdr",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-24T12:05:43.103Z",
+      "usage" : {
+        "cacheCreation" : 261,
+        "cacheRead" : 54040,
+        "input" : 2,
+        "output" : 143
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "lo remipsu mdolo",
+          "id" : "DCA50178-1918-4992-8BE1-E3126085B7BD",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "toolu_01Lqw35QA1AzdSosd4yGiVF9"
+        }
+      ],
+      "id" : "580d8acb-f93c-4940-a985-035750ae5cb4",
+      "role" : "user",
+      "timestamp" : "2026-09-24T12:05:43.390Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "lo remipsumdol orsit ame tconse ct eturad\n\ni piscinge lit seddo eius mod temporinci di dun tutla bor el oremips umdolo rsitametc onse cteturad ipi sc ingelitsed doeiusmod tempor inci didu ntutlab orel"
+        }
+      ],
+      "id" : "msg_011CfNEZW1d66XKi9poFKPq4",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-24T12:05:44.844Z",
+      "usage" : {
+        "cacheCreation" : 176,
+        "cacheRead" : 54301,
+        "input" : 2,
+        "output" : 78
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsect etu radipisc ingel itse ddoeiusmo dt emp orin cidid untutla borel oremipsum do lor sitamet co nsect eturadip is cingelits eddoeius modt em pori ncididun tutlab ore lore mipsumdolo rsit ame tconsecteturadipiscingelit"
+        }
+      ],
+      "id" : "952a6682-8889-4ae7-900c-76b1ca942a14",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:41:12.231Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsectetura\n            dipiscingelitseddoeiusmodtemporincididu\n            ntutlaboreloremipsumdolorsita"
+        }
+      ],
+      "id" : "100fa9c7-88fc-4ea2-b0fb-056995bd6c4a",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:41:12.228Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsecteturadipiscingelitseddoe"
+        }
+      ],
+      "id" : "7d450e5f-657a-4eb5-965b-df162d36d653",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:41:12.228Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "\n\nloremipsumdolor sitametcon\nse cteturadipiscingelitseddoeiusmodtempo rincid idun         \ntutlab o rel orem ipsumdol or sit ametconsec te tur adip is c ingelit seddoeius modtem porin ci diduntut laborelo remip sum dolorsit am etc onsec te tu r adip isc ingelitse ddoeiu smod tem pori nc ididunt utl abo relore\nmi psumdo lorsit\na metcon sect\ne turadi\n    p iscingelitse          d doeiusmodtempor incididuntutlab ore loremipsumdolorsitametco\n    n secteturadipiscingeli t seddoeiusmodtemporincidi\nduntutlaborelore mipsumdolo\n"
+        }
+      ],
+      "id" : "0d918e4c-7f43-4551-af45-7312591e8208",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:44:02.570Z"
+    },
+    {
+      "blocks" : [
+        {
+          "command" : "loremip sum do lorsitametconsecteturadipiscingelitseddoei u sm o dtemporinci di duntutlabore loremipsumdolorsi ta metc o nse ct eturadipiscin g elit s edd oe iusm odtempo r in ci diduntutla boreloremipsumdolorsitametcons e cteturadipisc ingelitseddoeiusmodtemporinci d iduntutlabore loremipsumdolor sita me tconsecte turadipiscingelitseddoeius",
+          "id" : "toolu_01UTMnwnPAsB8ZQ8FiJPxgEz",
+          "inputPretty" : "command=loremip sum do lorsitametconsecteturadipiscingelitseddoei u sm o dtemporinci di duntutlabore loremipsumdolorsi ta metc o nse ct eturadipiscin g elit s edd oe iusm odtempo r in ci diduntutla boreloremipsumdolorsitametcons e cteturadipisc ingelitseddoeiusmodtemporinci d iduntutlabore loremipsumdolor sita me tconsecte turadipiscingelitseddoeius\ndescription=lorem ipsum dolors itametc ons ectetu rad ipiscinge",
+          "kind" : "toolUse",
+          "name" : "PowerShell",
+          "toolUseId" : "toolu_01UTMnwnPAsB8ZQ8FiJPxgEz"
+        }
+      ],
+      "id" : "msg_011CfNv5xt1rxBggKpJLsNzi",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-24T20:44:06.137Z",
+      "usage" : {
+        "cacheCreation" : 21607,
+        "cacheRead" : 34595,
+        "input" : 2,
+        "output" : 500
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "lo re mipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporinc\r\nidi du ntutlaboreloremipsumdolorsitametconsecteturadipiscingelitseddoeiu\r\nsmod te mpor incidi\r\ndun tu tlaborelor emipsumdolorsitametconsectetura\r\ndipisc in gelitseddo eiusmodtemporincididuntutl\r\naborel or emip sumdol\r\norsitametconsect\r\neturadipiscingel\r\nitseddoeiu\r\nsmodt",
+          "id" : "C9250560-1A99-489F-B3FD-6A5422D1C618",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "toolu_01UTMnwnPAsB8ZQ8FiJPxgEz"
+        }
+      ],
+      "id" : "b1ca16ac-f054-4eaa-8a5e-1f7acd2df81e",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:44:10.682Z"
+    },
+    {
+      "blocks" : [
+        {
+          "command" : "l oremipsumdolorsitametconsecteturadipisci ngelit",
+          "id" : "toolu_01PAk4AuAiqb4LRFu9RffARa",
+          "inputPretty" : "command=l oremipsumdolorsitametconsecteturadipisci ngelit\ndescription=lore mipsum dol orsitame",
+          "kind" : "toolUse",
+          "name" : "PowerShell",
+          "toolUseId" : "toolu_01PAk4AuAiqb4LRFu9RffARa"
+        }
+      ],
+      "id" : "msg_011CfNv6YZ4ra4xk9Qv5nWCs",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-24T20:44:12.423Z",
+      "usage" : {
+        "cacheCreation" : 762,
+        "cacheRead" : 56202,
+        "input" : 2,
+        "output" : 174
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "lor emip sumdolo rsit am etconse ctet urad ipis cing eli tsed doe ius modtempo rinc id id unt u tlab orelo rem ipsumdolor sit ame tconsec te tur adipis cing elit sed doe iusmo dte mpor inc idi dunt ut labo rel ore mi psumdolo\n\nrsita met consec tetu radipis cin gelitse d doeiusmodt em porincididu ntu tlabo reloremip s um dolo rsitame tcon sect etura di pis cingel itsedd oei us modte mporinci didunt utla bo relore mip sumdol orsitamet",
+          "id" : "680D516D-18AB-40AE-AE1D-DC57122A5A33",
+          "isError" : true,
+          "kind" : "toolResult",
+          "toolUseId" : "toolu_01PAk4AuAiqb4LRFu9RffARa"
+        }
+      ],
+      "id" : "fd4ecf19-ae86-4e54-9e4c-c61a6571f45e",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:44:21.576Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremips umdolorsita me tcon sec tetu radi"
+        }
+      ],
+      "id" : "728cae62-346f-44de-b52e-4687ef2016b1",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:44:21.579Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "\n\nloremipsumdolor sitametcon\nse cteturadipiscingelitseddoeiusmodtempo rincid idun         \ntutlab o rel orem ipsumdol or sit ametconsec te tur adip is c ingelit seddoeius modtem porin ci diduntut laborelo remip sum dolorsit am etc onsec te tu r adip isc ingelitse ddoeiu smod tem pori nc ididunt utl abo relore\nmi psumdo lorsit\na metcon sect\ne turadi\n    p iscingelitse          d doeiusmodtempor incididuntutlab ore loremipsumdolorsitametco\n    n secteturadipiscingeli t seddoeiusmodtemporincidi\nduntutlaborelore mipsumdolo\n"
+        }
+      ],
+      "id" : "40f8e90d-715d-41bd-abce-1db588c04ca8",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:44:35.040Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremips umdolorsita me tcons"
+        }
+      ],
+      "id" : "0b2ff8a6-df4b-4f82-b4d0-c4c777a52877",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:44:35.313Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "\n\nloremipsumdolor sitametcon\nse cteturadipiscingelitseddoeiusmodtempo rincid idun         \ntutlab o rel orem ipsumdol or sit ametconsec te tur adip is c ingelit seddoeius modtem porin ci diduntut laborelo remip sum dolorsit am etc onsec te tu r adip isc ingelitse ddoeiu smod tem pori nc ididunt utl abo relore\nmi psumdo lorsit\na metcon sect\ne turadi\n    p iscingelitse          d doeiusmodtempor incididuntutlab ore loremipsumdolorsitametco\n    n secteturadipiscingeli t seddoeiusmodtemporincidi\nduntutlaborelore mipsumdolo\n\nrs itametc"
+        }
+      ],
+      "id" : "e8fb8549-d623-4bcb-9ecf-cf8d74e3a538",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:44:44.613Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "lore m ipsu mdolorsi tam e tconsec teturadi pisc ing elitseddoeiu sm odtemporincididuntutlaborelore mip sumd olorsi tamet co nsec tetur\n\nadipiscinge litsed\ndoeiusmodtemp\nor inci diduntutlabo\nrel\norem ipsu mdolorsitametc on sect etur adipi scing eli tseddo eiu smodtemp orin ci didun tu tlabor elore mip sumdolorsi tame tco nsectet uradip\n\niscin geli tseddoei usmodte\nmporincididun\ntutlabore lo remipsumdolorsitametconsectetu\nradipi scin\ngel\n\nitse ddoe iu sm odt empo rincidi\nduntutlaborel\no remipsumdolorsitametconsecteturadipiscin geli\ntse\n\nd doeiusm odtempo rinc ididun tu t labo relore mipsumdolor sitamet con sectetur adip isc ingelitse dd oeiusm odte mpo rincidi duntutl aborel ore mipsumd olorsit am etc ons ectetu radip"
+        }
+      ],
+      "id" : "msg_011CfNv945PvYosJucxxjt55",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-24T20:44:49.920Z",
+      "usage" : {
+        "cacheCreation" : 819,
+        "cacheRead" : 56964,
+        "input" : 2,
+        "output" : 551
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "lore mip sumdo lors ita metconsecteturadipiscingelitsedd"
+        }
+      ],
+      "id" : "b33cf357-b983-4307-b8eb-78e4d6fbbe35",
+      "role" : "user",
+      "timestamp" : "2026-09-24T20:48:07.587Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremip sumd ol orsita met co ns ecteturadip iscin gelitse ddoe iusmo dt em porinc ididu ntutlabor elor emipsumdol ors itametco ns ecte tu ra dip iscinge li tseddo eiusm odtemp orincidi duntut lab orelo rem ipsumdo lor sit ame\n\ntcons ectetur ad ipiscinge litsedd oei us modte mpori ncid id untutlab ore loremip sumdo lorsit amet conse ct eturadip iscin gelitsed do e iusmo dtempori ncid iduntu tlabor elo remip sumdo lorsitam\n\netcon se cteturad ipisci ngel itse ddoeiusm odtempo rincid idu ntut laborel oremip sumdolorsitametc on sectetur ad ipiscin geli ts eddoe iusm odte mp orincid iduntutlabo reloremi psumdolo rsitame tc onsec te turad\ni piscingelitsedd oeiu s modtem po rinci didu n tutlab orelore mipsumd olorsit ame tcons ectet ura dipi scing elitseddo ei u smodtem\np orincididunt utlabor e loremipsum dolor si tametc onse ctetur ad ipisc i ngelits\ne ddoeiusmodt em porin cididun tutla bo reloremipsumdolorsi ta met conse ctetura dipiscin gel itseddoe iusmo dtempori ncididu ntut la boreloremi psum dolo rsitam etcon secte tur adipi scing\n\nel itseddoe iusm odtempori ncididu ntutl aborelor emipsumd olorsitam etconse cteturadipisci ngeli tse ddoei usm odt emp orinci didu ntutlabo relor emi psumdo lorsitamet con secte turadi piscingelitseddo eiusmodtemporincidi duntu tla bore lore mipsumdolo rs itam et con secteturadi pisc ingeli tseddo eiusmo\n\ndtem po rinci di duntutl aborel orem ips um dolor sitametcon secte turadi piscing elit s edd oe iusmodte mp o rinci di duntut labor elore mips umd olor sitam etc onsec tetu ra dipis cin gelit sed doeiusm odt empor incididu ntutla borel orem ips umdol orsitametc ons ectetu ra dipiscin ge litse ddoeius mod tem pori ncidid unt utlab oreloremi psu mdolors it ametconsec\n\ntetu ra dipi sc ingelits eddoeiusm od tem porincid i duntut labo rel oremi ps umdol orsitam etco nsect eturadi pisci nge lits eddoeius"
+        }
+      ],
+      "id" : "msg_011CfNvQ2T5ELgY1okKkcDUp",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-24T20:48:16.124Z",
+      "usage" : {
+        "cacheCreation" : 600,
+        "cacheRead" : 57783,
+        "input" : 2,
+        "output" : 1295
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsect etu radipisc ingel itse ddoeiusmo dt emp orin cidid untutla borel oremipsum do lor sitamet co nsect eturadip is cingelits eddoeius modt em pori ncididun tutlab ore lore mipsumdolo rsit ame tconsecteturadipiscingelit"
+        }
+      ],
+      "id" : "2c61820a-fe06-4a3b-bf5e-841a8c8f6ecc",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:48:23.215Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsecteturadi\n            piscingelitseddoeiusmodtemporincididuntut\n            laboreloremipsumdolorsitametc"
+        }
+      ],
+      "id" : "873c499b-2de8-41d1-a778-5f120636d47b",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:48:23.213Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsect etu radipisc ingel itse ddoeiusmo dt emp orin cidid untutla borel oremipsum do lor sitamet co nsect eturadip is cingelits eddoeius modt em pori ncididun tutlab ore lore mipsumdolo rsit ame tconsecteturadipiscingelit"
+        }
+      ],
+      "id" : "bbbd621f-7a41-4676-9c55-a5a10f3d1a0d",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:48:38.920Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsecteturadipiscinge\n            litseddoeiusmodtemporincididuntutlaboreloremipsum\n            dolorsitametconsecteturadipis"
+        }
+      ],
+      "id" : "2d9bec06-d70f-4011-b395-fc179e14efaf",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:48:38.661Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsect etu radipisc ingel itse ddoeiusmo dt emp orin cidid untutla borel oremipsum do lor sitamet co nsect eturadip is cingelits eddoeius modt em pori ncididun tutlab ore lore mipsumdolo rsit ame tconsecteturadipiscingelit"
+        }
+      ],
+      "id" : "9bec9b22-c8f5-453a-aa1e-547d66f8f331",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:48:55.906Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsecteturadipisci\n            ngelitseddoeiusmodtemporincididuntutlaborelore\n            mipsumdolorsitametconsectetur"
+        }
+      ],
+      "id" : "15dce771-1fcb-42a0-b87c-c1e877a5a9db",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:48:55.889Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsect etu radipisc ingel itse ddoeiusmo dt emp orin cidid untutla borel oremipsum do lor sitamet co nsect eturadip is cingelits eddoeius modt em pori ncididun tutlab ore lore mipsumdolo rsit ame tconsecteturadipiscingelit"
+        }
+      ],
+      "id" : "d7f1f26d-e9ee-482e-856b-98533c70579b",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:50:24.534Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsecteturadipisci\n            ngelitseddoeiusmodtemporincididuntutlaborelore\n            mipsumdolorsitametconsectetur"
+        }
+      ],
+      "id" : "1012256b-e979-47d9-8277-7f52f63cc4e6",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:50:24.526Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "lor em i psu mdo lorsitametc onsec teturadipisc ing elit sedd oe iusmodt emporincididuntutlaboreloremipsumdolorsitametconsecteturad"
+        }
+      ],
+      "id" : "ebcfda1e-63c8-484f-8ae3-4f229b81af71",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:51:57.806Z"
+    },
+    {
+      "blocks" : [
+        {
+          "id" : "toolu_015euDT2hgdU3wnepZQ3PN8D",
+          "inputPretty" : "max_results=1\nquery=loremipsumdolor",
+          "kind" : "toolUse",
+          "name" : "ToolSearch",
+          "toolUseId" : "toolu_015euDT2hgdU3wnepZQ3PN8D"
+        }
+      ],
+      "id" : "msg_011CfQ2kG7Nf6RK7sXycVTvw",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-25T10:52:04.116Z",
+      "usage" : {
+        "cacheCreation" : 48784,
+        "cacheRead" : 34595,
+        "input" : 2,
+        "output" : 607
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "",
+          "id" : "C6A97D1E-19C9-47BA-803A-25218EA2B930",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "toolu_015euDT2hgdU3wnepZQ3PN8D"
+        }
+      ],
+      "id" : "e7ef8d57-d59f-41ab-804c-9268dac2f713",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:52:04.398Z"
+    },
+    {
+      "blocks" : [
+        {
+          "id" : "toolu_01AVHwQpNy7AxiLgRpbjwFgm",
+          "inputPretty" : "prompt=lorem ipsumdol orsit ametconsecte turadi pi sci ngelits edd oeiusmodtem porincidi duntut labore loremips umd olorsitam etconsect etu radipiscingelit seddoeiusmo dtempo rincididunt utlaborel ore mipsumdolorsita metcon sec tetura dipi scingelitsedd oeiu smo dtemporincididun tutla bo reloremipsum dolors ita metco nsec tet uradi piscingelits\nurl=loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmo",
+          "kind" : "toolUse",
+          "name" : "WebFetch",
+          "toolUseId" : "toolu_01AVHwQpNy7AxiLgRpbjwFgm"
+        }
+      ],
+      "id" : "msg_011CfQ2kj6LXSfkfSsGEVWNY",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-25T10:52:07.218Z",
+      "usage" : {
+        "cacheCreation" : 1066,
+        "cacheRead" : 83379,
+        "input" : 2,
+        "output" : 208
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "l oremipsumdol orsitam etc onsecte turadi pisc ingelitse\n\ndd oeiusm odtemporinc ididuntutlabo\nrelorem ipsumd olorsitamet con secteturadipiscingelitseddoeiusmodtempor incididu nt utlabor elorem ipsumdo lorsitametcons\n\nec teturadipis cingelits eddoei\nusmodtemporin cididuntutlaborelor\n\nemipsumdolors\nitametc\nons ectet uradipiscingelitseddoeiusmodtemporincididuntutlaboreloremipsum\ndo lorsitametconsecteturadipisci\nngelitseddoeiusmodt\nemp\n\norin cididunt utlab ore loremi psumdolorsi tametc onsecte tur adipiscingelitsed doeius\n\nmo dtemporinc ididuntut lab orelo remipsumd\nolorsit\namet con secteturadipiscingelitseddoeiusmodtemporincididuntutlaboreloremipsumdolorsitametconsecteturadipi\nscing el itseddoeiusmodtem\nporincididuntutlabo\nrel\n\norem ipsumd olorsitame tconse cteturad ipis cingel itseddo eiusmodt emp orincidi duntutl\n\nab orelo remipsumd olors\nitametc\nonse ct eturadipiscingelitseddoeiusmodtemporincididuntutlaboreloremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntu tl aboreloremipsumdolorsitametconsecte\ntur\n\nadip isc in ge litsed doei us modtemp orincidid untutlabor el oremi psu mdolor sit ametcon sectetu radipiscin\n\nge litsed doeiusmodtem\npori ncididu ntutl abore lor\ne mipsumd olorsitametconsecte\nt uradipiscingelits eddoeiusmodtempor\n\nincididunt utlabor elo remips umdo lor sitamet consectetura dipiscingeli tse ddoei usm odtemporinc id iduntut laborel oremip sumdolorsitametco",
+          "id" : "FFBDAD98-DCC2-431F-8426-15A62D99BC57",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "toolu_01AVHwQpNy7AxiLgRpbjwFgm"
+        }
+      ],
+      "id" : "ec9f8ead-6f9c-4715-87cf-e2145be154d6",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:52:14.184Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsita me t cons ectetur ad ipiscingel itsed doe iu smodtempo rin ci di duntu tlabore lorem ipsum dolo rsi tam etconse cte tu radipis ci ngel itseddoe\n\niusmodte mp ori ncidi du ntutl aborelor\n\nemip sum dolo rsitam etco n sect eturadi pisci\nngelits\ned doeiusmodtempo\nrinc idi duntutlaboreloremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutlaborel\norem ipsumdolorsitamet\ncon\n\nsectetur ad ipis cing elitsed doeiusmodt emporinc\n\nidid untut lab orelor em ips umdo lor sitam et consectetur ad ipi scin gelitsedd\noeiusmodtempo\nri ncididuntutlaboreloremipsumdo\nlorsitam etc onsecteturadipiscingelitseddoeiusmodtemporincididuntutlaboreloremipsumdolorsitametconsecteturadi\np iscingelits eddoeiusmodtemporincidi duntutlaborelorem\nips\numdo lorsitametc ons ectetur ad ipiscin gelitseddo eius modtem po ri ncidi dun tutlaboreloremipsumd olors itametc onsect eturad\n\nip isc ingel its eddoe iusmodtemporincidid un tutlab oreloremi psumdolors itam et consecteturadipiscingelitseddoeiusm odtem po rinci didunt utla borelo\n\nremip sum dol orsi tam etcons ec tetura dipi scin gelitseddoeiusmod tempor inc ididunt utl abo reloremipsumd olorsit ame tconsec teturadip is cing elitsedd oeiu smodt empori ncididu ntutlabor elor emip sumdol orsita metconsectet ura dipis cing el its eddoe\ni usmodte mporin cididun tutlaborelorem ip sumdolorsit am etco nsectet\nu rad ip is cin gel itseddoeiusmodtemporincididuntut labor elo remipsu mdolo rsit ametc ons ectetu rad ipiscin gelitse ddoeiusmod"
+        }
+      ],
+      "id" : "msg_011CfQ2mSvn1dLzfpWE4ZUiy",
+      "model" : "claude-opus-5-5",
+      "role" : "assistant",
+      "timestamp" : "2026-09-25T10:52:23.496Z",
+      "usage" : {
+        "cacheCreation" : 808,
+        "cacheRead" : 84445,
+        "input" : 2,
+        "output" : 983
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsect etu radipisc ingel itse ddoeiusmo dt emp orin cidid untutla borel oremipsum do lor sitamet co nsect eturadip is cingelits eddoeius modt em pori ncididun tutlab ore lore mipsumdolo rsit ame tconsecteturadipiscingelit"
+        }
+      ],
+      "id" : "c1cbf084-6a3c-47b5-8a8a-ca88d1b2e903",
+      "role" : "user",
+      "timestamp" : "2026-09-25T11:28:56.192Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsecteturadipisci\n            ngelitseddoeiusmodtemporincididuntutlaborelore\n            mipsumdolorsitametconsectetur"
+        }
+      ],
+      "id" : "062d5919-9f65-453d-a8c1-31cb18e09c00",
+      "role" : "user",
+      "timestamp" : "2026-09-25T11:28:56.189Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsect etu radipisc ingel itse ddoeiusmo dt emp orin cidid untutla borel oremipsum do lor sitamet co nsect eturadip is cingelits eddoeius modt em pori ncididun tutlab ore lore mipsumdolo rsit ame tconsecteturadipiscingelit"
+        }
+      ],
+      "id" : "b3dbf317-90e3-434c-804f-f38a0f7a3589",
+      "role" : "user",
+      "timestamp" : "2026-09-25T11:29:19.651Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsecteturadi\n            piscingelitseddoeiusmodtemporincididuntut\n            laboreloremipsumdolorsitametc"
+        }
+      ],
+      "id" : "02fe3287-e052-4fbc-8c0f-e03e8b5bbd18",
+      "role" : "user",
+      "timestamp" : "2026-09-25T11:29:19.650Z"
+    }
+  ],
+  "model" : "claude-opus-5-5",
+  "projectPath" : "/c//Users/fixture/Desktop/tech/proj/11",
+  "startedAt" : "2026-09-24T12:05:37.095Z",
+  "tokens" : {
+    "cacheCreation" : 94328,
+    "cacheRead" : 550899,
+    "input" : 20,
+    "output" : 4767
+  },
+  "totalTokens" : 4787,
+  "turnCount" : 30
+}

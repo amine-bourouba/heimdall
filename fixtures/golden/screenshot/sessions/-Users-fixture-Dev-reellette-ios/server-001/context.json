@@ -1,0 +1,12 @@
+{
+  "cacheCreationTokens" : 0,
+  "cacheReadTokens" : 0,
+  "current" : 720,
+  "inputTokens" : 720,
+  "outputTokens" : 380,
+  "peak" : 720,
+  "series" : [
+    720
+  ],
+  "window" : 200000
+}

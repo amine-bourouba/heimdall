@@ -1233,3 +1233,17 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `README.md` rewritten to describe this confirmed-working path as fact (no more "or the equivalent invocation the workflow settles on" hedging), documenting the environment-variable gotcha and the `safeName` fix as their own sections, and correcting the CFFIXED_USER_HOME paragraph's now-stale "no Swift toolchain anywhere in this environment" claim (a real macOS runner now exists and runs this successfully; A-9 simply hasn't been tested there, which is a choice, not an impossibility).
 - **Deviations:** none from either task's own acceptance criteria — every fix was to make the already-agreed design actually work, not a scope change.
 - **Follow-ups:** M1-52 can now commit this run's real `golden-oracle-output` artifact as `fixtures/golden/` — the exact blocker that made M1-52/M1-53/M1-59 wait is now resolved.
+
+### M1-52 · Commit the golden outputs · 2026-09-27
+
+- **Agent:** test-automator (executed by the coordinating agent)   **Reviewers:** pending (qa-expert)
+- **Status:** done
+- **Files touched:** `fixtures/golden/**` (145 files, new), `fixtures/golden/README.md` (new)
+- **Evidence:**
+  - AC1: `fixtures/golden/README.md`'s "Provenance" table records the upstream Poirot commit (`a29dd6ee0e0133ef26bd067c164c66b160e13d86`, pinned per ADR 0001), the exact workflow run URL (`golden-oracle.yml` run [36325558912](https://github.com/amine-bourouba/heimdall/actions/runs/36325558912)), the Heimdall commit that run checked out (`36323cbb47143a3e23a47fd6793dbfdc6a9fd863`), and the real run date/time (2026-09-27, 14:20:31–14:24:20 UTC) — all pulled from `gh run view --json` directly, not estimated. One folder per fixture set (`synthetic/` 14 files, `screenshot/` 72, `windows/` 48, `linux/` 11 — 145 total, matching the artifact's own upload log line "there will be 145 files uploaded").
+  - Content: downloaded the real `golden-oracle-output` artifact from that specific run (`gh run download 36325558912 -n golden-oracle-output`) and copied it into `fixtures/golden/` verbatim — this is the same run M1-50/M1-51's own closing progress-log entry already verified by spot-checking (sorted keys, camelCase, correct UTC ISO-8601 timestamps, a faithful reproduction of one of Poirot's own real path-decoding quirks).
+  - Checked for leaked identity before committing (standing rule, not skipped because the data originates from an automated pipeline rather than a hand-edited fixture): `grep -rliE "amine|bourouba|aminebourouba9|oooops" fixtures/golden/` matches only this task's own new `README.md` (a public GitHub username in a public workflow URL — expected, not a leak); none of the 145 actual data files match.
+  - `fixtures/golden/README.md` also documents the two known-non-reproducible fields (`stats.json`'s `computed.lastComputedDate`, `export.md`'s locale-dependent date line) inline, cross-referencing `tools/golden-oracle/README.md`'s fuller explanation, so M1-53 doesn't have to rediscover them from scratch.
+  - `fixtures/README.md`'s own existing table row for `fixtures/golden/` already correctly anticipated this task's shape (including `KNOWN_DIFFERENCES.md`, which is M1-53's own job to create) — no edit needed there.
+- **Deviations:** none.
+- **Follow-ups:** M1-53 (Rust versus Swift golden parity tests) can now consume this real, committed data and create `fixtures/golden/KNOWN_DIFFERENCES.md` for whatever it finds. M1-59 (the M1 gate) depends on M1-53.

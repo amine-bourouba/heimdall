@@ -1,0 +1,28 @@
+{
+  "lines" : [
+    {
+      "kind" : "context",
+      "newLine" : 1,
+      "oldLine" : 1,
+      "text" : "def login(user):"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 2,
+      "text" : "    pass"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 2,
+      "text" : "    return authenticate(user)"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 3,
+      "oldLine" : 3,
+      "text" : ""
+    }
+  ],
+  "maxLineNumber" : 3,
+  "truncated" : false
+}

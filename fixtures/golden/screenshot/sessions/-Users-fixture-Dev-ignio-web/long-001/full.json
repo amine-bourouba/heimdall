@@ -1,0 +1,65 @@
+{
+  "id" : "long-001",
+  "isSidechain" : false,
+  "messageCount" : 3,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Run the full test suite and show me the results"
+        }
+      ],
+      "id" : "0adfc441-3d58-5247-aaff-477090d472e5",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:45:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "command" : "xcodebuild test -scheme Poirot -destination 'platform=macOS' 2>&1",
+          "id" : "tu-bash-long",
+          "inputPretty" : "command=xcodebuild test -scheme Poirot -destination 'platform=macOS' 2>&1",
+          "kind" : "toolUse",
+          "name" : "Bash",
+          "toolUseId" : "tu-bash-long"
+        }
+      ],
+      "id" : "msg_l2",
+      "model" : "claude-sonnet-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:46:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 420,
+        "output" : 180
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Running xcodebuild test -scheme Poirot -destination 'platform=macOS'...\n\n  Test Case 'testSessionParsing' passed (0.01 seconds)\n  Test Case 'testMessageDecoding' passed (0.017 seconds)\n  Test Case 'testToolUseParsing' passed (0.024 seconds)\n  Test Case 'testThinkingBlockExtraction' passed (0.031 seconds)\n  Test Case 'testTokenUsageAggregation' passed (0.038 seconds)\n  Test Case 'testProjectDiscovery' passed (0.045 seconds)\n  Test Case 'testBatchLoading' passed (0.052 seconds)\n  Test Case 'testCacheEviction' passed (0.059 seconds)\n  Test Case 'testSearchFiltering' passed (0.066 seconds)\n  Test Case 'testFuzzyMatch' passed (0.073 seconds)\n  Test Case 'testSidebarCounts' passed (0.08 seconds)\n  Test Case 'testConfigParsing' passed (0.087 seconds)\n  Test Case 'testMCPServerLoading' passed (0.094 seconds)\n  Test Case 'testSkillsDiscovery' passed (0.101 seconds)\n  Test Case 'testCommandsRendering' passed (0.108 seconds)\n  Test Case 'testOutputStyleApplication' passed (0.115 seconds)\n  Test Case 'testSubAgentDetection' passed (0.122 seconds)\n  Test Case 'testPluginLoading' passed (0.129 seconds)\n  Test Case 'testModelEnumeration' passed (0.136 seconds)\n  Test Case 'testThemeColors' passed (0.143 seconds)\n  Test Case 'testSnapshot_021' passed (0.323 seconds)\n  Test Case 'testSnapshot_022' passed (0.336 seconds)\n  Test Case 'testSnapshot_023' passed (0.349 seconds)\n  Test Case 'testSnapshot_024' passed (0.362 seconds)\n  Test Case 'testSnapshot_025' passed (0.375 seconds)\n  Test Case 'testSnapshot_026' passed (0.388 seconds)\n  Test Case 'testSnapshot_027' passed (0.401 seconds)\n  Test Case 'testSnapshot_028' passed (0.414 seconds)\n  Test Case 'testSnapshot_029' passed (0.427 seconds)\n  Test Case 'testSnapshot_030' passed (0.44 seconds)\n  Test Case 'testSnapshot_031' passed (0.053 seconds)\n  Test Case 'testSnapshot_032' passed (0.066 seconds)\n  Test Case 'testSnapshot_033' passed (0.079 seconds)\n  Test Case 'testSnapshot_034' passed (0.092 seconds)\n  Test Case 'testSnapshot_035' passed (0.105 seconds)\n  Test Case 'testSnapshot_036' passed (0.118 seconds)\n  Test Case 'testSnapshot_037' passed (0.131 seconds)\n  Test Case 'testSnapshot_038' passed (0.144 seconds)\n  Test Case 'testSnapshot_039' passed (0.157 seconds)\n  Test Case 'testSnapshot_040' passed (0.17 seconds)\n  Test Case 'testSnapshot_041' passed (0.183 seconds)\n  Test Case 'testSnapshot_042' passed (0.196 seconds)\n  Test Case 'testSnapshot_043' passed (0.209 seconds)\n  Test Case 'testSnapshot_044' passed (0.222 seconds)\n  Test Case 'testSnapshot_045' passed (0.235 seconds)\n  Test Case 'testSnapshot_046' passed (0.248 seconds)\n  Test Case 'testSnapshot_047' passed (0.261 seconds)\n  Test Case 'testSnapshot_048' passed (0.274 seconds)\n  Test Case 'testSnapshot_049' passed (0.287 seconds)\n  Test Case 'testSnapshot_050' passed (0.3 seconds)\n  Test Case 'testSnapshot_051' passed (0.313 seconds)\n  Test Case 'testSnapshot_052' passed (0.326 seconds)\n  Test Case 'testSnapshot_053' passed (0.339 seconds)\n  Test Case 'testSnapshot_054' passed (0.352 seconds)\n  Test Case 'testSnapshot_055' passed (0.365 seconds)\n  Test Case 'testSnapshot_056' passed (0.378 seconds)\n  Test Case 'testSnapshot_057' passed (0.391 seconds)\n  Test Case 'testSnapshot_058' passed (0.404 seconds)\n  Test Case 'testSnapshot_059' passed (0.417 seconds)\n  Test Case 'testSnapshot_060' passed (0.43 seconds)\n  Test Case 'testSnapshot_061' passed (0.443 seconds)\n  Test Case 'testSnapshot_062' passed (0.056 seconds)\n  Test Case 'testSnapshot_063' passed (0.069 seconds)\n  Test Case 'testSnapshot_064' passed (0.082 seconds)\n  Test Case 'testSnapshot_065' passed (0.095 seconds)\n  Test Case 'testSnapshot_066' passed (0.108 seconds)\n  Test Case 'testSnapshot_067' passed (0.121 seconds)\n  Test Case 'testSnapshot_068' passed (0.134 seconds)\n\nTest Suite 'All tests' passed\n  Executed 68 tests, with 0 failures in 4.821 (5.003) seconds",
+          "id" : "6D14F37E-703E-48F1-96A1-F4D3A4C42C45",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-bash-long"
+        }
+      ],
+      "id" : "91121201-13d9-52d0-88e3-09bcdb97ec46",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:46:00.000Z"
+    }
+  ],
+  "model" : "claude-sonnet-4-6",
+  "projectPath" : "//Users/fixture/Dev/ignio/web",
+  "startedAt" : "2026-09-20T11:45:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 420,
+    "output" : 180
+  },
+  "totalTokens" : 600,
+  "turnCount" : 2
+}

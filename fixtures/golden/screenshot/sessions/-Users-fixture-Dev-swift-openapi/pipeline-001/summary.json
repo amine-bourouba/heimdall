@@ -1,0 +1,11 @@
+{
+  "endedAt" : "2026-09-19T12:00:00.000Z",
+  "id" : "pipeline-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "projectPath" : "//Users/fixture/Dev/swift/openapi",
+  "startedAt" : "2026-09-19T12:00:00.000Z",
+  "title" : "Generate OpenAPI spec from the Vapor routes and add Swagger UI middleware",
+  "totalTokens" : 0,
+  "turnCount" : 1
+}

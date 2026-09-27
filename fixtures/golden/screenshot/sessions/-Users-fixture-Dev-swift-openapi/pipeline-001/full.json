@@ -1,0 +1,28 @@
+{
+  "id" : "pipeline-001",
+  "isSidechain" : false,
+  "messageCount" : 1,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Generate OpenAPI spec from the Vapor routes and add Swagger UI middleware"
+        }
+      ],
+      "id" : "e947b652-25af-5fb0-a028-0acaac02a671",
+      "role" : "user",
+      "timestamp" : "2026-09-19T12:00:00.000Z"
+    }
+  ],
+  "projectPath" : "//Users/fixture/Dev/swift/openapi",
+  "startedAt" : "2026-09-19T12:00:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 0,
+    "output" : 0
+  },
+  "totalTokens" : 0,
+  "turnCount" : 1
+}

@@ -1,0 +1,21 @@
+{
+  "cacheCreationTokens" : 94328,
+  "cacheReadTokens" : 550899,
+  "current" : 85255,
+  "inputTokens" : 20,
+  "outputTokens" : 4767,
+  "peak" : 85255,
+  "series" : [
+    54042,
+    54303,
+    54479,
+    56204,
+    56966,
+    57785,
+    58385,
+    83381,
+    84447,
+    85255
+  ],
+  "window" : 200000
+}

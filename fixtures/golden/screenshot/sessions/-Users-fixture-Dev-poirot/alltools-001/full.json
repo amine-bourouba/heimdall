@@ -1,0 +1,299 @@
+{
+  "id" : "alltools-001",
+  "isSidechain" : false,
+  "messageCount" : 16,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Add a toast notification system that shows success/error/info messages with auto-dismiss"
+        }
+      ],
+      "id" : "212b7aea-56f8-5ec7-b1a9-4e05e429b22a",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:10:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "filePath" : "Poirot/Sources/App/AppState.swift",
+          "id" : "tu-at-read",
+          "inputPretty" : "file_path=Poirot/Sources/App/AppState.swift",
+          "kind" : "toolUse",
+          "name" : "Read",
+          "toolUseId" : "tu-at-read"
+        }
+      ],
+      "id" : "msg_at2",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:11:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 340,
+        "output" : 140
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "import SwiftUI\nimport Observation\n\n@Observable\nfinal class AppState {\n    var projects: [Project] = []\n    var selectedSession: Session?\n    var selectedNav: NavigationItem = .sessions\n    var isLoadingProjects = false\n    var isSearchPresented = false\n    var selectedProject: String?\n    // ...\n}",
+          "id" : "80770B84-8D6E-4D2D-907D-2F822EFD6097",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-at-read"
+        }
+      ],
+      "id" : "6dec63bc-c708-575f-97c3-af5a0da22f3b",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:11:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "filePath" : "Poirot/Sources/Views/Components/ToastOverlay.swift",
+          "id" : "tu-at-write",
+          "inputPretty" : "content=import SwiftUI\n\nstruct ToastOverlay: View {\n    @Environment(AppState.self) private var appState\n\n    var body: some View {\n        if let toast = appState.toastQueue.first {\n            ToastView(toast: toast)\n                .transition(.move(edge: .top).combined(with: .opacity))\n                .onAppear {\n                    Task {\n                        try? await Task.sleep(for: .seconds(3))\n                        withAnimation { appState.dismissToast() }\n                    }\n                }\n        }\n    }\n}\nfile_path=Poirot/Sources/Views/Components/ToastOverlay.swift",
+          "kind" : "toolUse",
+          "name" : "Write",
+          "toolUseId" : "tu-at-write"
+        }
+      ],
+      "id" : "msg_at3",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:12:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 480,
+        "output" : 320
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Successfully wrote to Poirot/Sources/Views/Components/ToastOverlay.swift",
+          "id" : "DB90D87E-3C66-4C79-A9ED-666A685698F9",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-at-write"
+        }
+      ],
+      "id" : "ab488b79-0f18-518d-9375-d652636367aa",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:12:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "filePath" : "Poirot/Sources/App/AppState.swift",
+          "id" : "tu-at-edit",
+          "inputPretty" : "file_path=Poirot/Sources/App/AppState.swift\nnew_string=var isSearchPresented = false\n    var toastQueue: [Toast] = []\n\n    func showToast(_ message: String, icon: String, style: Toast.Style) {\n        let toast = Toast(message: message, icon: icon, style: style)\n        toastQueue.append(toast)\n    }\nold_string=var isSearchPresented = false",
+          "kind" : "toolUse",
+          "name" : "Edit",
+          "newString" : "var isSearchPresented = false\n    var toastQueue: [Toast] = []\n\n    func showToast(_ message: String, icon: String, style: Toast.Style) {\n        let toast = Toast(message: message, icon: icon, style: style)\n        toastQueue.append(toast)\n    }",
+          "oldString" : "var isSearchPresented = false",
+          "toolUseId" : "tu-at-edit"
+        }
+      ],
+      "id" : "msg_at4",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:13:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 560,
+        "output" : 340
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Successfully edited Poirot/Sources/App/AppState.swift",
+          "id" : "71F57B99-EFAD-4497-B8D6-024F2EE8B0BC",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-at-edit"
+        }
+      ],
+      "id" : "665fa368-4d62-5657-aec5-f5de10c65827",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:13:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "command" : "cd /Users/fixture/Dev/poirot && xcodebuild build -scheme Poirot -destination 'platform=macOS' 2>&1 | tail -3",
+          "id" : "tu-at-bash",
+          "inputPretty" : "command=cd /Users/fixture/Dev/poirot && xcodebuild build -scheme Poirot -destination 'platform=macOS' 2>&1 | tail -3",
+          "kind" : "toolUse",
+          "name" : "Bash",
+          "toolUseId" : "tu-at-bash"
+        }
+      ],
+      "id" : "msg_at5",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:14:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 320,
+        "output" : 160
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Ld /Users/fixture/Library/Developer/Xcode/DerivedData/Poirot-abc123/Build/Products/Debug/Poirot.app\nGenerateDSYMFile Poirot.app.dSYM\n** BUILD SUCCEEDED **",
+          "id" : "0347FE78-82CF-4654-8230-CE0428904AE4",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-at-bash"
+        }
+      ],
+      "id" : "81b9ca92-e789-5f93-a821-52db3ae1e9ce",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:14:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "id" : "tu-at-glob",
+          "inputPretty" : "pattern=Poirot/Sources/Views/**/*.swift",
+          "kind" : "toolUse",
+          "name" : "Glob",
+          "toolUseId" : "tu-at-glob"
+        }
+      ],
+      "id" : "msg_at6",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:15:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 300,
+        "output" : 140
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Poirot/Sources/Views/Components/SidebarView.swift\nPoirot/Sources/Views/Components/ToastOverlay.swift\nPoirot/Sources/Views/Home/HomeView.swift\nPoirot/Sources/Views/Session/SessionDetailView.swift\nPoirot/Sources/Views/Session/ToolBlockView.swift\nPoirot/Sources/Views/Session/ThinkingBlockView.swift\nPoirot/Sources/Views/Config/CommandsListView.swift\nPoirot/Sources/Views/Config/SkillsListView.swift",
+          "id" : "B6122056-E69D-4C64-8A3F-741B7ADE56E2",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-at-glob"
+        }
+      ],
+      "id" : "f5b45cb7-b9ef-58e6-8698-04f011998f36",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:15:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "filePath" : "Poirot/Sources",
+          "id" : "tu-at-grep",
+          "inputPretty" : "path=Poirot/Sources\npattern=showToast\\(",
+          "kind" : "toolUse",
+          "name" : "Grep",
+          "toolUseId" : "tu-at-grep"
+        }
+      ],
+      "id" : "msg_at7",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:16:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 300,
+        "output" : 140
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Poirot/Sources/App/AppState.swift:42:    func showToast(_ message: String, icon: String, style: Toast.Style) {\nPoirot/Sources/App/ContentView.swift:98:                appState.showToast(",
+          "id" : "8F8A8C3E-FD6F-4530-8270-D5BBB0BAFEB4",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-at-grep"
+        }
+      ],
+      "id" : "514cc880-8b78-5f40-8de2-cab1fb22e890",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:16:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "id" : "tu-at-task",
+          "inputPretty" : "description=Verify toast UI\nprompt=Check that ToastOverlay renders correctly for success, error, and info styles. Verify auto-dismiss after 3 seconds and animation transitions.",
+          "kind" : "toolUse",
+          "name" : "Task",
+          "toolUseId" : "tu-at-task"
+        }
+      ],
+      "id" : "msg_at8",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:17:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 320,
+        "output" : 180
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Toast UI verification complete:\n- Success style: green tint, checkmark icon, renders correctly\n- Error style: red tint, xmark icon, renders correctly\n- Info style: blue tint, info icon, renders correctly\n- Auto-dismiss: works after 3s delay\n- Transition: slide + opacity combination is smooth",
+          "id" : "9FEFAB76-B715-43F5-A03F-E5BAAFFFAE66",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-at-task"
+        }
+      ],
+      "id" : "a69aea57-1137-53d8-8801-7be5284c8cb5",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:17:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "The toast notification system is fully implemented and verified. All three styles (success, error, info) render correctly with smooth animations and auto-dismiss."
+        }
+      ],
+      "id" : "msg_at9",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:18:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 1400,
+        "output" : 280
+      }
+    }
+  ],
+  "model" : "claude-opus-4-6",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T11:10:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 4020,
+    "output" : 1700
+  },
+  "totalTokens" : 5720,
+  "turnCount" : 8
+}

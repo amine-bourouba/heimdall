@@ -1,0 +1,17 @@
+[
+  {
+    "fileName" : "C:\\Users\\fixture\\.claude\\settings.json",
+    "versions" : [
+      {
+        "backupTime" : "2026-09-24T12:01:21.718Z",
+        "version" : 1,
+        "versionId" : "36a080e6f6a47f83@v1"
+      },
+      {
+        "backupTime" : "2026-09-24T12:01:30.892Z",
+        "version" : 2,
+        "versionId" : "36a080e6f6a47f83@v2"
+      }
+    ]
+  }
+]

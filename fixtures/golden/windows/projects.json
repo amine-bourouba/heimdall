@@ -1,0 +1,29 @@
+[
+  {
+    "id" : "C--Users-fixture-Desktop-tech",
+    "lastActivity" : "2026-09-25T16:31:23.078Z",
+    "name" : "C--Users-fixture-Desktop-tech",
+    "path" : "/C//Users/fixture/Desktop/tech",
+    "sessionCount" : 6
+  },
+  {
+    "id" : "c--Users-fixture-Desktop-tech-proj-2",
+    "name" : "c--Users-fixture-Desktop-tech-proj-2",
+    "path" : "/c//Users/fixture/Desktop/tech/proj/2",
+    "sessionCount" : 0
+  },
+  {
+    "id" : "c--Users-fixture-Desktop-tech-proj-11",
+    "lastActivity" : "2026-09-25T12:18:43.435Z",
+    "name" : "c--Users-fixture-Desktop-tech-proj-11",
+    "path" : "/c//Users/fixture/Desktop/tech/proj/11",
+    "sessionCount" : 14
+  },
+  {
+    "id" : "c--Users-fixture-Desktop-tech-proj-10",
+    "lastActivity" : "2026-06-04T11:09:41.397Z",
+    "name" : "c--Users-fixture-Desktop-tech-proj-10",
+    "path" : "/c//Users/fixture/Desktop/tech/proj/10",
+    "sessionCount" : 1
+  }
+]

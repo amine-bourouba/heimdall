@@ -1,0 +1,13 @@
+{
+  "endedAt" : "2026-09-20T11:05:00.000Z",
+  "id" : "task-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "model" : "claude-opus-4-6",
+  "preview" : "I'll launch a sub-agent to do a thorough accessibility audit across the codebase.",
+  "projectPath" : "//Users/fixture/Dev/reellette/ios",
+  "startedAt" : "2026-09-20T11:00:00.000Z",
+  "title" : "Audit the codebase for any accessibility issues — missing labels, small tap targets, missing VoiceOver hints",
+  "totalTokens" : 1100,
+  "turnCount" : 2
+}

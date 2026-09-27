@@ -1,0 +1,13 @@
+{
+  "endedAt" : "2026-09-20T11:18:00.000Z",
+  "id" : "alltools-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "model" : "claude-opus-4-6",
+  "preview" : "The toast notification system is fully implemented and verified. All three styles (success, error, info) render correctly with smooth animations and auto-dismiss.",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T11:10:00.000Z",
+  "title" : "Add a toast notification system that shows success/error/info messages with auto-dismiss",
+  "totalTokens" : 5720,
+  "turnCount" : 8
+}

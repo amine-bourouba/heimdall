@@ -1,0 +1,39 @@
+{
+  "id" : "901c982b-5b61-47ba-abc0-63c48ab44fa1",
+  "isSidechain" : false,
+  "messageCount" : 2,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsect etu radipisc ingel itse ddoeiusmo dt emp orin cidid untutla borel oremipsum do lor sitamet co nsect eturadip is cingelits eddoeius modt em pori ncididun tutlab ore lore mipsumdolo rsit ame tconsecteturadipiscingelit"
+        }
+      ],
+      "id" : "e7688178-b26c-4fc8-a73c-847f3b4bc7de",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:47:01.702Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "loremipsumdolorsitametconsecteturadi\n            piscingelitseddoeiusmodtemporincididuntut\n            laboreloremipsumdolorsitametc"
+        }
+      ],
+      "id" : "5280de8a-1ee5-4313-b742-31de55926f88",
+      "role" : "user",
+      "timestamp" : "2026-09-25T10:47:01.572Z"
+    }
+  ],
+  "projectPath" : "/C//Users/fixture/Desktop/tech",
+  "startedAt" : "2026-09-25T10:47:01.572Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 0,
+    "output" : 0
+  },
+  "totalTokens" : 0,
+  "turnCount" : 2
+}

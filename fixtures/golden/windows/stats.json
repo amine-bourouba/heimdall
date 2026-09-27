@@ -1,0 +1,99 @@
+{
+  "chosenSource" : "computed",
+  "computed" : {
+    "dailyActivity" : [
+      {
+        "date" : "2026-06-04",
+        "messageCount" : 286,
+        "sessionCount" : 1,
+        "toolCallCount" : 95
+      },
+      {
+        "date" : "2026-09-24",
+        "messageCount" : 143,
+        "sessionCount" : 4,
+        "toolCallCount" : 30
+      },
+      {
+        "date" : "2026-09-25",
+        "messageCount" : 119,
+        "sessionCount" : 2,
+        "toolCallCount" : 30
+      }
+    ],
+    "dailyModelTokens" : [
+      {
+        "date" : "2026-06-04",
+        "tokensByModel" : {
+          "claude-opus-4-8" : 16639625,
+          "claude-sonnet-4-6" : 499611
+        }
+      },
+      {
+        "date" : "2026-09-24",
+        "tokensByModel" : {
+          "claude-opus-4-8" : 274921,
+          "claude-opus-5-5" : 4403494
+        }
+      },
+      {
+        "date" : "2026-09-25",
+        "tokensByModel" : {
+          "claude-opus-5-5" : 9203244
+        }
+      }
+    ],
+    "firstSessionDate" : "2026-06-04T11:09:41.397Z",
+    "hourCounts" : {
+      "10" : 18,
+      "11" : 388,
+      "12" : 62,
+      "14" : 61,
+      "20" : 19
+    },
+    "lastComputedDate" : "2026-09-27",
+    "longestSession" : {
+      "duration" : 87739174,
+      "messageCount" : 116,
+      "sessionId" : "54a79a0b-db3f-46cf-abbe-91ea1056d8bb",
+      "timestamp" : "2026-09-24T11:46:22.523Z"
+    },
+    "modelUsage" : {
+      "claude-opus-4-8" : {
+        "cacheCreationInputTokens" : 1208906,
+        "cacheReadInputTokens" : 15530845,
+        "contextWindow" : 1000000,
+        "costUSD" : 0,
+        "inputTokens" : 33478,
+        "maxOutputTokens" : 32000,
+        "outputTokens" : 141317,
+        "webSearchRequests" : 0
+      },
+      "claude-opus-5-5" : {
+        "cacheCreationInputTokens" : 1202147,
+        "cacheReadInputTokens" : 12167890,
+        "contextWindow" : 1000000,
+        "costUSD" : 0,
+        "inputTokens" : 262,
+        "maxOutputTokens" : 32000,
+        "outputTokens" : 236439,
+        "webSearchRequests" : 0
+      },
+      "claude-sonnet-4-6" : {
+        "cacheCreationInputTokens" : 31216,
+        "cacheReadInputTokens" : 462682,
+        "contextWindow" : 1000000,
+        "costUSD" : 0,
+        "inputTokens" : 38,
+        "maxOutputTokens" : 32000,
+        "outputTokens" : 5675,
+        "webSearchRequests" : 0
+      }
+    },
+    "totalMessages" : 548,
+    "totalSessions" : 7,
+    "totalSpeculationTimeSavedMs" : 0,
+    "version" : 1
+  },
+  "latestSessionDay" : "2026-09-27"
+}

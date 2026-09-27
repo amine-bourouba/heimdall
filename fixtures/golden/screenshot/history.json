@@ -1,0 +1,92 @@
+[
+  {
+    "display" : "Add a debounce to the universal search so typing feels responsive",
+    "id" : "1789905000000-0",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/poirot",
+    "timestamp" : "2026-09-20T11:50:00.000Z"
+  },
+  {
+    "display" : "Fix the sidebar icon alignment — they should be top-aligned with the label text",
+    "id" : "1789902900000-1",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/poirot",
+    "timestamp" : "2026-09-20T11:15:00.000Z"
+  },
+  {
+    "display" : "Run the screenshot tests and regenerate all snapshots that show the sidebar",
+    "id" : "1789898400000-2",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/poirot",
+    "timestamp" : "2026-09-20T10:00:00.000Z"
+  },
+  {
+    "display" : "Refactor the session loader to support pagination with lazy loading",
+    "id" : "1789894800000-3",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/reellette-ios",
+    "timestamp" : "2026-09-20T09:00:00.000Z"
+  },
+  {
+    "display" : "Create a new MCP server config for the Perplexity search integration",
+    "id" : "1789887600000-4",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/ignio-web",
+    "timestamp" : "2026-09-20T07:00:00.000Z"
+  },
+  {
+    "display" : "Write unit tests for the TranscriptParser covering edge cases with malformed JSONL",
+    "id" : "1789876800000-5",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/poirot",
+    "timestamp" : "2026-09-20T04:00:00.000Z"
+  },
+  {
+    "display" : "Implement the cost breakdown chart with per-model token pricing",
+    "id" : "1789855200000-6",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/poirot",
+    "timestamp" : "2026-09-19T22:00:00.000Z"
+  },
+  {
+    "display" : "Add dark mode support to the analytics export view",
+    "id" : "1789826400000-7",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/poirot",
+    "timestamp" : "2026-09-19T14:00:00.000Z"
+  },
+  {
+    "display" : "Set up the CI pipeline with GitHub Actions for automated testing on every PR",
+    "id" : "1789797600000-8",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/swift-openapi",
+    "timestamp" : "2026-09-19T06:00:00.000Z"
+  },
+  {
+    "display" : "Debug the file watcher — it stops firing events after the app is backgrounded for more than 5 minutes",
+    "id" : "1789754400000-9",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/Dev/poirot",
+    "timestamp" : "2026-09-18T18:00:00.000Z"
+  }
+]

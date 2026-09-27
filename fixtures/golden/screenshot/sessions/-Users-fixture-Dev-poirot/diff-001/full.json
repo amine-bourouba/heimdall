@@ -1,0 +1,71 @@
+{
+  "id" : "diff-001",
+  "isSidechain" : false,
+  "messageCount" : 3,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Refactor the TranscriptParser to use async/await instead of completion handlers"
+        }
+      ],
+      "id" : "29d763a7-d568-5b8f-80a6-0f53eb4e433e",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:25:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "I'll convert the completion-based API to async/await for cleaner call sites."
+        },
+        {
+          "filePath" : "Poirot/Sources/Services/TranscriptParser.swift",
+          "id" : "tu-edit-diff",
+          "inputPretty" : "file_path=Poirot/Sources/Services/TranscriptParser.swift\nnew_string=func parse(\n    fileURL: URL,\n    projectPath: String,\n    sessionId: String,\n    indexStartedAt: Date?\n) -> Session? {\n    parseSync(\n        fileURL: fileURL,\n        projectPath: projectPath,\n        sessionId: sessionId,\n        indexStartedAt: indexStartedAt\n    )\n}\nold_string=func parse(\n    fileURL: URL,\n    projectPath: String,\n    completion: @escaping (Session?) -> Void\n) {\n    DispatchQueue.global(qos: .userInitiated).async {\n        let session = self.parseSync(fileURL: fileURL, projectPath: projectPath)\n        DispatchQueue.main.async {\n            completion(session)\n        }\n    }\n}",
+          "kind" : "toolUse",
+          "name" : "Edit",
+          "newString" : "func parse(\n    fileURL: URL,\n    projectPath: String,\n    sessionId: String,\n    indexStartedAt: Date?\n) -> Session? {\n    parseSync(\n        fileURL: fileURL,\n        projectPath: projectPath,\n        sessionId: sessionId,\n        indexStartedAt: indexStartedAt\n    )\n}",
+          "oldString" : "func parse(\n    fileURL: URL,\n    projectPath: String,\n    completion: @escaping (Session?) -> Void\n) {\n    DispatchQueue.global(qos: .userInitiated).async {\n        let session = self.parseSync(fileURL: fileURL, projectPath: projectPath)\n        DispatchQueue.main.async {\n            completion(session)\n        }\n    }\n}",
+          "toolUseId" : "tu-edit-diff"
+        }
+      ],
+      "id" : "msg_d2",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:26:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 1800,
+        "output" : 1050
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Successfully edited Poirot/Sources/Services/TranscriptParser.swift",
+          "id" : "F094FC94-53D0-4E77-9C9B-5B35BCC2A20B",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-edit-diff"
+        }
+      ],
+      "id" : "aade9f3a-b516-5f26-8e91-779bcfaaf42f",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:26:00.000Z"
+    }
+  ],
+  "model" : "claude-opus-4-6",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T11:25:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 1800,
+    "output" : 1050
+  },
+  "totalTokens" : 2850,
+  "turnCount" : 2
+}

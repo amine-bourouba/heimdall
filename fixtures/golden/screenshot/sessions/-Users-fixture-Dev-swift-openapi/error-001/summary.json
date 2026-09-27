@@ -1,0 +1,13 @@
+{
+  "endedAt" : "2026-09-20T11:42:00.000Z",
+  "id" : "error-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "model" : "claude-sonnet-4-6",
+  "preview" : "I'll run the tests first to see what's failing.",
+  "projectPath" : "//Users/fixture/Dev/swift/openapi",
+  "startedAt" : "2026-09-20T11:40:00.000Z",
+  "title" : "Run the test suite and fix any failures",
+  "totalTokens" : 1960,
+  "turnCount" : 3
+}

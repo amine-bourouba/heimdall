@@ -1,0 +1,69 @@
+{
+  "id" : "sysctx-001",
+  "isSidechain" : false,
+  "messageCount" : 3,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Fix the build error in TranscriptParser.swift.\n\n<system-reminder>\nThe user is working on branch feature/lazy-loading.\nLast build failed with 2 errors in TranscriptParser.swift.\n</system-reminder>"
+        }
+      ],
+      "id" : "e59ee7ff-3df3-5a91-a457-582619f63d04",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:50:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "I see the build errors on `feature/lazy-loading`. Let me read the parser to find the type mismatches."
+        },
+        {
+          "filePath" : "Poirot/Sources/Services/TranscriptParser.swift",
+          "id" : "tu-sc-read",
+          "inputPretty" : "file_path=Poirot/Sources/Services/TranscriptParser.swift",
+          "kind" : "toolUse",
+          "name" : "Read",
+          "toolUseId" : "tu-sc-read"
+        }
+      ],
+      "id" : "msg_sc2",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:51:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 880,
+        "output" : 380
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "import Foundation\n\nnonisolated struct TranscriptParser {\n    func parse(\n        fileURL: URL,\n        projectPath: String,\n        sessionId: String,\n        indexStartedAt: Date?\n    ) -> Session? {\n        guard let data = try? Data(contentsOf: fileURL) else { return nil }\n        let lines = String(data: data, encoding: .utf8)?.split(separator: \"\\n\") ?? []\n        // ... parse each line as JSON\n        return Session(id: sessionId, projectPath: projectPath, messages: messages)\n    }\n}",
+          "id" : "5D82ECBB-88BA-4C75-8540-3570868656E9",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-sc-read"
+        }
+      ],
+      "id" : "bc416b57-8947-59a6-84e7-a1d4e107fab0",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:51:00.000Z"
+    }
+  ],
+  "model" : "claude-opus-4-6",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T11:50:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 880,
+    "output" : 380
+  },
+  "totalTokens" : 1260,
+  "turnCount" : 2
+}

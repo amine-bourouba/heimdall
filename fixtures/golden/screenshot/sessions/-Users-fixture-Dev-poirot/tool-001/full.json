@@ -1,0 +1,143 @@
+{
+  "id" : "tool-001",
+  "isSidechain" : false,
+  "messageCount" : 6,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Add a keyboard shortcut Cmd+T to toggle the tool filter bar in the session detail view"
+        }
+      ],
+      "id" : "bc802764-4cb7-5f2f-8396-9cdb178301b8",
+      "role" : "user",
+      "timestamp" : "2026-09-20T10:00:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "I'll add the `Cmd+T` keyboard shortcut to toggle the tool filter. Let me find where shortcuts are registered."
+        },
+        {
+          "filePath" : "Poirot/Sources",
+          "id" : "tu-grep",
+          "inputPretty" : "path=Poirot/Sources\npattern=keyboardShortcut.*command",
+          "kind" : "toolUse",
+          "name" : "Grep",
+          "toolUseId" : "tu-grep"
+        },
+        {
+          "id" : "tu-glob",
+          "inputPretty" : "pattern=Poirot/Sources/**/*Shortcut*.swift",
+          "kind" : "toolUse",
+          "name" : "Glob",
+          "toolUseId" : "tu-glob"
+        }
+      ],
+      "id" : "msg_t2",
+      "model" : "claude-sonnet-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T10:00:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 900,
+        "output" : 380
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Poirot/Sources/App/ContentView.swift:29:            .keyboardShortcut(for: .search) {\nPoirot/Sources/App/ContentView.swift:32:            .keyboardShortcut(for: .find) {\nPoirot/Sources/App/ContentView.swift:40:            .keyboardShortcut(for: \"[\") {\nPoirot/Sources/App/ContentView.swift:43:            .keyboardShortcut(for: \"]\") {\nPoirot/Sources/Views/Session/SessionDetailView.swift:88:            .keyboardShortcut(.escape, modifiers: [])",
+          "id" : "462B06A3-86F1-42BD-A04F-75D285852C28",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-grep"
+        },
+        {
+          "content" : "Poirot/Sources/App/ContentView.swift",
+          "id" : "C8EE4E5D-6597-47C9-BC81-89DDA08BCE4F",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-glob"
+        }
+      ],
+      "id" : "fcc4d232-8a16-5c49-a914-56445d4eb5fe",
+      "role" : "user",
+      "timestamp" : "2026-09-20T10:00:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "The shortcuts are defined in `ContentView.swift` using the `.keyboardShortcut(for:)` helper. I'll add `Cmd+T` there."
+        },
+        {
+          "filePath" : "Poirot/Sources/App/ContentView.swift",
+          "id" : "tu-edit",
+          "inputPretty" : "file_path=Poirot/Sources/App/ContentView.swift\nnew_string=.keyboardShortcut(for: \"]\") {\n                appState.navigateForward()\n            }\n            .keyboardShortcut(for: \"t\") {\n                if appState.selectedSession != nil {\n                    appState.isToolFilterActive.toggle()\n                    if !appState.isToolFilterActive {\n                        appState.activeToolFilters.removeAll()\n                    }\n                }\n            }\nold_string=.keyboardShortcut(for: \"]\") {\n                appState.navigateForward()\n            }",
+          "kind" : "toolUse",
+          "name" : "Edit",
+          "newString" : ".keyboardShortcut(for: \"]\") {\n                appState.navigateForward()\n            }\n            .keyboardShortcut(for: \"t\") {\n                if appState.selectedSession != nil {\n                    appState.isToolFilterActive.toggle()\n                    if !appState.isToolFilterActive {\n                        appState.activeToolFilters.removeAll()\n                    }\n                }\n            }",
+          "oldString" : ".keyboardShortcut(for: \"]\") {\n                appState.navigateForward()\n            }",
+          "toolUseId" : "tu-edit"
+        }
+      ],
+      "id" : "msg_t3",
+      "model" : "claude-sonnet-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T10:00:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 2100,
+        "output" : 750
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Successfully edited Poirot/Sources/App/ContentView.swift",
+          "id" : "DDBFC85B-9E4C-4F3F-BAFC-0444CE1F9408",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-edit"
+        }
+      ],
+      "id" : "985b1f94-70e4-5bfe-8f72-7ace5c5aa1b9",
+      "role" : "user",
+      "timestamp" : "2026-09-20T10:00:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "`Cmd+T` now toggles the tool filter bar. When toggled off, it also clears the active filters. The shortcut only activates when a session is selected."
+        }
+      ],
+      "id" : "msg_t4",
+      "model" : "claude-sonnet-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T10:00:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 2800,
+        "output" : 280
+      }
+    }
+  ],
+  "model" : "claude-sonnet-4-6",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T10:00:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 5800,
+    "output" : 1410
+  },
+  "totalTokens" : 7210,
+  "turnCount" : 3
+}

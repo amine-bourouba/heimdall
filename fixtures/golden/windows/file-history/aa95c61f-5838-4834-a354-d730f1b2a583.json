@@ -1,0 +1,112 @@
+[
+  {
+    "fileName" : "src\\components\\organisms\\BottomNav.vue",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:31:32.593Z",
+        "version" : 1,
+        "versionId" : "7f965e55a71ec790@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\components\\pages\\SettingsPage.vue",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:29:00.504Z",
+        "version" : 1,
+        "versionId" : "92bfedae488e916a@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\components\\pages\\TodayPage.vue",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:31:24.570Z",
+        "version" : 1,
+        "versionId" : "bc7cbc3b18a4e08e@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\domain\\schemas.ts",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:23:33.369Z",
+        "version" : 1,
+        "versionId" : "4c770923cd6c2f81@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\domain\\types.ts",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:23:52.259Z",
+        "version" : 1,
+        "versionId" : "2c16b86e4e72213f@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\infra\\db.ts",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:25:24.047Z",
+        "version" : 1,
+        "versionId" : "f548a22985745b2c@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\infra\\index.ts",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:26:00.694Z",
+        "version" : 1,
+        "versionId" : "dfed8010a4aca39f@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\infra\\repositories\\index.ts",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:25:54.899Z",
+        "version" : 1,
+        "versionId" : "fca9c5a265286ebb@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\locales\\en.json",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:27:56.174Z",
+        "version" : 1,
+        "versionId" : "dba5f1676f60560e@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\locales\\fr.json",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:28:28.704Z",
+        "version" : 1,
+        "versionId" : "2a6d4b7dcb11fd37@v1"
+      }
+    ]
+  },
+  {
+    "fileName" : "src\\router\\index.ts",
+    "versions" : [
+      {
+        "backupTime" : "2026-06-04T11:31:14.808Z",
+        "version" : 1,
+        "versionId" : "e31bc562eec29dca@v1"
+      }
+    ]
+  }
+]

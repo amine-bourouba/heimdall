@@ -1,0 +1,12 @@
+{
+  "endedAt" : "2026-09-20T11:46:00.000Z",
+  "id" : "long-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "model" : "claude-sonnet-4-6",
+  "projectPath" : "//Users/fixture/Dev/ignio/web",
+  "startedAt" : "2026-09-20T11:45:00.000Z",
+  "title" : "Run the full test suite and show me the results",
+  "totalTokens" : 600,
+  "turnCount" : 2
+}

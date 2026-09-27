@@ -1,0 +1,22 @@
+{
+  "lines" : [
+    {
+      "kind" : "remove",
+      "oldLine" : 1,
+      "text" : "l oremipsumdolors itam etconsecteturadipiscingelitseddoeius m odtemporincid idun tu tlabor elor emi psu m dolorsitame tc"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 1,
+      "text" : "l oremipsumdolors itam etconsecteturadipiscingelitseddoeius m odtemporincid idun tu tlabor elor emi psumd o l ors i tametconsec"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 2,
+      "oldLine" : 2,
+      "text" : ""
+    }
+  ],
+  "maxLineNumber" : 2,
+  "truncated" : false
+}

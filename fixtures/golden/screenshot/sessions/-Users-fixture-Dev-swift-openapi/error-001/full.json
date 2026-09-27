@@ -1,0 +1,109 @@
+{
+  "id" : "error-001",
+  "isSidechain" : false,
+  "messageCount" : 5,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Run the test suite and fix any failures"
+        }
+      ],
+      "id" : "2069cc5d-999c-57b1-a4bd-0d2262a9683e",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:40:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "I'll run the tests first to see what's failing."
+        },
+        {
+          "command" : "swift test 2>&1 | tail -12",
+          "id" : "tu-bash-err",
+          "inputPretty" : "command=swift test 2>&1 | tail -12",
+          "kind" : "toolUse",
+          "name" : "Bash",
+          "toolUseId" : "tu-bash-err"
+        }
+      ],
+      "id" : "msg_e2",
+      "model" : "claude-sonnet-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:41:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 520,
+        "output" : 280
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Test Suite 'OpenAPIGeneratorTests' started at 2026-02-20 14:10:22\nTest Case 'testGenerateRoutes' started\n/Users/fixture/Dev/swift-openapi/Tests/GeneratorTests.swift:42: error: testGenerateRoutes\n    #expect(routes.count == 8) failed: (routes.count → 6) == 8\nTest Case 'testGenerateRoutes' failed (0.012 seconds)\nTest Case 'testSchemaValidation' started\n/Users/fixture/Dev/swift-openapi/Tests/GeneratorTests.swift:67: error: testSchemaValidation\n    #expect(schema.properties[\"email\"] != nil) failed\nTest Case 'testSchemaValidation' failed (0.003 seconds)\nTest Suite 'OpenAPIGeneratorTests' failed\n     Executed 5 tests, with 2 failures in 0.089 (0.091) seconds",
+          "id" : "3771B6DC-C1D5-4F2A-8657-3599BCFA8BF3",
+          "isError" : true,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-bash-err"
+        }
+      ],
+      "id" : "dd947809-4d6b-590c-9871-0a98134163c6",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:41:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Two test failures. Let me read the test file and the route generator to understand what changed."
+        },
+        {
+          "filePath" : "/Users/fixture/Dev/swift-openapi/Sources/RouteCollector.swift",
+          "id" : "tu-read-err",
+          "inputPretty" : "file_path=/Users/fixture/Dev/swift-openapi/Sources/RouteCollector.swift",
+          "kind" : "toolUse",
+          "name" : "Read",
+          "toolUseId" : "tu-read-err"
+        }
+      ],
+      "id" : "msg_e3",
+      "model" : "claude-sonnet-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:42:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 920,
+        "output" : 240
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Error: File not found at path /Users/fixture/Dev/swift-openapi/Sources/RouteCollector.swift",
+          "id" : "0DA1E68B-B813-4FBD-9A3B-5871CD3C9A1E",
+          "isError" : true,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-read-err"
+        }
+      ],
+      "id" : "11aaa9af-a4f3-5801-bbd0-6c9bb43d10d4",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:42:00.000Z"
+    }
+  ],
+  "model" : "claude-sonnet-4-6",
+  "projectPath" : "//Users/fixture/Dev/swift/openapi",
+  "startedAt" : "2026-09-20T11:40:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 1440,
+    "output" : 520
+  },
+  "totalTokens" : 1960,
+  "turnCount" : 3
+}

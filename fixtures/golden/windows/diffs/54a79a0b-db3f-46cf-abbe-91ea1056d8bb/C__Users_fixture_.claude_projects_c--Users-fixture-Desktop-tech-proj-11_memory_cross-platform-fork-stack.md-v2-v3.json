@@ -1,0 +1,142 @@
+{
+  "lines" : [
+    {
+      "kind" : "context",
+      "newLine" : 1,
+      "oldLine" : 1,
+      "text" : "lor"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 2,
+      "oldLine" : 2,
+      "text" : "emips umdolorsitametconsectetur"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 3,
+      "text" : "adipiscingel itse ddoei u smodtemporinc idid un tutlab orel o rem i psumdolorsi ta metconsec teturad"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 4,
+      "text" : "ipiscinge"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 5,
+      "text" : "  litseddoei usmodt"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 6,
+      "text" : "  empor incidid"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 7,
+      "text" : "  untutlaborelorem ipsumdolorsitametconsecteturadipisci"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 8,
+      "text" : "  ngelitsed doeiusmodtemporincididun"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 9,
+      "text" : "tut"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 3,
+      "text" : "adipiscingel itse ddoei u smodtemporinc idid un tutlab orel oremi p s umd o lorsitametc onsectetu radipis"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 4,
+      "text" : "cingelits"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 5,
+      "text" : "  eddoeiusmo dtempo"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 6,
+      "text" : "  rinci diduntu"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 7,
+      "text" : "  tlaboreloremipsu mdolorsitametconsecteturadipiscingel"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 8,
+      "text" : "  itseddoei usmodtemporincididuntutl"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 9,
+      "text" : "abo"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 10,
+      "oldLine" : 10,
+      "text" : ""
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 11,
+      "text" : "la bo reloremipsu mdo lors itame tc onsec tetura di piscingeli tseddoe iusm odt empori nc id idu nt utlabor elo remip sumd olor sitam etc o nsecteturad ipi sci nge lit seddoei usmod tem por inc ididunt utla bore lor emipsu mdolo r sit ametconsecte tura dipiscin ge lit seddoeiusmodte mporincididu"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 11,
+      "text" : "re lo remipsumdol ors itam etcon se ctetu radipi sc ingelitsed doeiusm odte mpo rincid id un tut la borelor emi psumd olor sita metco nse c teturadipis cin gel it sed doeiu s modte mporinci di dun tutlabo relore"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 12,
+      "oldLine" : 12,
+      "text" : ""
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 13,
+      "text" : "ntutlabo reloremipsumdolorsit ametconse ctetura dip iscingelits ed doe iu smodt em pori ncidi duntut labo re loremipsum dol orsitamet cons ectet ur adip iscinge litse"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 13,
+      "text" : "mipsumdo lorsitametconsectetu radipisci ngelits edd oeiusmodtem po rin ci didun tu tlab orelo remips umdo lo rsitametco nse cteturadi pisc ingel it sedd oeiusmo dtemp"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 14,
+      "oldLine" : 14,
+      "text" : ""
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 15,
+      "text" : "ddoei us modtempo rinc ididunt ut lab orelo remipsu mdo l o rsitamet consectetu rad ipiscing elit seddoeiusmodtempo rincidid un tut laborelore mipsu mdolors itametcon se ctetur adipiscinge litseddo eiusmodtemporinci didunt utlaborelor emipsumd olorsit ametconsectetu radi piscinge"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 15,
+      "text" : "orinc id iduntutl abor eloremi ps umd olors itametc ons e c teturadi piscingeli tse ddoeiusm odte mporincididuntutl aborelor em ips umdolorsit ametc onsecte turadipis ci ngelit seddoeiusmo dtempori ncididuntutlabore loremi psumdolorsi tametcon sectetu radipiscingeli tsed doeiusmo"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 16,
+      "oldLine" : 16,
+      "text" : ""
+    }
+  ],
+  "maxLineNumber" : 16,
+  "truncated" : false
+}

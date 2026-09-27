@@ -1,0 +1,11 @@
+{
+  "id" : "think-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "preview" : "Looking at the current `SessionLoader` and `TranscriptParser`, I can see the bottleneck clearly:\n\n## Performance Analysis\n\nEvery session file (~2MB average) is fully parsed on launch. For 100+ sessions, that's **200+ MB of JSON** decoded before anything renders.\n\n## Recommended Approach: Two-Phase Loading\n\n### Phase 1 — Fast Metadata Scan\nRead only the first 5 lines of each `.jsonl` for the sidebar summary (title, timestamp, model, turn count). This gives us **~50x speedup** for initial load.\n\n```swift\nfunc parseSummary(fileURL: URL) -> SessionSummary {\n    // Read first 5 lines only — enough for metadata\n    let head = readLines(fileURL, count: 5)\n    return SessionSummary(\n        id: extractSessionId(head),\n        title: extractFirstUserMessage(head),\n        startedAt: extractTimestamp(head),\n        model: extractModel(head)\n    )\n}\n```\n\n### Phase 2 — Lazy Full Parse\nOnly parse the complete transcript when the user selects a session. Cache the 50 most recent.\n\n### Phase 3 — Batch Loading\nLoad projects in groups of 5, updating the UI between batches for progressive rendering.\n\nShall I implement this?",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T07:00:00.000Z",
+  "title" : "Session loading is slow when there are 100+ sessions per project. Can we optimize it?",
+  "totalTokens" : 0,
+  "turnCount" : 0
+}

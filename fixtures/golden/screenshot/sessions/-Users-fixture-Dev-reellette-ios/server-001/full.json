@@ -1,0 +1,47 @@
+{
+  "id" : "server-001",
+  "isSidechain" : false,
+  "messageCount" : 2,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Add pull-to-refresh on the Discover feed using async/await and the new SwiftUI refreshable modifier"
+        }
+      ],
+      "id" : "69f3b5a7-d2d0-5a25-afdc-f11d19debe58",
+      "role" : "user",
+      "timestamp" : "2026-09-20T04:00:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "I'll add pull-to-refresh to the Discover feed using `.refreshable`. Let me read the current view first."
+        }
+      ],
+      "id" : "msg_s2",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T04:00:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 720,
+        "output" : 380
+      }
+    }
+  ],
+  "model" : "claude-opus-4-6",
+  "projectPath" : "//Users/fixture/Dev/reellette/ios",
+  "startedAt" : "2026-09-20T04:00:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 720,
+    "output" : 380
+  },
+  "totalTokens" : 1100,
+  "turnCount" : 1
+}

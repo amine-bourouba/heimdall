@@ -1,0 +1,39 @@
+[
+  {
+    "endedAt" : "2026-09-20T11:05:00.000Z",
+    "id" : "task-001",
+    "isSidechain" : false,
+    "messageCount" : 0,
+    "model" : "claude-opus-4-6",
+    "preview" : "I'll launch a sub-agent to do a thorough accessibility audit across the codebase.",
+    "projectPath" : "/Users/fixture/Dev/reellette-ios",
+    "startedAt" : "2026-09-20T11:00:00.000Z",
+    "title" : "Audit the codebase for any accessibility issues — missing labels, small tap targets, missing VoiceOver hints",
+    "totalTokens" : 1100,
+    "turnCount" : 2
+  },
+  {
+    "endedAt" : "2026-09-20T04:00:00.000Z",
+    "id" : "server-001",
+    "isSidechain" : false,
+    "messageCount" : 0,
+    "model" : "claude-opus-4-6",
+    "preview" : "I'll add pull-to-refresh to the Discover feed using `.refreshable`. Let me read the current view first.",
+    "projectPath" : "/Users/fixture/Dev/reellette-ios",
+    "startedAt" : "2026-09-20T04:00:00.000Z",
+    "title" : "Add pull-to-refresh on the Discover feed using async/await and the new SwiftUI refreshable modifier",
+    "totalTokens" : 1100,
+    "turnCount" : 1
+  },
+  {
+    "endedAt" : "2026-09-20T00:00:00.000Z",
+    "id" : "migration-001",
+    "isSidechain" : false,
+    "messageCount" : 0,
+    "projectPath" : "/Users/fixture/Dev/reellette-ios",
+    "startedAt" : "2026-09-20T00:00:00.000Z",
+    "title" : "Migrate the Catalog module from RxSwift to Combine + async/await",
+    "totalTokens" : 0,
+    "turnCount" : 1
+  }
+]

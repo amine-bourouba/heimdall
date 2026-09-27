@@ -1,0 +1,30 @@
+[
+  {
+    "id" : "-Users-fixture-Dev-poirot",
+    "lastActivity" : "2026-09-20T11:50:00.000Z",
+    "name" : "poirot",
+    "path" : "/Users/fixture/Dev/poirot",
+    "sessionCount" : 11
+  },
+  {
+    "id" : "-Users-fixture-Dev-ignio-web",
+    "lastActivity" : "2026-09-20T11:45:00.000Z",
+    "name" : "ignio-web",
+    "path" : "/Users/fixture/Dev/ignio-web",
+    "sessionCount" : 1
+  },
+  {
+    "id" : "-Users-fixture-Dev-swift-openapi",
+    "lastActivity" : "2026-09-20T11:40:00.000Z",
+    "name" : "swift-openapi",
+    "path" : "/Users/fixture/Dev/swift-openapi",
+    "sessionCount" : 2
+  },
+  {
+    "id" : "-Users-fixture-Dev-reellette-ios",
+    "lastActivity" : "2026-09-20T11:00:00.000Z",
+    "name" : "reellette-ios",
+    "path" : "/Users/fixture/Dev/reellette-ios",
+    "sessionCount" : 3
+  }
+]

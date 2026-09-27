@@ -1,0 +1,20 @@
+[
+  {
+    "display" : "Fix the auth bug in login.py",
+    "id" : "1789020000000-0",
+    "pastedContents" : {
+
+    },
+    "project" : "/Users/fixture/src/app",
+    "timestamp" : "2026-09-10T06:00:00.000Z"
+  },
+  {
+    "display" : "Paste this stack trace and explain it",
+    "id" : "1789019000000-1",
+    "pastedContents" : {
+      "trace.txt" : "Traceback (most recent call last):\n  File \"login.py\", line 3"
+    },
+    "project" : "/Users/fixture/src/app",
+    "timestamp" : "2026-09-10T05:43:20.000Z"
+  }
+]

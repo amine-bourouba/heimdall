@@ -1,0 +1,11 @@
+{
+  "id" : "tool-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "preview" : "I'll add the `Cmd+T` keyboard shortcut to toggle the tool filter. Let me find where shortcuts are registered.",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T10:00:00.000Z",
+  "title" : "Add a keyboard shortcut Cmd+T to toggle the tool filter bar in the session detail view",
+  "totalTokens" : 0,
+  "turnCount" : 0
+}

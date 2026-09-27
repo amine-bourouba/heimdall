@@ -1,0 +1,11 @@
+{
+  "id" : "error-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "preview" : "I'll run the tests first to see what's failing.",
+  "projectPath" : "//Users/fixture/Dev/swift/openapi",
+  "startedAt" : "2026-09-20T11:40:00.000Z",
+  "title" : "Run the test suite and fix any failures",
+  "totalTokens" : 0,
+  "turnCount" : 0
+}

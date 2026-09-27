@@ -1,0 +1,11 @@
+{
+  "id" : "diff-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "preview" : "I'll convert the completion-based API to async/await for cleaner call sites.",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T11:25:00.000Z",
+  "title" : "Refactor the TranscriptParser to use async/await instead of completion handlers",
+  "totalTokens" : 0,
+  "turnCount" : 0
+}

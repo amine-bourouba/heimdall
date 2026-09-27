@@ -1,0 +1,328 @@
+{
+  "lines" : [
+    {
+      "kind" : "context",
+      "newLine" : 1,
+      "oldLine" : 1,
+      "text" : "l"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 2,
+      "oldLine" : 2,
+      "text" : "  oremipsumdolor s"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 3,
+      "oldLine" : 3,
+      "text" : "    itametco n"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 4,
+      "oldLine" : 4,
+      "text" : "      sectetura dipi scin"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 5,
+      "oldLine" : 5,
+      "text" : "      gelitsedd oeiu smod"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 6,
+      "oldLine" : 6,
+      "text" : "      temporinc ididun tutl"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 7,
+      "oldLine" : 7,
+      "text" : "      aborelore mip sumd"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 8,
+      "oldLine" : 8,
+      "text" : "      olorsitam et cons"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 9,
+      "oldLine" : 9,
+      "text" : "      ecteturad ipiscin gelitse"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 10,
+      "oldLine" : 10,
+      "text" : "      ddoeiusmo dtemp orin"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 11,
+      "oldLine" : 11,
+      "text" : "      cididuntu tlabor elor"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 12,
+      "oldLine" : 12,
+      "text" : "      emipsumdo lorsitamet cons"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 13,
+      "oldLine" : 13,
+      "text" : "      ecteturad ipisci ngel"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 14,
+      "oldLine" : 14,
+      "text" : "      itseddoeiusmodtemporincididuntutlaborelo rem ipsumd olo rsitametconsecteturadipisci ngel i tseddoeiusmod tempo rinci"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 15,
+      "oldLine" : 15,
+      "text" : "      diduntutlaboreloremipsumdolorsitametcons ect etu radipisci ngel i tseddoeiusmod tempo rinci"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 16,
+      "oldLine" : 16,
+      "text" : "      diduntutlaboreloremipsumdolorsitametcons ect etu radip isci n gelitseddoeiu smodt em porincididuntutlaboreloremip sum dol orsi tametco nsec t eturadipiscin gelit se d doeiusmodtemporincididuntutlab or eloremi psumdolorsita metc o nsecteturadip iscin ge lit seddoei us modtemporincididuntutlaboreloremipsumdolorsitametconsecteturadipisc inge l itseddoeiusmo dtemp orin"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 17,
+      "oldLine" : 17,
+      "text" : "      cididuntutlaboreloremipsumdolorsitametco nse cte turadipis cing e litseddoeiusm odtem por incididuntutlaboreloremipsum dol orsi tame t consecteturad ipisc in gelitseddoeiusmodtemporincid idu ntu tlaborel orem i psumdolorsita metco ns ecteturadipiscingelitseddoei usm odt empo rinc i diduntutlabor elore mip"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 18,
+      "oldLine" : 18,
+      "text" : "    s"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 19,
+      "oldLine" : 19,
+      "text" : "  um"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 20,
+      "oldLine" : 20,
+      "text" : "  dolorsit ametcon"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 21,
+      "text" : "  secteturadipiscingelitsed d"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 22,
+      "text" : "    oeiusmodtem p"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 23,
+      "text" : "      orincidid u"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 24,
+      "text" : "        ntutlabor eloremips"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 25,
+      "text" : "        umdolor sitametconsecteturadipisc"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 26,
+      "text" : "      i"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 27,
+      "text" : "    n"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 28,
+      "text" : "  ge"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 29,
+      "text" : "  litseddoeiusmo dtempor"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 30,
+      "text" : "  incididuntutlabo r"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 31,
+      "text" : "    eloremipsumdolorsi t"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 32,
+      "text" : "      ametconsectetu radipis"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 33,
+      "text" : "    c"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 21,
+      "text" : "  secteturadipi s"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 22,
+      "text" : "    cingeli tseddoeius"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 23,
+      "text" : "    modtempori ncididuntut laboreloremipsum dolors itame tconsecteturadipiscingelitseddoeiusmodtemporincididuntutlaboreloremipsumdolorsitametconsecteturadipiscingeli"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 24,
+      "text" : "  ts"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 25,
+      "text" : "  eddoeiusmodtemporincididu n"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 26,
+      "text" : "    tutlaborelo r"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 27,
+      "text" : "      emipsumdo l"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 28,
+      "text" : "        orsitamet consectet"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 29,
+      "text" : "        uradipi scingelitseddoeiusmodtemp"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 30,
+      "text" : "      o"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 31,
+      "text" : "    r"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 32,
+      "oldLine" : 34,
+      "text" : "  in"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 35,
+      "text" : "  gelitseddoeiusmod t"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 36,
+      "text" : "    emporincididuntutlab orel"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 37,
+      "text" : "  o"
+    },
+    {
+      "kind" : "remove",
+      "oldLine" : 38,
+      "text" : "r"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 33,
+      "text" : "  cididuntutlabo relorem"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 34,
+      "text" : "  ipsumdolorsitame t"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 35,
+      "text" : "    consecteturadipisc i"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 36,
+      "text" : "      ngelitseddoeiu smodtem"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 37,
+      "text" : "    p"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 38,
+      "text" : "  or"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 39,
+      "text" : "  incididuntutlabor e"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 40,
+      "text" : "    loremipsumdolorsitam etco"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 41,
+      "text" : "  n"
+    },
+    {
+      "kind" : "add",
+      "newLine" : 42,
+      "text" : "s"
+    },
+    {
+      "kind" : "context",
+      "newLine" : 43,
+      "oldLine" : 39,
+      "text" : ""
+    }
+  ],
+  "maxLineNumber" : 43,
+  "truncated" : false
+}

@@ -1,0 +1,69 @@
+{
+  "id" : "write-001",
+  "isSidechain" : false,
+  "messageCount" : 3,
+  "messages" : [
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "Create a FileWatcher service that monitors ~/.claude/projects/ for new session files and triggers a refresh"
+        }
+      ],
+      "id" : "a4dfae78-3ea1-5885-b059-cbdf4eaae1ec",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:30:00.000Z"
+    },
+    {
+      "blocks" : [
+        {
+          "kind" : "text",
+          "text" : "I'll create a `FileWatcher` using `DispatchSource.makeFileSystemObjectSource` to monitor the projects directory."
+        },
+        {
+          "filePath" : "Poirot/Sources/Services/FileWatcher.swift",
+          "id" : "tu-write",
+          "inputPretty" : "content=import Foundation\n\nfinal class FileWatcher: @unchecked Sendable {\n    private var source: DispatchSourceFileSystemObject?\n    private let callback: () -> Void\n\n    init(onChange callback: @escaping () -> Void) {\n        self.callback = callback\n    }\n\n    func start(path: String) {\n        let fd = open(path, O_EVTONLY)\n        guard fd >= 0 else { return }\n\n        let source = DispatchSource.makeFileSystemObjectSource(\n            fileDescriptor: fd,\n            eventMask: [.write, .rename],\n            queue: .global(qos: .utility)\n        )\n        source.setEventHandler { [weak self] in\n            DispatchQueue.main.async {\n                self?.callback()\n            }\n        }\n        source.setCancelHandler { close(fd) }\n        source.resume()\n        self.source = source\n    }\n\n    func stop() {\n        source?.cancel()\n        source = nil\n    }\n}\nfile_path=Poirot/Sources/Services/FileWatcher.swift",
+          "kind" : "toolUse",
+          "name" : "Write",
+          "toolUseId" : "tu-write"
+        }
+      ],
+      "id" : "msg_w2",
+      "model" : "claude-opus-4-6",
+      "role" : "assistant",
+      "timestamp" : "2026-09-20T11:31:00.000Z",
+      "usage" : {
+        "cacheCreation" : 0,
+        "cacheRead" : 0,
+        "input" : 920,
+        "output" : 640
+      }
+    },
+    {
+      "blocks" : [
+        {
+          "content" : "Successfully wrote to Poirot/Sources/Services/FileWatcher.swift",
+          "id" : "40A528A1-FE76-4F4D-BE84-1BB26708D396",
+          "isError" : false,
+          "kind" : "toolResult",
+          "toolUseId" : "tu-write"
+        }
+      ],
+      "id" : "ef6bd94b-6d0c-50cb-be30-943f39605f2a",
+      "role" : "user",
+      "timestamp" : "2026-09-20T11:31:00.000Z"
+    }
+  ],
+  "model" : "claude-opus-4-6",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T11:30:00.000Z",
+  "tokens" : {
+    "cacheCreation" : 0,
+    "cacheRead" : 0,
+    "input" : 920,
+    "output" : 640
+  },
+  "totalTokens" : 1560,
+  "turnCount" : 2
+}

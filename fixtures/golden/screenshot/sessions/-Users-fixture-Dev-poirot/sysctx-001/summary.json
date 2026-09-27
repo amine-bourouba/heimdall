@@ -1,0 +1,13 @@
+{
+  "endedAt" : "2026-09-20T11:51:00.000Z",
+  "id" : "sysctx-001",
+  "isSidechain" : false,
+  "messageCount" : 0,
+  "model" : "claude-opus-4-6",
+  "preview" : "I see the build errors on `feature/lazy-loading`. Let me read the parser to find the type mismatches.",
+  "projectPath" : "//Users/fixture/Dev/poirot",
+  "startedAt" : "2026-09-20T11:50:00.000Z",
+  "title" : "Fix the build error in TranscriptParser.swift.\n\n<system-reminder>\nThe user is working on branch feature/lazy-loading.\nLast build failed with 2 errors in TranscriptParser.swift.\n</system-reminder>",
+  "totalTokens" : 1260,
+  "turnCount" : 2
+}
