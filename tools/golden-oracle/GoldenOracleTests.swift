@@ -35,9 +35,24 @@ import Testing
 
 // MARK: - Environment
 
+/// Reads a fixed config file first, falling back to the process environment. Confirmed by a real
+/// CI run that `xcodebuild test-without-building` does not reliably pass the invoking shell's
+/// environment through to the test process it spawns: the shell step's own logged `env:` block
+/// showed `GOLDEN_FIXTURES`/`GOLDEN_OUT` set, yet every test in this suite still saw both as nil
+/// via `ProcessInfo.processInfo.environment` and was skipped. The workflow writes this file
+/// immediately before running tests; the environment fallback costs nothing and still lets a
+/// local, non-CI `xcodebuild test` invocation (or a future runner where inheritance does work)
+/// use plain env vars instead.
 nonisolated private enum Env {
-    static var fixtures: String? { ProcessInfo.processInfo.environment["GOLDEN_FIXTURES"] }
-    static var out: String? { ProcessInfo.processInfo.environment["GOLDEN_OUT"] }
+    private static let configPath = "/tmp/heimdall-golden-oracle-config.json"
+    private static let config: [String: String] = {
+        guard let data = FileManager.default.contents(atPath: configPath),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: String]
+        else { return [:] }
+        return json
+    }()
+    static var fixtures: String? { config["GOLDEN_FIXTURES"] ?? ProcessInfo.processInfo.environment["GOLDEN_FIXTURES"] }
+    static var out: String? { config["GOLDEN_OUT"] ?? ProcessInfo.processInfo.environment["GOLDEN_OUT"] }
 }
 
 /// One fixture set under `$GOLDEN_FIXTURES`. Every set in `fixtures/README.md`'s table that has a

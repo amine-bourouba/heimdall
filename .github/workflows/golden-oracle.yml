@@ -118,6 +118,11 @@ jobs:
           LC_ALL: en_US.UTF-8
         run: |
           mkdir -p "$GOLDEN_OUT"
+          # xcodebuild test-without-building does not reliably pass this step's own env vars
+          # through to the test process it spawns (confirmed by a real run: this step's env
+          # showed both set, yet the Swift suite saw both as nil and skipped every test) — the
+          # harness reads this fixed-path file instead; see GoldenOracleTests.swift's Env enum.
+          printf '{"GOLDEN_FIXTURES":"%s","GOLDEN_OUT":"%s"}' "$GOLDEN_FIXTURES" "$GOLDEN_OUT" > /tmp/heimdall-golden-oracle-config.json
           xcodebuild -scheme Poirot \
             -destination 'platform=macOS' \
             -skipMacroValidation \
