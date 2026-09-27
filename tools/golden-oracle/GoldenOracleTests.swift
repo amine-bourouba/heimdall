@@ -9,8 +9,14 @@
 // output layout, and every deliberate skip/deviation from a literal 1:1 port of ipc-contract.md §5.
 //
 // Given GOLDEN_FIXTURES (a directory holding fixture sets, each shaped `<set>/claude-home/**` +
-// `<set>/claude.json`) and GOLDEN_OUT (an output directory), every test method below walks the
-// fixture sets it needs and writes one file per unit of output under `$GOLDEN_OUT/<set>/...`.
+// `<set>/claude.json`) and GOLDEN_OUT (an output directory), every test below walks the fixture
+// sets it needs and writes one file per unit of output under `$GOLDEN_OUT/<set>/...`.
+//
+// Uses Swift Testing (`@Suite`/`@Test`), not XCTest — confirmed by checking: zero files anywhere
+// in PoirotTests import XCTest; every real test in this project already uses Testing. `PoirotTests`
+// is a separate module from `Poirot` (project.yml: a `bundle.unit-test` target depending on the
+// `Poirot` target), so every Poirot type this file uses needs `@testable import Poirot` below —
+// without it, none of Poirot's own (implicitly internal) types are visible here at all.
 //
 // ponytail: one flat file, not a mini-framework — this only ever runs once per CI job, by design
 // (ADR 0001 point 4: retired entirely once parity is reached), so there is no second call site to
@@ -19,12 +25,13 @@
 // Every private helper type/function below is explicitly `nonisolated` — required, not stylistic:
 // `project.yml` sets `SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor`, so anything left unmarked in this
 // module becomes implicitly @MainActor-isolated, and every Poirot type these helpers wrap
-// (`Session`, `Message`, `TokenUsage`, ...) is itself `nonisolated` for the same reason. Only
-// `GoldenOracleTests` itself is left unmarked, so it inherits whatever isolation `XCTestCase`'s own
-// lifecycle methods expect rather than risking an override mismatch.
+// (`Session`, `Message`, `TokenUsage`, ...) is itself `nonisolated` for the same reason. The
+// `GoldenOracleTests` suite struct itself is left unmarked (Swift Testing, unlike XCTestCase, has
+// no fixed isolation expectation on its own suite/test declarations to conflict with).
 
 import Foundation
-import XCTest
+@testable import Poirot
+import Testing
 
 // MARK: - Environment
 
@@ -360,26 +367,27 @@ nonisolated private func topLevelSessionFiles(projectsPath: String) -> [SessionF
 
 // MARK: - Tests
 
-final class GoldenOracleTests: XCTestCase {
-    private var outRoot = ""
-    private var sets: [FixtureSet] = []
+/// Skipped entirely (not failed) when `GOLDEN_FIXTURES`/`GOLDEN_OUT` are unset, via the
+/// suite-level trait below — `init()` only ever runs for a test that trait already let through.
+@Suite("Golden Oracle", .enabled(if: Env.fixtures != nil && Env.out != nil))
+struct GoldenOracleTests {
+    let outRoot: String
+    let sets: [FixtureSet]
 
-    override func setUpWithError() throws {
-        guard let fixturesRoot = Env.fixtures, let out = Env.out else {
-            throw XCTSkip("GOLDEN_FIXTURES and GOLDEN_OUT must both be set — see tools/golden-oracle/README.md")
-        }
-        outRoot = out
-        sets = FixtureSet.discover(root: fixturesRoot)
-        XCTAssertFalse(sets.isEmpty, "no fixture set under \(fixturesRoot) has a claude-home/ directory")
+    init() throws {
+        outRoot = Env.out!
+        sets = FixtureSet.discover(root: Env.fixtures!)
+        try #require(!sets.isEmpty, "no fixture set under \(Env.fixtures!) has a claude-home/ directory")
     }
 
-    private func outPath(_ set: FixtureSet, _ relative: String) -> String {
+    func outPath(_ set: FixtureSet, _ relative: String) -> String {
         (outRoot as NSString).appendingPathComponent(set.name).appendingPathComponent(relative)
     }
 
     /// AC1: "projects and summaries" — `SessionLoader.discoverProjects()`, which itself builds
     /// each session via `parseSummary` (the summary tier), including sub-agent sessions.
-    func testProjectsAndSummaries() throws {
+    @Test
+    func projectsAndSummaries() throws {
         for set in sets {
             let loader = SessionLoader(claudeProjectsPath: set.projectsPath)
             let projects = (try? loader.discoverProjects()) ?? []
@@ -401,7 +409,8 @@ final class GoldenOracleTests: XCTestCase {
     }
 
     /// AC1: "full parses" — `TranscriptParser.parse`, direct per top-level session file.
-    func testFullParses() throws {
+    @Test
+    func fullParses() throws {
         for set in sets {
             let parser = TranscriptParser()
             for sf in topLevelSessionFiles(projectsPath: set.projectsPath) {
@@ -413,7 +422,8 @@ final class GoldenOracleTests: XCTestCase {
     }
 
     /// AC1: "header ... tiers" — `TranscriptParser.parseHeader` (fast path, first ~50 lines only).
-    func testHeaderTiers() throws {
+    @Test
+    func headerTiers() throws {
         for set in sets {
             let parser = TranscriptParser()
             for sf in topLevelSessionFiles(projectsPath: set.projectsPath) {
@@ -425,9 +435,10 @@ final class GoldenOracleTests: XCTestCase {
     }
 
     /// AC1: "... and summary tiers" — `TranscriptParser.parseSummary` run directly (as opposed to
-    /// via `discoverProjects()`, which is `testProjectsAndSummaries`'s job); same tier, isolated
-    /// per file so a full-parse/header/summary mismatch on one session is easy to bisect.
-    func testSummaryTiersDirect() throws {
+    /// via `discoverProjects()`, which is `projectsAndSummaries()`'s job); same tier, isolated per
+    /// file so a full-parse/header/summary mismatch on one session is easy to bisect.
+    @Test
+    func summaryTiersDirect() throws {
         for set in sets {
             let parser = TranscriptParser()
             for sf in topLevelSessionFiles(projectsPath: set.projectsPath) {
@@ -439,7 +450,8 @@ final class GoldenOracleTests: XCTestCase {
     }
 
     /// AC1: "stats (computed and cache-staleness verdict)".
-    func testStats() throws {
+    @Test
+    func stats() throws {
         for set in sets {
             let computed = StatsComputer.compute(projectsPath: set.projectsPath)
             let cached = StatsCacheLoader.load(from: set.statsCachePath)
@@ -455,7 +467,8 @@ final class GoldenOracleTests: XCTestCase {
     }
 
     /// AC1: "history".
-    func testHistory() throws {
+    @Test
+    func history() throws {
         for set in sets {
             let entries = HistoryLoader(historyFilePath: set.historyFilePath).loadAll().map(GoldenHistoryEntry.init)
             try writeJSON(entries, to: outPath(set, "history.json"))
@@ -463,7 +476,8 @@ final class GoldenOracleTests: XCTestCase {
     }
 
     /// AC1: "todos".
-    func testTodos() throws {
+    @Test
+    func todos() throws {
         for set in sets {
             let grouped = TodoLoader(claudeTodosPath: set.todosPath).loadAllTodos()
             let golden = grouped.mapValues { $0.map(GoldenTodoItem.init) }
@@ -473,7 +487,8 @@ final class GoldenOracleTests: XCTestCase {
 
     /// AC1: "debug-log pages" — one page per session that has a log, offset 0, a limit large
     /// enough to capture the whole file (so this also doubles as the unpaged dump).
-    func testDebugLogPages() throws {
+    @Test
+    func debugLogPages() throws {
         for set in sets {
             let loader = DebugLogLoader(claudeDebugPath: set.debugPath)
             for sessionId in loader.allSessionIds() {
@@ -485,7 +500,8 @@ final class GoldenOracleTests: XCTestCase {
     }
 
     /// AC1: "facets".
-    func testFacets() throws {
+    @Test
+    func facets() throws {
         for set in sets {
             let all = FacetsLoader(claudeFacetsPath: set.facetsPath).loadAllFacets()
             let golden = all.mapValues(GoldenFacets.init)
@@ -495,7 +511,8 @@ final class GoldenOracleTests: XCTestCase {
 
     /// AC1: "file history" — one dump per session that has any, keyed by the same session ids the
     /// full-parse/header/summary dumps use, so cross-referencing them is a plain path lookup.
-    func testFileHistory() throws {
+    @Test
+    func fileHistory() throws {
         for set in sets {
             let loader = FileHistoryLoader(claudeProjectsPath: set.projectsPath, claudeFileHistoryPath: set.fileHistoryPath)
             for sf in topLevelSessionFiles(projectsPath: set.projectsPath) {
@@ -507,7 +524,8 @@ final class GoldenOracleTests: XCTestCase {
     }
 
     /// AC1: "context usage" — `ContextUsage.from(_:)` over each session's full-parse messages.
-    func testContextUsage() throws {
+    @Test
+    func contextUsage() throws {
         for set in sets {
             let parser = TranscriptParser()
             for sf in topLevelSessionFiles(projectsPath: set.projectsPath) {
@@ -523,7 +541,8 @@ final class GoldenOracleTests: XCTestCase {
     /// shape for a Markdown document). README.md flags the one non-deterministic line this
     /// produces (the locale/timezone-formatted "**Date:**" header) and what the CI workflow must
     /// pin for this file to compare byte-for-byte across runs.
-    func testExportMarkdown() throws {
+    @Test
+    func exportMarkdown() throws {
         for set in sets {
             let parser = TranscriptParser()
             for sf in topLevelSessionFiles(projectsPath: set.projectsPath) {
@@ -537,7 +556,8 @@ final class GoldenOracleTests: XCTestCase {
 
     /// AC1: "line diffs" — real data, not synthetic strings: every consecutive pair of versions of
     /// every file `FileHistoryLoader` finds, diffed with `LineDiff.diff`.
-    func testLineDiffs() throws {
+    @Test
+    func lineDiffs() throws {
         for set in sets {
             let loader = FileHistoryLoader(claudeProjectsPath: set.projectsPath, claudeFileHistoryPath: set.fileHistoryPath)
             for sf in topLevelSessionFiles(projectsPath: set.projectsPath) {
