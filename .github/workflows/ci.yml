@@ -1,0 +1,105 @@
+name: CI
+
+# Task M1-58. Runs on every push and pull request (unlike golden-oracle.yml, which is manual-only)
+# — this is the day-to-day gate for the Rust workspace: formatting, lints, tests, supply-chain
+# checks, the generated-bindings drift check and the heimdall-core coverage gate.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: Rust (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Tauri's own build needs these to compile at all on Linux; xvfb provides the X11 display
+      # webkit2gtk needs even for `cargo test`, not only a real windowed run.
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev xvfb
+
+      # rust-toolchain.toml pins the channel (1.98.1) and components (clippy, rustfmt) with no
+      # target override, so rustup on each runner installs that channel for its own default host
+      # triple automatically (msvc on Windows, gnu on Linux, the standard Apple triple on macOS) —
+      # no explicit toolchain-setup action needed.
+      - name: Rust cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: cargo fmt --check
+        run: cargo fmt --check
+
+      - name: cargo clippy --workspace
+        run: cargo clippy --workspace -- -D warnings
+
+      - name: cargo test --workspace (Linux, under xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum cargo test --workspace
+
+      - name: cargo test --workspace
+        if: runner.os != 'Linux'
+        run: cargo test --workspace
+
+      # ADR 0002: heimdall-core must never depend on tauri, checked directly rather than trusted.
+      - name: heimdall-core must never depend on tauri (ADR 0002)
+        if: runner.os == 'Linux'
+        run: |
+          if cargo tree -p heimdall-core | grep -qi tauri; then
+            echo "::error::heimdall-core depends on tauri — ADR 0002 says it never should"
+            cargo tree -p heimdall-core
+            exit 1
+          fi
+
+      - name: cargo deny check
+        if: runner.os == 'Linux'
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+
+      - name: Setup Node
+        if: runner.os == 'Linux'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: npm ci
+        if: runner.os == 'Linux'
+        run: npm ci
+
+      # M1-37 / ADR 0004: CI regenerates the TypeScript bindings and fails if they differ from
+      # what's committed, so a Rust-side command signature change can never silently drift from
+      # src/ipc/bindings.ts.
+      - name: Check generated bindings are up to date
+        if: runner.os == 'Linux'
+        run: node scripts/check-bindings.mjs
+
+      # M1-56: heimdall-core line coverage gate. Only runs on Linux — the same
+      # profiler_builtins gap documented in that task's own progress-log entry means this can't
+      # run on windows-gnu, and there is no reason to run the same gate three times regardless.
+      - name: heimdall-core coverage gate
+        if: runner.os == 'Linux'
+        run: |
+          rustup component add llvm-tools-preview
+          cargo install cargo-llvm-cov --locked
+          bash scripts/coverage-core.sh
