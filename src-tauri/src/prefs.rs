@@ -87,15 +87,19 @@ fn validate_patch(patch: &PrefsPatch, os: TargetOs) -> Result<()> {
 const FONT_SCALE_MIN: f64 = 0.75;
 const FONT_SCALE_MAX: f64 = 1.5;
 const FONT_SCALE_STEP: f64 = 0.05;
+// Repeatedly adding FONT_SCALE_STEP (real cross-OS CI: macos-latest/ubuntu-22.04) drifts the
+// last valid step a few ULPs past FONT_SCALE_MAX before this ever reaches the step check below,
+// which already tolerates exactly this much drift -- the range check needs the same tolerance.
+const FONT_SCALE_EPSILON: f64 = 1e-9;
 
 fn validate_font_scale(scale: f64) -> Result<()> {
-    if !(FONT_SCALE_MIN..=FONT_SCALE_MAX).contains(&scale) {
+    if scale < FONT_SCALE_MIN - FONT_SCALE_EPSILON || scale > FONT_SCALE_MAX + FONT_SCALE_EPSILON {
         return Err(AppError::invalid_input(format!(
             "fontScale must be between {FONT_SCALE_MIN} and {FONT_SCALE_MAX}"
         )));
     }
     let steps = (scale - FONT_SCALE_MIN) / FONT_SCALE_STEP;
-    if (steps - steps.round()).abs() > 1e-9 {
+    if (steps - steps.round()).abs() > FONT_SCALE_EPSILON {
         return Err(AppError::invalid_input("fontScale must be a multiple of 0.05"));
     }
     Ok(())
