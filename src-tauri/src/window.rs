@@ -16,9 +16,9 @@
 
 use std::sync::Mutex;
 
+use tauri::Url;
 use tauri::utils::config::WebviewUrl;
 use tauri::webview::{NewWindowResponse, WebviewWindowBuilder};
-use tauri::Url;
 
 const TITLE: &str = "Heimdall";
 const WIDTH: f64 = 1280.0;
@@ -75,7 +75,9 @@ pub fn init(app: &mut tauri::App) -> tauri::Result<()> {
 fn apply_title_bar_chrome<R: tauri::Runtime, M: tauri::Manager<R>>(
     builder: WebviewWindowBuilder<'_, R, M>,
 ) -> WebviewWindowBuilder<'_, R, M> {
-    builder.title_bar_style(tauri::TitleBarStyle::Overlay).hidden_title(true)
+    builder
+        .title_bar_style(tauri::TitleBarStyle::Overlay)
+        .hidden_title(true)
 }
 
 /// Windows and Linux: native decorations, no overlay (port-plan P-4).
