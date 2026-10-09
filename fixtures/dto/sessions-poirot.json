@@ -1,0 +1,163 @@
+[
+  {
+    "id": "sysctx-001",
+    "projectId": "-Users-fixture-Dev-poirot",
+    "title": "Fix the build error in TranscriptParser.swift.\n\n\nThe user is working on branch feature/lazy-loading.\nLast build failed with 2 errors in TranscriptParser.swift.",
+    "preview": "I see the build errors on `feature/lazy-loading`. Let me read the parser to find the type mismatches.",
+    "startedAt": "2026-09-20T11:50:00Z",
+    "endedAt": "2026-09-20T11:51:00Z",
+    "model": "claude-opus-4-6",
+    "tokens": {
+      "input": 880,
+      "output": 380,
+      "cacheRead": 0,
+      "cacheCreation": 0
+    },
+    "turnCount": 2,
+    "isSidechain": false,
+    "parentSessionId": null,
+    "agentType": null,
+    "agentDescription": null,
+    "hasDebugLog": false,
+    "hasFileHistory": false,
+    "hasTodos": false
+  },
+  {
+    "id": "write-001",
+    "projectId": "-Users-fixture-Dev-poirot",
+    "title": "Create a FileWatcher service that monitors ~/.claude/projects/ for new session files and triggers a refresh",
+    "preview": "I'll create a `FileWatcher` using `DispatchSource.makeFileSystemObjectSource` to monitor the projects directory.",
+    "startedAt": "2026-09-20T11:30:00Z",
+    "endedAt": "2026-09-20T11:31:00Z",
+    "model": "claude-opus-4-6",
+    "tokens": {
+      "input": 920,
+      "output": 640,
+      "cacheRead": 0,
+      "cacheCreation": 0
+    },
+    "turnCount": 2,
+    "isSidechain": false,
+    "parentSessionId": null,
+    "agentType": null,
+    "agentDescription": null,
+    "hasDebugLog": false,
+    "hasFileHistory": false,
+    "hasTodos": false
+  },
+  {
+    "id": "diff-001",
+    "projectId": "-Users-fixture-Dev-poirot",
+    "title": "Refactor the TranscriptParser to use async/await instead of completion handlers",
+    "preview": "I'll convert the completion-based API to async/await for cleaner call sites.",
+    "startedAt": "2026-09-20T11:25:00Z",
+    "endedAt": "2026-09-20T11:26:00Z",
+    "model": "claude-opus-4-6",
+    "tokens": {
+      "input": 1800,
+      "output": 1050,
+      "cacheRead": 0,
+      "cacheCreation": 0
+    },
+    "turnCount": 2,
+    "isSidechain": false,
+    "parentSessionId": null,
+    "agentType": null,
+    "agentDescription": null,
+    "hasDebugLog": false,
+    "hasFileHistory": false,
+    "hasTodos": false
+  },
+  {
+    "id": "conv-001",
+    "projectId": "-Users-fixture-Dev-poirot",
+    "title": "The sidebar doesn't show session counts next to each project. Add a badge with the session count, and make it match the accent color when the project is selected.",
+    "preview": "I'll add session count badges to each project row in the sidebar. The badge will use accent color when selected:\n\n```swift\nText(\"\\(project.sessions.count)\")\n    .font(.system(size: 11, weight: .semibold))\n    .foregroundStyle(isSelected ? PoirotTheme.Colors.accent : .secondary)\n    .padding(.horizontal, 6)\n    .padding(.vertical, 2)\n    .background(\n        Capsule()\n            .fill(isSelected ? PoirotTheme.Colors.accent.opacity(0.15) : Color.secondary.opacity(0.1))\n    )\n```\n\nLet me start by reading the current implementation.",
+    "startedAt": "2026-09-20T11:15:00Z",
+    "endedAt": "2026-09-20T11:20:00Z",
+    "model": "claude-opus-4-6",
+    "tokens": {
+      "input": 10300,
+      "output": 3300,
+      "cacheRead": 0,
+      "cacheCreation": 0
+    },
+    "turnCount": 4,
+    "isSidechain": false,
+    "parentSessionId": null,
+    "agentType": null,
+    "agentDescription": null,
+    "hasDebugLog": false,
+    "hasFileHistory": false,
+    "hasTodos": false
+  },
+  {
+    "id": "alltools-001",
+    "projectId": "-Users-fixture-Dev-poirot",
+    "title": "Add a toast notification system that shows success/error/info messages with auto-dismiss",
+    "preview": "The toast notification system is fully implemented and verified. All three styles (success, error, info) render correctly with smooth animations and auto-dismiss.",
+    "startedAt": "2026-09-20T11:10:00Z",
+    "endedAt": "2026-09-20T11:18:00Z",
+    "model": "claude-opus-4-6",
+    "tokens": {
+      "input": 4020,
+      "output": 1700,
+      "cacheRead": 0,
+      "cacheCreation": 0
+    },
+    "turnCount": 8,
+    "isSidechain": false,
+    "parentSessionId": null,
+    "agentType": null,
+    "agentDescription": null,
+    "hasDebugLog": false,
+    "hasFileHistory": false,
+    "hasTodos": false
+  },
+  {
+    "id": "tool-001",
+    "projectId": "-Users-fixture-Dev-poirot",
+    "title": "Add a keyboard shortcut Cmd+T to toggle the tool filter bar in the session detail view",
+    "preview": "I'll add the `Cmd+T` keyboard shortcut to toggle the tool filter. Let me find where shortcuts are registered.",
+    "startedAt": "2026-09-20T10:00:00Z",
+    "endedAt": "2026-09-20T10:00:00Z",
+    "model": "claude-sonnet-4-6",
+    "tokens": {
+      "input": 5800,
+      "output": 1410,
+      "cacheRead": 0,
+      "cacheCreation": 0
+    },
+    "turnCount": 3,
+    "isSidechain": false,
+    "parentSessionId": null,
+    "agentType": null,
+    "agentDescription": null,
+    "hasDebugLog": false,
+    "hasFileHistory": false,
+    "hasTodos": false
+  },
+  {
+    "id": "think-001",
+    "projectId": "-Users-fixture-Dev-poirot",
+    "title": "Session loading is slow when there are 100+ sessions per project. Can we optimize it?",
+    "preview": "Looking at the current `SessionLoader` and `TranscriptParser`, I can see the bottleneck clearly:\n\n## Performance Analysis\n\nEvery session file (~2MB average) is fully parsed on launch. For 100+ sessions, that's **200+ MB of JSON** decoded before anything renders.\n\n## Recommended Approach: Two-Phase Loading\n\n### Phase 1 — Fast Metadata Scan\nRead only the first 5 lines of each `.jsonl` for the sidebar summary (title, timestamp, model, turn count). This gives us **~50x speedup** for initial load.\n\n```swift\nfunc parseSummary(fileURL: URL) -> SessionSummary {\n    // Read first 5 lines only — enough for metadata\n    let head = readLines(fileURL, count: 5)\n    return SessionSummary(\n        id: extractSessionId(head),\n        title: extractFirstUserMessage(head),\n        startedAt: extractTimestamp(head),\n        model: extractModel(head)\n    )\n}\n```\n\n### Phase 2 — Lazy Full Parse\nOnly parse the complete transcript when the user selects a session. Cache the 50 most recent.\n\n### Phase 3 — Batch Loading\nLoad projects in groups of 5, updating the UI between batches for progressive rendering.\n\nShall I implement this?",
+    "startedAt": "2026-09-20T07:00:00Z",
+    "endedAt": "2026-09-20T07:00:00Z",
+    "model": "claude-opus-4-6",
+    "tokens": {
+      "input": 4800,
+      "output": 4200,
+      "cacheRead": 0,
+      "cacheCreation": 0
+    },
+    "turnCount": 1,
+    "isSidechain": false,
+    "parentSessionId": null,
+    "agentType": null,
+    "agentDescription": null,
+    "hasDebugLog": false,
+    "hasFileHistory": false,
+    "hasTodos": false
+  }
+]
