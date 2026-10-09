@@ -1,5 +1,132 @@
 /*
- * Placeholder (task M2-02's own Outputs list names this file but assigns its content to M2-04:
- * "Icons, named motion utilities behind one reduced-motion composable"). Imported by main.css
- * already so M2-04 only has to fill this file in, not wire up a new import.
+ * Named motion utilities behind reduced motion (task M2-04), applied through AppIcon.vue's
+ * `effect` prop. Each maps to a real SwiftUI symbol effect Poirot uses (or, for `variable-color`
+ * and `wiggle`, one the AC names but no real call site currently exercises — grep confirmed:
+ * see docs/design/icon-map.md's own motion section).
+ *
+ * The animation itself lives only inside `@media (prefers-reduced-motion: no-preference)`, so
+ * under `reduce` the class still exists (no console error from an unknown class) but applies no
+ * motion at all -- not a shorter/toned-down version of it. AppIcon.vue's own JS-level check
+ * (usePrefersReducedMotion + the showAnimations preference) is a second, independent gate for
+ * the same reason ADR 0005-style defense in depth applies elsewhere: a CSS media query alone
+ * cannot express "the user turned off in-app animations while their OS has no preference set."
  */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* One quick bounce: SwiftUI's `.bounce`, re-triggered by changing the element's `key`
+     (ToastOverlay.swift's own `.symbolEffect(.bounce, value: ...)` pattern). */
+  .motion-bounce {
+    animation: motion-bounce 0.5s ease-in-out;
+  }
+
+  /* Continuous dim/bright pulse: `.pulse`, e.g. an MCP connection-status indicator. */
+  .motion-pulse {
+    animation: motion-pulse 1.4s ease-in-out infinite;
+  }
+
+  /* Continuous gentle scale breathing: `.breathe`, e.g. a hovered icon. */
+  .motion-breathe {
+    animation: motion-breathe 2.4s ease-in-out infinite;
+  }
+
+  /* SF Symbols' variable-color effect sequentially highlights a multi-layer symbol's own parts
+     (e.g. wifi bars lighting up one at a time) -- a single-path Lucide icon has no such layers
+     to target, so this is an opacity-cycle approximation, not a faithful port. */
+  .motion-variable-color {
+    animation: motion-variable-color 1.8s ease-in-out infinite;
+  }
+
+  /* Continuous 360° spin: `.rotate`, e.g. a loading spinner. */
+  .motion-rotate {
+    animation: motion-rotate 1s linear infinite;
+  }
+
+  /* One quick side-to-side shake: `.wiggle`, re-triggered the same way as bounce. */
+  .motion-wiggle {
+    animation: motion-wiggle 0.4s ease-in-out;
+  }
+
+  /* A brief scale+fade on content change: `.replace`/`.contentTransition(.symbolEffect(.replace))`,
+     e.g. swapping between two icon states. Re-triggered by changing the element's `key`, same as
+     bounce/wiggle -- this is a plain CSS animation, not a Vue <Transition>, so it composes with
+     AppIcon's own single `effect` prop the same way every other utility here does. */
+  .motion-replace {
+    animation: motion-replace 0.25s ease-out;
+  }
+}
+
+@keyframes motion-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.3);
+  }
+  60% {
+    transform: scale(0.9);
+  }
+}
+
+@keyframes motion-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes motion-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes motion-variable-color {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes motion-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes motion-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
+  }
+}
+
+@keyframes motion-replace {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
