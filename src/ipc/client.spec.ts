@@ -2,7 +2,7 @@ import { mockIPC } from '@tauri-apps/api/mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { events } from './bindings';
 import type { AppError, DataChange } from './bindings';
-import { IpcError, ipc, onDataChanged } from './client';
+import { IpcError, ipc, onDataChanged, onMenuAction } from './client';
 
 describe('ipc: success', () => {
   it('resolves with the unwrapped data, not the { status, data } envelope', async () => {
@@ -89,5 +89,19 @@ describe('onDataChanged filtering', () => {
   it('matches any of several watched areas', async () => {
     const handler = await emitAndCollect(['todos', 'history'], [{ area: 'history', key: null }]);
     expect(handler).toHaveBeenCalledWith([{ area: 'history', key: null }]);
+  });
+});
+
+describe('onMenuAction', () => {
+  beforeEach(() => {
+    mockIPC(() => {}, { shouldMockEvents: true });
+  });
+
+  it('calls the handler with the action name, unwrapped from the event payload', async () => {
+    const handler = vi.fn();
+    const unlisten = await onMenuAction(handler);
+    await events.menuAction.emit({ action: 'settings' });
+    unlisten();
+    expect(handler).toHaveBeenCalledWith('settings');
   });
 });

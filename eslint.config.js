@@ -22,4 +22,9 @@ export default defineConfig(
   },
   { files: ['src/lib/markdown/MarkdownView.vue'], rules: { 'vue/no-v-html': 'off' } },
   { files: ['src/ipc/**'], rules: { 'no-restricted-imports': 'off' } },
+  // Task docs (docs/tasks/M2-09-app-layout.md) name these exact single-word filenames.
+  {
+    files: ['src/layout/Sidebar.vue', 'src/layout/Toolbar.vue', 'src/features/onboarding/Onboarding.vue'],
+    rules: { 'vue/multi-word-component-names': 'off' },
+  },
 );

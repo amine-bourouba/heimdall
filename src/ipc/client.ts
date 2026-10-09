@@ -6,7 +6,7 @@
 // `onDataChanged` wraps the `data-changed` event with the area filtering stores actually need.
 
 import { commands, events } from './bindings';
-import type { Area, AppError, DataChange } from './bindings';
+import type { Area, AppAction, AppError, DataChange } from './bindings';
 
 /** ADR 0005's AppError, thrown instead of returned so callers can use plain try/catch. */
 export class IpcError extends Error {
@@ -57,4 +57,10 @@ export function onDataChanged(areas: Area[], handler: (changes: DataChange[]) =>
     const relevant = event.payload.filter((change) => change.area === 'all' || wanted.has(change.area));
     if (relevant.length > 0) handler(relevant);
   });
+}
+
+/** Subscribes to `menu-action` (macOS native menu, M2-13), calling `handler` with the action
+ * name so a caller can feed it straight into `useAppActions().dispatch(...)`. */
+export function onMenuAction(handler: (action: AppAction) => void) {
+  return events.menuAction.listen((event) => handler(event.payload.action));
 }

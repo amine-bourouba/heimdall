@@ -1,7 +1,7 @@
 <script setup lang="ts">
-const title = 'Heimdall';
+import AppShell from '@/layout/AppShell.vue';
 </script>
 
 <template>
-  <main>{{ title }}</main>
+  <AppShell />
 </template>

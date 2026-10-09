@@ -18,6 +18,16 @@
   /* fontScale preference (parity row I4, 0.75-1.5, default 1.0) drives every text-* size below;
      a later task (M2-05's theme store) sets this on :root/html from the real Prefs value. */
   --font-scale: 1;
+
+  /* Reserves room for macOS's overlay traffic lights (window.rs, M2-12: `TitleBarStyle::Overlay`
+     + `hidden_title`, which float window-manager buttons over the webview's own content instead
+     of a native bar). 28px matches the traffic lights' own vertical span. Windows/Linux already
+     get a native title bar from the OS (M2-12's `decorations(true)` branch), so they need none. */
+  --titlebar-inset: 0px;
+}
+
+:root[data-os='macos'] {
+  --titlebar-inset: 28px;
 }
 
 @theme {
