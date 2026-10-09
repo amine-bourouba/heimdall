@@ -57,13 +57,17 @@ jobs:
       - name: cargo clippy --workspace
         run: cargo clippy --workspace -- -D warnings
 
+      # --no-fail-fast: without it, cargo test stops the whole invocation at the first broken
+      # test *target*, which on windows-latest means heimdall_desktop_lib's own crash (M1-59's
+      # gate review) silently prevented tests/watcher.rs from ever running at all, three runs in
+      # a row, with no sign of it in the log beyond "there is no Running tests\watcher.rs line."
       - name: cargo test --workspace (Linux, under xvfb)
         if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum cargo test --workspace
+        run: xvfb-run --auto-servernum cargo test --workspace --no-fail-fast
 
       - name: cargo test --workspace
         if: runner.os != 'Linux'
-        run: cargo test --workspace
+        run: cargo test --workspace --no-fail-fast
 
       # ADR 0002: heimdall-core must never depend on tauri, checked directly rather than trusted.
       - name: heimdall-core must never depend on tauri (ADR 0002)
