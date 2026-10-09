@@ -1,0 +1,686 @@
+/*
+ * 20 theme palettes as CSS custom properties, switched by [data-theme] on <html> (task M2-02).
+ * Every hex/opacity value is transcribed from $POIROT/Poirot/Sources/Theme/PoirotTheme.swift's
+ * ThemePalette cases (default/solarized/highContrast) and ColorTheme.palette's 17 `.chat(...)`
+ * calls — see docs/design/theme-tokens.md for the full value table and provenance.
+ *
+ * Two kinds of theme, matching the Swift source exactly:
+ * - default/solarized/highContrast are appearance-adaptive: each token has its own light and dark
+ *   value, switched by `@media (prefers-color-scheme: dark)`, and `color-scheme: light dark` lets
+ *   the browser's own UI (scrollbars, form controls) follow suit.
+ * - The other 17 (ported from a7t/chat's single-appearance theme spec) use one fixed value per
+ *   token regardless of OS appearance, with `color-scheme` set directly from the theme's own
+ *   fixed isDark value (PoirotTheme.swift:280-287) so native UI still renders correctly.
+ *
+ * 23 base tokens per theme (bgApp..diffRemoveText) plus one computed one, --accent-dim
+ * (PoirotTheme.Colors.accentDim: the theme's own accent at 20% opacity in light, 15% in dark).
+ */
+
+[data-theme="default"] {
+  color-scheme: light dark;
+  --bg-app: #F3F4F7;
+  --bg-sidebar: #ECEEF3;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F5F7FB;
+  --bg-elevated: #FCFCFD;
+  --bg-code: #EEF1F6;
+  --text-primary: #15161A;
+  --text-secondary: #4E5260;
+  --text-tertiary: #747A89;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-emphasis: rgba(0, 0, 0, 0.16);
+  --color-green: #1F8A36;
+  --color-red: #C22A21;
+  --color-blue: #005ECF;
+  --color-orange: #B86A00;
+  --color-purple: #7A3FB5;
+  --color-teal: #0F8F85;
+  --accent: #C88422;
+  --diff-add-bg: rgba(31, 138, 54, 0.16);
+  --diff-add-text: #166A29;
+  --diff-remove-bg: rgba(194, 42, 33, 0.16);
+  --diff-remove-text: #9B221B;
+  --accent-dim: rgba(200, 132, 34, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="default"] {
+    --bg-app: #0D0D0F;
+    --bg-sidebar: #141416;
+    --bg-card: #1A1A1E;
+    --bg-card-hover: #222226;
+    --bg-elevated: #222226;
+    --bg-code: #161618;
+    --text-primary: #F5F5F7;
+    --text-secondary: #8E8E93;
+    --text-tertiary: #636366;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-subtle: rgba(255, 255, 255, 0.03);
+    --border-emphasis: rgba(255, 255, 255, 0.1);
+    --color-green: #32D74B;
+    --color-red: #FF453A;
+    --color-blue: #0A84FF;
+    --color-orange: #FF9F0A;
+    --color-purple: #AF52DE;
+    --color-teal: #30D5C8;
+    --accent: #E8A642;
+    --diff-add-bg: rgba(50, 215, 75, 0.1);
+    --diff-add-text: #32D74B;
+    --diff-remove-bg: rgba(255, 69, 58, 0.1);
+    --diff-remove-text: #FF453A;
+    --accent-dim: rgba(232, 166, 66, 0.15);
+  }
+}
+
+[data-theme="solarized"] {
+  color-scheme: light dark;
+  --bg-app: #FDF6E3;
+  --bg-sidebar: #EEE8D5;
+  --bg-card: #FDF6E3;
+  --bg-card-hover: #EEE8D5;
+  --bg-elevated: #FDF6E3;
+  --bg-code: #EEE8D5;
+  --text-primary: #073642;
+  --text-secondary: #586E75;
+  --text-tertiary: #93A1A1;
+  --border: rgba(7, 54, 66, 0.12);
+  --border-subtle: rgba(7, 54, 66, 0.06);
+  --border-emphasis: rgba(7, 54, 66, 0.2);
+  --color-green: #859900;
+  --color-red: #DC322F;
+  --color-blue: #268BD2;
+  --color-orange: #CB4B16;
+  --color-purple: #6C71C4;
+  --color-teal: #2AA198;
+  --accent: #268BD2;
+  --diff-add-bg: rgba(133, 153, 0, 0.16);
+  --diff-add-text: #859900;
+  --diff-remove-bg: rgba(220, 50, 47, 0.16);
+  --diff-remove-text: #DC322F;
+  --accent-dim: rgba(38, 139, 210, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="solarized"] {
+    --bg-app: #002B36;
+    --bg-sidebar: #073642;
+    --bg-card: #073642;
+    --bg-card-hover: #0A4050;
+    --bg-elevated: #0A4050;
+    --bg-code: #002B36;
+    --text-primary: #93A1A1;
+    /* Lightened from Poirot's literal #839496: that value is 4.11:1 on --bg-card, under the
+       4.5:1 WCAG AA bar this task's contrast.spec.ts enforces. Poirot never caught this because
+       it used the OS's native secondaryLabelColor here, not this stored token (PoirotTheme.swift
+       :344-349) -- a flat ported hex needs its own adjustment to meet the same accessibility bar. */
+    --text-secondary: #8C9C9E;
+    --text-tertiary: #657B83;
+    --border: rgba(131, 148, 150, 0.08);
+    --border-subtle: rgba(131, 148, 150, 0.04);
+    --border-emphasis: rgba(131, 148, 150, 0.14);
+    --color-green: #859900;
+    --color-red: #DC322F;
+    --color-blue: #268BD2;
+    --color-orange: #CB4B16;
+    --color-purple: #6C71C4;
+    --color-teal: #2AA198;
+    --accent: #2AA198;
+    --diff-add-bg: rgba(133, 153, 0, 0.12);
+    --diff-add-text: #859900;
+    --diff-remove-bg: rgba(220, 50, 47, 0.12);
+    --diff-remove-text: #DC322F;
+    --accent-dim: rgba(42, 161, 152, 0.15);
+  }
+}
+
+[data-theme="highContrast"] {
+  color-scheme: light dark;
+  --bg-app: #FFFFFF;
+  --bg-sidebar: #F0F0F0;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #E8E8E8;
+  --bg-elevated: #FFFFFF;
+  --bg-code: #F0F0F0;
+  --text-primary: #000000;
+  --text-secondary: #222222;
+  --text-tertiary: #444444;
+  --border: rgba(0, 0, 0, 0.2);
+  --border-subtle: rgba(0, 0, 0, 0.12);
+  --border-emphasis: rgba(0, 0, 0, 0.3);
+  --color-green: #007A1B;
+  --color-red: #CC0000;
+  --color-blue: #0050CC;
+  --color-orange: #CC6600;
+  --color-purple: #6633CC;
+  --color-teal: #007777;
+  --accent: #0050CC;
+  --diff-add-bg: rgba(0, 122, 27, 0.2);
+  --diff-add-text: #007A1B;
+  --diff-remove-bg: rgba(204, 0, 0, 0.2);
+  --diff-remove-text: #CC0000;
+  --accent-dim: rgba(0, 80, 204, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="highContrast"] {
+    --bg-app: #000000;
+    --bg-sidebar: #0A0A0A;
+    --bg-card: #111111;
+    --bg-card-hover: #1A1A1A;
+    --bg-elevated: #1A1A1A;
+    --bg-code: #0A0A0A;
+    --text-primary: #FFFFFF;
+    --text-secondary: #DDDDDD;
+    --text-tertiary: #AAAAAA;
+    --border: rgba(255, 255, 255, 0.15);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-emphasis: rgba(255, 255, 255, 0.25);
+    --color-green: #3DE858;
+    --color-red: #FF4444;
+    --color-blue: #4499FF;
+    --color-orange: #FFAA22;
+    --color-purple: #BB77FF;
+    --color-teal: #33DDCC;
+    --accent: #4499FF;
+    --diff-add-bg: rgba(61, 232, 88, 0.15);
+    --diff-add-text: #3DE858;
+    --diff-remove-bg: rgba(255, 68, 68, 0.15);
+    --diff-remove-text: #FF4444;
+    --accent-dim: rgba(68, 153, 255, 0.15);
+  }
+}
+
+[data-theme="charcoal"] {
+  color-scheme: dark;
+  --bg-app: #101012;
+  --bg-sidebar: #19191C;
+  --bg-card: #19191C;
+  --bg-card-hover: #212126;
+  --bg-elevated: #212126;
+  --bg-code: #101012;
+  --text-primary: #ECECEC;
+  --text-secondary: #9B9BA2;
+  --text-tertiary: rgba(155, 155, 162, 0.7);
+  --border: #2B2B30;
+  --border-subtle: rgba(43, 43, 48, 0.5);
+  --border-emphasis: #2B2B30;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #2D9B9B;
+  --accent: #2D9B9B;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(45, 155, 155, 0.15);
+}
+
+[data-theme="tealNight"] {
+  color-scheme: dark;
+  --bg-app: #0B3838;
+  --bg-sidebar: #0F4444;
+  --bg-card: #0F4444;
+  --bg-card-hover: #135050;
+  --bg-elevated: #135050;
+  --bg-code: #0B3838;
+  --text-primary: #D7ECEC;
+  --text-secondary: #7FCDCD;
+  --text-tertiary: rgba(127, 205, 205, 0.7);
+  --border: #1F6B6B;
+  --border-subtle: rgba(31, 107, 107, 0.5);
+  --border-emphasis: #1F6B6B;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #7FCDCD;
+  --accent: #7FCDCD;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(127, 205, 205, 0.15);
+}
+
+[data-theme="white"] {
+  color-scheme: light;
+  --bg-app: #FFFFFF;
+  --bg-sidebar: #F5F4F1;
+  --bg-card: #F5F4F1;
+  --bg-card-hover: #ECEBE6;
+  --bg-elevated: #ECEBE6;
+  --bg-code: #ECEBE6;
+  --text-primary: #0A0F0F;
+  --text-secondary: #4A5454;
+  --text-tertiary: rgba(74, 84, 84, 0.7);
+  --border: #E3E1DA;
+  --border-subtle: rgba(227, 225, 218, 0.5);
+  --border-emphasis: #E3E1DA;
+  --color-green: #1F8A36;
+  --color-red: #C22A21;
+  --color-blue: #005ECF;
+  --color-orange: #B86A00;
+  --color-purple: #7A3FB5;
+  --color-teal: #1F6B6B;
+  --accent: #1F6B6B;
+  --diff-add-bg: rgba(31, 138, 54, 0.16);
+  --diff-add-text: #1F8A36;
+  --diff-remove-bg: rgba(194, 42, 33, 0.16);
+  --diff-remove-text: #C22A21;
+  --accent-dim: rgba(31, 107, 107, 0.2);
+}
+
+[data-theme="pastel"] {
+  color-scheme: light;
+  --bg-app: #F7F1E8;
+  --bg-sidebar: #EFE6D3;
+  --bg-card: #EFE6D3;
+  --bg-card-hover: #E7DCC4;
+  --bg-elevated: #E7DCC4;
+  --bg-code: #E7DCC4;
+  --text-primary: #0A0F0F;
+  --text-secondary: #4A5454;
+  --text-tertiary: rgba(74, 84, 84, 0.7);
+  --border: #DCCFB4;
+  --border-subtle: rgba(220, 207, 180, 0.5);
+  --border-emphasis: #DCCFB4;
+  --color-green: #1F8A36;
+  --color-red: #C22A21;
+  --color-blue: #005ECF;
+  --color-orange: #B86A00;
+  --color-purple: #7A3FB5;
+  --color-teal: #1F6B6B;
+  --accent: #1F6B6B;
+  --diff-add-bg: rgba(31, 138, 54, 0.16);
+  --diff-add-text: #1F8A36;
+  --diff-remove-bg: rgba(194, 42, 33, 0.16);
+  --diff-remove-text: #C22A21;
+  --accent-dim: rgba(31, 107, 107, 0.2);
+}
+
+[data-theme="greenTheme"] {
+  color-scheme: light;
+  --bg-app: #EEF3EF;
+  --bg-sidebar: #E0EBE2;
+  --bg-card: #E0EBE2;
+  --bg-card-hover: #D3E2D6;
+  --bg-elevated: #D3E2D6;
+  --bg-code: #D3E2D6;
+  --text-primary: #0A1F17;
+  --text-secondary: #45615A;
+  --text-tertiary: rgba(69, 97, 90, 0.7);
+  --border: #C5D8C9;
+  --border-subtle: rgba(197, 216, 201, 0.5);
+  --border-emphasis: #C5D8C9;
+  --color-green: #1F8A36;
+  --color-red: #C22A21;
+  --color-blue: #005ECF;
+  --color-orange: #B86A00;
+  --color-purple: #7A3FB5;
+  --color-teal: #1F6B6B;
+  --accent: #1F6B6B;
+  --diff-add-bg: rgba(31, 138, 54, 0.16);
+  --diff-add-text: #1F8A36;
+  --diff-remove-bg: rgba(194, 42, 33, 0.16);
+  --diff-remove-text: #C22A21;
+  --accent-dim: rgba(31, 107, 107, 0.2);
+}
+
+[data-theme="nightshade"] {
+  color-scheme: dark;
+  --bg-app: #282A36;
+  --bg-sidebar: #2F3140;
+  --bg-card: #2F3140;
+  --bg-card-hover: #383A4A;
+  --bg-elevated: #383A4A;
+  --bg-code: #282A36;
+  --text-primary: #F8F8F2;
+  /* Lightened from Poirot's literal #8B8FA3 (4.01:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+     solarized-dark block above for why a flat ported hex needs its own adjustment here. */
+  --text-secondary: #9599AB;
+  --text-tertiary: rgba(139, 143, 163, 0.7);
+  --border: #44475A;
+  --border-subtle: rgba(68, 71, 90, 0.5);
+  --border-emphasis: #44475A;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #BD93F9;
+  --accent: #BD93F9;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(189, 147, 249, 0.15);
+}
+
+[data-theme="fjord"] {
+  color-scheme: dark;
+  --bg-app: #2E3440;
+  --bg-sidebar: #353C4A;
+  --bg-card: #353C4A;
+  --bg-card-hover: #3B4252;
+  --bg-elevated: #3B4252;
+  --bg-code: #2E3440;
+  --text-primary: #ECEFF4;
+  /* Lightened from Poirot's literal #8893A8 (3.58:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+     solarized-dark block above for why a flat ported hex needs its own adjustment here. */
+  --text-secondary: #9EA7B8;
+  --text-tertiary: rgba(136, 147, 168, 0.7);
+  --border: #434C5E;
+  --border-subtle: rgba(67, 76, 94, 0.5);
+  --border-emphasis: #434C5E;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #88C0D0;
+  --accent: #88C0D0;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(136, 192, 208, 0.15);
+}
+
+[data-theme="fjordLight"] {
+  color-scheme: light;
+  --bg-app: #ECEFF4;
+  --bg-sidebar: #E5E9F0;
+  --bg-card: #E5E9F0;
+  --bg-card-hover: #D8DEE9;
+  --bg-elevated: #D8DEE9;
+  --bg-code: #D8DEE9;
+  --text-primary: #2E3440;
+  --text-secondary: #4C566A;
+  --text-tertiary: rgba(76, 86, 106, 0.7);
+  --border: #C8D0DE;
+  --border-subtle: rgba(200, 208, 222, 0.5);
+  --border-emphasis: #C8D0DE;
+  --color-green: #1F8A36;
+  --color-red: #C22A21;
+  --color-blue: #005ECF;
+  --color-orange: #B86A00;
+  --color-purple: #7A3FB5;
+  --color-teal: #5E81AC;
+  --accent: #5E81AC;
+  --diff-add-bg: rgba(31, 138, 54, 0.16);
+  --diff-add-text: #1F8A36;
+  --diff-remove-bg: rgba(194, 42, 33, 0.16);
+  --diff-remove-text: #C22A21;
+  --accent-dim: rgba(94, 129, 172, 0.2);
+}
+
+[data-theme="harbor"] {
+  color-scheme: dark;
+  --bg-app: #1A1B26;
+  --bg-sidebar: #1F2335;
+  --bg-card: #1F2335;
+  --bg-card-hover: #24283B;
+  --bg-elevated: #24283B;
+  --bg-code: #1A1B26;
+  --text-primary: #C0CAF5;
+  /* Lightened from Poirot's literal #787C99 (3.81:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+     solarized-dark block above for why a flat ported hex needs its own adjustment here. */
+  --text-secondary: #8689A3;
+  --text-tertiary: rgba(120, 124, 153, 0.7);
+  --border: #2F334D;
+  --border-subtle: rgba(47, 51, 77, 0.5);
+  --border-emphasis: #2F334D;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #7AA2F7;
+  --accent: #7AA2F7;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(122, 162, 247, 0.15);
+}
+
+[data-theme="mocha"] {
+  color-scheme: dark;
+  --bg-app: #1E1E2E;
+  --bg-sidebar: #242436;
+  --bg-card: #242436;
+  --bg-card-hover: #313244;
+  --bg-elevated: #313244;
+  --bg-code: #1E1E2E;
+  --text-primary: #CDD6F4;
+  --text-secondary: #9399B2;
+  --text-tertiary: rgba(147, 153, 178, 0.7);
+  --border: #45475A;
+  --border-subtle: rgba(69, 71, 90, 0.5);
+  --border-emphasis: #45475A;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #CBA6F7;
+  --accent: #CBA6F7;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(203, 166, 247, 0.15);
+}
+
+[data-theme="rosewood"] {
+  color-scheme: dark;
+  --bg-app: #191724;
+  --bg-sidebar: #1F1D2E;
+  --bg-card: #1F1D2E;
+  --bg-card-hover: #26233A;
+  --bg-elevated: #26233A;
+  --bg-code: #191724;
+  --text-primary: #E0DEF4;
+  --text-secondary: #908CAA;
+  --text-tertiary: rgba(144, 140, 170, 0.7);
+  --border: #403D52;
+  --border-subtle: rgba(64, 61, 82, 0.5);
+  --border-emphasis: #403D52;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #EBBCBA;
+  --accent: #EBBCBA;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(235, 188, 186, 0.15);
+}
+
+[data-theme="ember"] {
+  color-scheme: dark;
+  --bg-app: #282828;
+  --bg-sidebar: #32302F;
+  --bg-card: #32302F;
+  --bg-card-hover: #3C3836;
+  --bg-elevated: #3C3836;
+  --bg-code: #282828;
+  --text-primary: #EBDBB2;
+  --text-secondary: #A89984;
+  --text-tertiary: rgba(168, 153, 132, 0.7);
+  --border: #504945;
+  --border-subtle: rgba(80, 73, 69, 0.5);
+  --border-emphasis: #504945;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #FABD2F;
+  --accent: #FABD2F;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(250, 189, 47, 0.15);
+}
+
+[data-theme="parchment"] {
+  color-scheme: light;
+  --bg-app: #FBF1C7;
+  --bg-sidebar: #F2E5BC;
+  --bg-card: #F2E5BC;
+  --bg-card-hover: #EBDBB2;
+  --bg-elevated: #EBDBB2;
+  --bg-code: #EBDBB2;
+  --text-primary: #3C3836;
+  /* Darkened from Poirot's literal #7C6F64 (3.87:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+     solarized-dark block above for why a flat ported hex needs its own adjustment here. */
+  --text-secondary: #70645A;
+  --text-tertiary: rgba(124, 111, 100, 0.7);
+  --border: #D5C4A1;
+  --border-subtle: rgba(213, 196, 161, 0.5);
+  --border-emphasis: #D5C4A1;
+  --color-green: #1F8A36;
+  --color-red: #C22A21;
+  --color-blue: #005ECF;
+  --color-orange: #B86A00;
+  --color-purple: #7A3FB5;
+  --color-teal: #B57614;
+  --accent: #B57614;
+  --diff-add-bg: rgba(31, 138, 54, 0.16);
+  --diff-add-text: #1F8A36;
+  --diff-remove-bg: rgba(194, 42, 33, 0.16);
+  --diff-remove-text: #C22A21;
+  --accent-dim: rgba(181, 118, 20, 0.2);
+}
+
+[data-theme="deepSea"] {
+  color-scheme: dark;
+  --bg-app: #002B36;
+  --bg-sidebar: #073642;
+  --bg-card: #073642;
+  --bg-card-hover: #0A4250;
+  --bg-elevated: #0A4250;
+  --bg-code: #002B36;
+  --text-primary: #93A1A1;
+  /* Lightened from Poirot's literal #657B83 (2.92:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+     solarized-dark block above for why a flat ported hex needs its own adjustment here. */
+  --text-secondary: #889CA3;
+  --text-tertiary: rgba(101, 123, 131, 0.7);
+  --border: #0F4D5C;
+  --border-subtle: rgba(15, 77, 92, 0.5);
+  --border-emphasis: #0F4D5C;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #2AA198;
+  --accent: #2AA198;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(42, 161, 152, 0.15);
+}
+
+[data-theme="daybreak"] {
+  color-scheme: light;
+  --bg-app: #FDF6E3;
+  --bg-sidebar: #EEE8D5;
+  --bg-card: #EEE8D5;
+  --bg-card-hover: #E4DDC8;
+  --bg-elevated: #E4DDC8;
+  --bg-code: #E4DDC8;
+  /* Darkened from Poirot's literal #586E75 (4.39:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+     solarized-dark block above for why a flat ported hex needs its own adjustment here. */
+  --text-primary: #566C72;
+  /* Darkened from Poirot's literal #93A1A1 (2.18:1 on --bg-card, badly under 4.5:1 WCAG AA). */
+  --text-secondary: #5D6B6B;
+  --text-tertiary: rgba(147, 161, 161, 0.7);
+  --border: #D6CFB8;
+  --border-subtle: rgba(214, 207, 184, 0.5);
+  --border-emphasis: #D6CFB8;
+  --color-green: #1F8A36;
+  --color-red: #C22A21;
+  --color-blue: #005ECF;
+  --color-orange: #B86A00;
+  --color-purple: #7A3FB5;
+  --color-teal: #268BD2;
+  --accent: #268BD2;
+  --diff-add-bg: rgba(31, 138, 54, 0.16);
+  --diff-add-text: #1F8A36;
+  --diff-remove-bg: rgba(194, 42, 33, 0.16);
+  --diff-remove-text: #C22A21;
+  --accent-dim: rgba(38, 139, 210, 0.2);
+}
+
+[data-theme="citrus"] {
+  color-scheme: dark;
+  --bg-app: #272822;
+  --bg-sidebar: #2F302A;
+  --bg-card: #2F302A;
+  --bg-card-hover: #3A3B32;
+  --bg-elevated: #3A3B32;
+  --bg-code: #272822;
+  --text-primary: #F8F8F2;
+  /* Lightened from Poirot's literal #9A9682 (4.48:1 on --bg-card, just under 4.5:1 WCAG AA) --
+     see the solarized-dark block above for why a flat ported hex needs its own adjustment here. */
+  --text-secondary: #9B9784;
+  --text-tertiary: rgba(154, 150, 130, 0.7);
+  --border: #49483E;
+  --border-subtle: rgba(73, 72, 62, 0.5);
+  --border-emphasis: #49483E;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #A6E22E;
+  --accent: #A6E22E;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(166, 226, 46, 0.15);
+}
+
+[data-theme="evergreen"] {
+  color-scheme: dark;
+  --bg-app: #2D353B;
+  --bg-sidebar: #343F44;
+  --bg-card: #343F44;
+  --bg-card-hover: #3D484D;
+  --bg-elevated: #3D484D;
+  --bg-code: #2D353B;
+  --text-primary: #D3C6AA;
+  /* Lightened from Poirot's literal #859289 (3.33:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+     solarized-dark block above for why a flat ported hex needs its own adjustment here. */
+  --text-secondary: #A0ABA4;
+  --text-tertiary: rgba(133, 146, 137, 0.7);
+  --border: #4A555B;
+  --border-subtle: rgba(74, 85, 91, 0.5);
+  --border-emphasis: #4A555B;
+  --color-green: #32D74B;
+  --color-red: #FF453A;
+  --color-blue: #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-purple: #AF52DE;
+  --color-teal: #A7C080;
+  --accent: #A7C080;
+  --diff-add-bg: rgba(50, 215, 75, 0.12);
+  --diff-add-text: #32D74B;
+  --diff-remove-bg: rgba(255, 69, 58, 0.12);
+  --diff-remove-text: #FF453A;
+  --accent-dim: rgba(167, 192, 128, 0.15);
+}
+
