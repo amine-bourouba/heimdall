@@ -119,28 +119,28 @@ This matrix defines "done" for the port. Each row is one Poirot capability, its 
 
 | ID | Path pattern | Swift loader | Heimdall module | Scope | Win | Linux | macOS | Outcome | WS | Tasks |
 |---|---|---|---|---|---|---|---|---|---|---|
-| E1 | `projects/<encoded>/*.jsonl` | `Services/SessionLoader.swift`, `Services/TranscriptParser.swift` | `projects/`, `transcript/` | MVP | NS | NS | NS | Project path from `cwd` first (C-6) | RUST | M1-12, M1-13, M1-14 |
-| E2 | `projects/<encoded>/sessions-index.json` | `SessionLoader.swift:214-245` | `projects/sessions_index.rs` | MVP | NS | NS | NS | Accepts `projectPath` and `originalPath` (C-7) | RUST | M1-14 |
-| E3 | `projects/<encoded>/<sessionId>/subagents/agent-*.jsonl` and `.meta.json` | `SessionLoader.swift:249-301` | `projects/subagents.rs` | MVP | NS | NS | NS | — | RUST | M1-14 |
-| E4 | `projects/<encoded>/memory/*.md` | `Services/Config/ClaudeConfigLoader.swift:421-451` | `config/read/memory.rs` | MVP | NS | NS | NS | — | RUST | M1-27 |
-| E5 | `history.jsonl` | `Services/HistoryLoader.swift` | `data/history.rs` | MVP | NS | NS | NS | — | RUST | M1-15 |
-| E6 | `todos/<sessionId>[-agent-<id>].json` | `Services/TodoLoader.swift` | `data/todos.rs` | MVP | NS | NS | NS | — | RUST | M1-16 |
-| E7 | `debug/<sessionId>.txt` | `Services/DebugLogLoader.swift` | `data/debug_log.rs` | MVP | NS | NS | NS | — | RUST | M1-17 |
-| E8 | `file-history/<sessionId>/<hash@vN>` | `Services/FileHistoryLoader.swift` | `data/file_history.rs` | MVP | NS | NS | NS | — | RUST | M1-19 |
-| E9 | `usage-data/facets/<sessionId>.json` | `Services/FacetsLoader.swift` | `data/facets.rs` | MVP | NS | NS | NS | — | RUST | M1-18 |
-| E10 | `stats-cache.json` (used only when not stale) | `Services/StatsCacheLoader.swift`, `Services/StatsComputer.swift` | `data/stats_cache.rs`, `data/stats.rs` | Later | NS | NS | NS | — | RUST | M1-20 |
-| E11 | `commands/*.md`, global and project | `ClaudeConfigLoader.loadCommands` | `config/read/commands.rs` | MVP | NS | NS | NS | — | RUST | M1-24 |
-| E12 | `skills/<name>/SKILL.md`, global and project | `ClaudeConfigLoader.loadSkills` | `config/read/skills.rs` | MVP | NS | NS | NS | — | RUST | M1-24 |
-| E13 | `plans/*.md` | `ClaudeConfigLoader.loadPlans` | `config/read/plans.rs` | MVP | NS | NS | NS | — | RUST | M1-24 |
-| E14 | `output-styles/*.md` except README, global and project | `ClaudeConfigLoader.loadOutputStyles` | `config/read/output_styles.rs` | MVP | NS | NS | NS | — | RUST | M1-24 |
-| E15 | `agents/*.md` | `ClaudeConfigLoader.loadCustomAgents` | `config/read/agents.rs` | MVP | NS | NS | NS | — | RUST | M1-24 |
-| E16 | `settings.json`, global and project (permissions, enabledPlugins, model, hooks) | `ClaudeConfigLoader.loadSettings`, `loadHooks` | `config/read/settings.rs`, `hooks.rs` | MVP | NS | NS | NS | — | RUST | M1-25 |
-| E17 | `~/.claude.json` (`mcpServers`, `projects.<path>.mcpServers`) | `ClaudeConfigLoader.loadClaudeConfig` | `config/read/mcp.rs` | MVP | NS | NS | NS | Secrets held as `Secret` | RUST | M1-26 |
-| E18 | `<project>/.mcp.json` | `ClaudeConfigLoader.swift:155-170` | `config/read/mcp.rs` | MVP | NS | NS | NS | — | RUST | M1-26 |
-| E19 | `plugins/installed_plugins.json` | `ClaudeConfigLoader.loadPlugins`, `loadPluginMCPServers` | `config/read/plugins.rs` | MVP | NS | NS | NS | — | RUST | M1-26 |
-| E20 | `mcp-needs-auth-cache.json` (keys only) | `Services/Config/MCPServerStatusChecker.swift:7-11`, `ClaudeConfigLoader.swift:302-331` | `config/read/mcp.rs`, `mcp_status.rs` | MVP | NS | NS | NS | — | RUST | M1-26, M1-28 |
-| E21 | `<project>/.claude/settings.json` model | `ClaudeConfigLoader.loadProjectModel` | `config/read/settings.rs` | MVP | NS | NS | NS | — | RUST | M1-25 |
-| E22 | User-chosen memory folders | `ClaudeConfigLoader.loadMemoryFiles(customFolder:)` | `config/read/memory.rs` | MVP | NS | NS | NS | — | RUST | M1-27 |
+| E1 | `projects/<encoded>/*.jsonl` | `Services/SessionLoader.swift`, `Services/TranscriptParser.swift` | `projects/`, `transcript/` | MVP | AP | AP | AP | Project path from `cwd` first (C-6) | RUST | M1-12, M1-13, M1-14 |
+| E2 | `projects/<encoded>/sessions-index.json` | `SessionLoader.swift:214-245` | `projects/sessions_index.rs` | MVP | AP | AP | AP | Accepts `projectPath` and `originalPath` (C-7) | RUST | M1-14 |
+| E3 | `projects/<encoded>/<sessionId>/subagents/agent-*.jsonl` and `.meta.json` | `SessionLoader.swift:249-301` | `projects/subagents.rs` | MVP | AP | AP | AP | — | RUST | M1-14 |
+| E4 | `projects/<encoded>/memory/*.md` | `Services/Config/ClaudeConfigLoader.swift:421-451` | `config/read/memory.rs` | MVP | AP | AP | AP | — | RUST | M1-27 |
+| E5 | `history.jsonl` | `Services/HistoryLoader.swift` | `data/history.rs` | MVP | AP | AP | AP | — | RUST | M1-15 |
+| E6 | `todos/<sessionId>[-agent-<id>].json` | `Services/TodoLoader.swift` | `data/todos.rs` | MVP | AP | AP | AP | — | RUST | M1-16 |
+| E7 | `debug/<sessionId>.txt` | `Services/DebugLogLoader.swift` | `data/debug_log.rs` | MVP | AP | AP | AP | — | RUST | M1-17 |
+| E8 | `file-history/<sessionId>/<hash@vN>` | `Services/FileHistoryLoader.swift` | `data/file_history.rs` | MVP | AP | AP | AP | — | RUST | M1-19 |
+| E9 | `usage-data/facets/<sessionId>.json` | `Services/FacetsLoader.swift` | `data/facets.rs` | MVP | AP | AP | AP | — | RUST | M1-18 |
+| E10 | `stats-cache.json` (used only when not stale) | `Services/StatsCacheLoader.swift`, `Services/StatsComputer.swift` | `data/stats_cache.rs`, `data/stats.rs` | Later | AP | AP | AP | — | RUST | M1-20 |
+| E11 | `commands/*.md`, global and project | `ClaudeConfigLoader.loadCommands` | `config/read/commands.rs` | MVP | AP | AP | AP | — | RUST | M1-24 |
+| E12 | `skills/<name>/SKILL.md`, global and project | `ClaudeConfigLoader.loadSkills` | `config/read/skills.rs` | MVP | AP | AP | AP | — | RUST | M1-24 |
+| E13 | `plans/*.md` | `ClaudeConfigLoader.loadPlans` | `config/read/plans.rs` | MVP | AP | AP | AP | — | RUST | M1-24 |
+| E14 | `output-styles/*.md` except README, global and project | `ClaudeConfigLoader.loadOutputStyles` | `config/read/output_styles.rs` | MVP | AP | AP | AP | — | RUST | M1-24 |
+| E15 | `agents/*.md` | `ClaudeConfigLoader.loadCustomAgents` | `config/read/agents.rs` | MVP | AP | AP | AP | — | RUST | M1-24 |
+| E16 | `settings.json`, global and project (permissions, enabledPlugins, model, hooks) | `ClaudeConfigLoader.loadSettings`, `loadHooks` | `config/read/settings.rs`, `hooks.rs` | MVP | AP | AP | AP | — | RUST | M1-25 |
+| E17 | `~/.claude.json` (`mcpServers`, `projects.<path>.mcpServers`) | `ClaudeConfigLoader.loadClaudeConfig` | `config/read/mcp.rs` | MVP | AP | AP | AP | Secrets held as `Secret` | RUST | M1-26 |
+| E18 | `<project>/.mcp.json` | `ClaudeConfigLoader.swift:155-170` | `config/read/mcp.rs` | MVP | AP | AP | AP | — | RUST | M1-26 |
+| E19 | `plugins/installed_plugins.json` | `ClaudeConfigLoader.loadPlugins`, `loadPluginMCPServers` | `config/read/plugins.rs` | MVP | AP | AP | AP | — | RUST | M1-26 |
+| E20 | `mcp-needs-auth-cache.json` (keys only) | `Services/Config/MCPServerStatusChecker.swift:7-11`, `ClaudeConfigLoader.swift:302-331` | `config/read/mcp.rs`, `mcp_status.rs` | MVP | AP | AP | AP | — | RUST | M1-26, M1-28 |
+| E21 | `<project>/.claude/settings.json` model | `ClaudeConfigLoader.loadProjectModel` | `config/read/settings.rs` | MVP | AP | AP | AP | — | RUST | M1-25 |
+| E22 | User-chosen memory folders | `ClaudeConfigLoader.loadMemoryFiles(customFolder:)` | `config/read/memory.rs` | MVP | AP | AP | AP | — | RUST | M1-27 |
 
 ## F. Writes
 
@@ -168,13 +168,13 @@ Every write to a Claude Code file goes through the safe-write primitive (ADR 000
 
 | ID | Feature | Swift reference | Heimdall target | Scope | Win | Linux | macOS | Outcome | WS | Tasks |
 |---|---|---|---|---|---|---|---|---|---|---|
-| G1 | Projects watcher | `App/ContentView.swift:112` | one recursive watcher, `src-tauri/src/watcher.rs` | MVP | NS | NS | NS | RP: recursive watch replaces 3+N single-folder watchers (ADR 0006) | RUST | M1-47 |
-| G2 | Facets watcher | `App/ContentView.swift:120` | same | MVP | NS | NS | NS | Same | RUST | M1-47 |
-| G3 | Debug-log watcher | `App/ContentView.swift:424` | same; no longer creates `~/.claude/debug` | MVP | NS | NS | NS | Same | RUST | M1-47 |
-| G4 | Memory watchers: projects, each memory folder, each custom folder | `Views/Memory/MemoryListView.swift:337-354` | same, re-registered on prefs change | MVP | NS | NS | NS | Same | RUST | M1-47 |
-| G5 | Transcript cache invalidation | `App/AppState.swift:303`, `clearCache()` :370 (test-only caller) | `src-tauri/src/state.rs`, validated by (mtime, size) | MVP | NS | NS | NS | Fixes a stale-cache gap | RUST | M1-38 |
-| G6 | Watch-limit fallback (inotify cap, ReadDirectoryChangesW overflow) | none | `watcher-status` event, per-folder fallback | MVP | NS | NS | NS | New behaviour | RUST | M1-47 |
-| G7 | Per-screen watchers: `settings.json` (hooks), `~/.claude.json` and the MCP auth cache, `agents/`, `history.jsonl`, `plans/`, `todos/` | `Views/Config/HooksListView.swift:262-272`, `Views/Config/MCPServersListView.swift:118-136`, `Views/Config/SubAgentsListView.swift:96-106`, `Views/History/HistoryListView.swift:139-149`, `Views/Plans/PlansListView.swift:115-124`, `Views/Todos/TodosOverviewView.swift:113-123` | same recursive watcher; no folder is created just to watch it | MVP | NS | NS | NS | RP: one recursive watcher (C-22) | RUST | M1-47 |
+| G1 | Projects watcher | `App/ContentView.swift:112` | one recursive watcher, `src-tauri/src/watcher.rs` | MVP | NS | IP | IP | RP: recursive watch replaces 3+N single-folder watchers (ADR 0006). M1-59: real CI (first ever run of `tests/watcher.rs`) found modify/rename/delete on a pre-existing watched file undetected on Linux/macOS; Windows cannot run at all (`STATUS_ENTRYPOINT_NOT_FOUND`). Follow-up task needed | RUST | M1-47 |
+| G2 | Facets watcher | `App/ContentView.swift:120` | same | MVP | NS | IP | IP | Same as G1 | RUST | M1-47 |
+| G3 | Debug-log watcher | `App/ContentView.swift:424` | same; no longer creates `~/.claude/debug` | MVP | NS | IP | IP | Same as G1 | RUST | M1-47 |
+| G4 | Memory watchers: projects, each memory folder, each custom folder | `Views/Memory/MemoryListView.swift:337-354` | same, re-registered on prefs change | MVP | NS | IP | IP | Same as G1; a folder newly registered via `set_custom_folders` after `init` also missed its first write in the same real run | RUST | M1-47 |
+| G5 | Transcript cache invalidation | `App/AppState.swift:303`, `clearCache()` :370 (test-only caller) | `src-tauri/src/state.rs`, validated by (mtime, size) | MVP | NS | AP | AP | Fixes a stale-cache gap. The `Cache` data structure's own unit tests (hit/miss/clear) pass on Linux/macOS, crash on Windows (M1-59); full end-to-end invalidation still depends on G1's own open defect | RUST | M1-38 |
+| G6 | Watch-limit fallback (inotify cap, ReadDirectoryChangesW overflow) | none | `watcher-status` event, per-folder fallback | MVP | NS | IP | IP | New behaviour. Same open defect as G1 | RUST | M1-47 |
+| G7 | Per-screen watchers: `settings.json` (hooks), `~/.claude.json` and the MCP auth cache, `agents/`, `history.jsonl`, `plans/`, `todos/` | `Views/Config/HooksListView.swift:262-272`, `Views/Config/MCPServersListView.swift:118-136`, `Views/Config/SubAgentsListView.swift:96-106`, `Views/History/HistoryListView.swift:139-149`, `Views/Plans/PlansListView.swift:115-124`, `Views/Todos/TodosOverviewView.swift:113-123` | same recursive watcher; no folder is created just to watch it | MVP | NS | IP | IP | RP: one recursive watcher (C-22). Same open defect as G1 — a safe-write to a top-level file (`settings.json`) was detected correctly in the same real run, so this row's own failure mode is unconfirmed either way beyond G1's | RUST | M1-47 |
 
 ## H. Network
 
