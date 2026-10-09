@@ -13,10 +13,14 @@
 //! has no `Code` variant for it -- confirmed by reading `muda-0.19.3`'s `accelerator.rs`
 //! `parse_code` match arms directly rather than guessing a syntax that would panic at startup.
 
+#[cfg(target_os = "macos")]
 use heimdall_core::app_shell::AppAction;
+#[cfg(target_os = "macos")]
 use tauri::menu::{Menu, MenuItemBuilder, SubmenuBuilder};
+#[cfg(target_os = "macos")]
 use tauri_specta::Event;
 
+#[cfg(target_os = "macos")]
 use crate::events::MenuAction;
 
 #[cfg(target_os = "macos")]
