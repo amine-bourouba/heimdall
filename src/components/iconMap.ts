@@ -14,6 +14,7 @@ import {
   Brain,
   Bug,
   ChartLine,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -109,6 +110,7 @@ export const iconMap: Record<string, LucideIcon> = {
   'brain.head.profile': Brain,
   'chart.xyaxis.line': ChartLine,
   checklist: ListChecks,
+  checkmark: Check,
   'checkmark.circle': CircleCheck,
   'checkmark.circle.fill': CircleCheck,
   'chevron.down': ChevronDown,
@@ -168,6 +170,11 @@ export const iconMap: Record<string, LucideIcon> = {
   'powerplug.fill': Plug,
   'brain.fill': Brain,
   'person.2.fill': Users,
+  // SessionsNavigationView.swift's own agent-sessions toggle (M2-15) -- no Lucide "waving hand"
+  // variant exists, so the on/off states share the one real people icon (docs/design/icon-map.md's
+  // established convention for a gap, same as every `.fill` SF Symbol reusing its non-fill icon).
+  'person.2': Users,
+  'person.2.wave.2': Users,
   'puzzlepiece.fill': Puzzle,
   'speaker.wave.3.fill': Volume2,
   'brain.head.profile.fill': Brain,

@@ -178,3 +178,14 @@ sequentially highlight, which is what SF Symbols' real variable-color effect doe
   `stop.fill`, `magnifyingglass.circle`, and every `SubAgent.icon` value beyond the four built-in
   defaults.
 - Every `.fill` SF Symbol variant reuses its non-fill Lucide mapping (Lucide has no filled set).
+
+## 6. Added after M2-04: `SessionsNavigationView.swift`'s own literals (task M2-15)
+
+Outside the five sources above (M2-04's own closed inventory) because this view belongs to a
+later milestone's own task, not M2-04's. Found while building M2-15's sessions list.
+
+| SF Symbol | Lucide icon | Note |
+|---|---|---|
+| `person.2` | `Users` | the agent-sessions toggle's "off" state |
+| `person.2.wave.2` | `Users` | the toggle's "on" state — another real gap, no "waving hand" variant exists in Lucide, so both states share the one icon (same fill-gap convention as `person.2.fill` above) |
+| `checkmark` (bare, not `.circle`/`.circle.fill`) | `Check` | the sort menu's active-option indicator |
