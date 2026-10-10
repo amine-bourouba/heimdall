@@ -63,6 +63,7 @@ async function mountBlock(tool: ToolUse, result: ToolResult | null, prefsOverrid
       usePrefsStore().prefs = { ...current, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== null)) };
       return usePrefsStore().prefs;
     }
+    if (cmd === 'diff_lines') return { lines: [], truncated: false, maxLineNumber: 0 };
     throw new Error(`unexpected command: ${cmd}`);
   });
   const wrapper = mount(ToolBlock, { props: { tool, result }, attachTo: document.body });
@@ -199,9 +200,9 @@ describe('ToolBlock: expand/collapse and status', () => {
     expect(wrapper.text()).toContain('No output');
   });
 
-  it('shows the diff placeholder instead of content when the tool carries edit data', async () => {
+  it('renders EditDiff instead of the result content when the tool carries edit data', async () => {
     const wrapper = await mountBlock(makeTool({ name: 'Edit', edit: { oldString: 'a', newString: 'b' } }), makeResult(), { autoExpandBlocks: true });
-    expect(wrapper.text()).toContain('Diff view not built yet');
+    expect(wrapper.find('button[title="Copy diff text"]').exists()).toBe(true);
     expect(wrapper.find('pre').exists()).toBe(false);
   });
 

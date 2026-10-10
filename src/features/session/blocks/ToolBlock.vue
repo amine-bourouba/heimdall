@@ -6,9 +6,7 @@
 // anything else, e.g. MCP tool names, WebFetch/WebSearch, TodoWrite).
 //
 // `tool.edit` (Heimdall's real contract) replaces `tool.hasDiffData`/`oldString`/`newString` --
-// when present, this renders a placeholder instead of a real diff: `EditDiffView` is a separate,
-// substantial component M2-19 ("Edit diff view") owns as its own dedicated task, not in this
-// task's own Inputs.
+// when present, this renders `EditDiff.vue` (M2-19), which fetches and renders the diff itself.
 //
 // `isExpanded` reads `autoExpandBlocks` once on mount, same as `ThinkingBlock`/`SystemContent` --
 // but, confirmed directly in the real source, `ToolBlockView` is also the *one* block that
@@ -19,6 +17,7 @@ import { onMounted, ref } from 'vue';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import AppIcon from '@/components/AppIcon.vue';
 import MarkdownView from '@/lib/markdown/MarkdownView.vue';
+import EditDiff from './EditDiff.vue';
 import type { ToolResult, ToolUse } from '@/ipc/bindings';
 import { usePrefsStore } from '@/stores/prefs';
 
@@ -155,11 +154,11 @@ async function copyAsMarkdown() {
     <template v-if="isExpanded">
       <div class="border-t border-(--border)/30" />
 
-      <div v-if="tool.edit">
-        <p class="p-(--spacing-lg) text-(length:--text-code) text-(--text-tertiary)">
-          Diff view not built yet (M2-19).
-        </p>
-      </div>
+      <EditDiff
+        v-if="tool.edit"
+        :old-string="tool.edit.oldString"
+        :new-string="tool.edit.newString"
+      />
       <div
         v-else-if="content()"
         class="bg-(--bg-code)"
