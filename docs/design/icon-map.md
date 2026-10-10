@@ -189,3 +189,10 @@ later milestone's own task, not M2-04's. Found while building M2-15's sessions l
 | `person.2` | `Users` | the agent-sessions toggle's "off" state |
 | `person.2.wave.2` | `Users` | the toggle's "on" state — another real gap, no "waving hand" variant exists in Lucide, so both states share the one icon (same fill-gap convention as `person.2.fill` above) |
 | `checkmark` (bare, not `.circle`/`.circle.fill`) | `Check` | the sort menu's active-option indicator |
+
+## 7. Added after M2-04: `ProjectSessionsView.swift`'s own literals (task M2-16)
+
+| SF Symbol | Lucide icon | Note |
+|---|---|---|
+| `list.bullet` | `List` | the layout-toggle button, shown when the grid is active |
+| `square.grid.2x2` | `Grid2x2` | the layout-toggle button, shown when the list is active |

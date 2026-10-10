@@ -45,6 +45,7 @@ import {
   FolderPlus,
   GitBranch,
   Globe,
+  Grid2x2,
   Hammer,
   Hand,
   Hash,
@@ -175,6 +176,9 @@ export const iconMap: Record<string, LucideIcon> = {
   // established convention for a gap, same as every `.fill` SF Symbol reusing its non-fill icon).
   'person.2': Users,
   'person.2.wave.2': Users,
+  // ProjectSessionsView.swift's own layout toggle (M2-16) -- exact real matches, no gap.
+  'list.bullet': List,
+  'square.grid.2x2': Grid2x2,
   'puzzlepiece.fill': Puzzle,
   'speaker.wave.3.fill': Volume2,
   'brain.head.profile.fill': Brain,
