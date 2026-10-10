@@ -50,3 +50,13 @@ export function formatTokenCount(count: number): string {
 export function totalTokens(usage: TokenUsage): number {
   return usage.input + usage.output + usage.cacheRead + usage.cacheCreation;
 }
+
+/** 1500000 -> "1.5M", 12000 -> "12.0K", 500 -> "500" -- ported verbatim from
+ * `AnalyticsFormatters.formatLargeNumber`. A real, separate algorithm from `formatTokenCount`
+ * above (always one decimal place, uppercase suffix, an M tier) -- Swift itself uses the two for
+ * different UI contexts (session-list badges vs. the context card/analytics), not duplicates. */
+export function formatLargeNumber(count: number): string {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
+  return String(count);
+}

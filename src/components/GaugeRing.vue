@@ -4,7 +4,12 @@
 // same fraction/percent/severity math UsageWindowTests.swift exercises.
 import { computed } from 'vue';
 
-const props = defineProps<{ utilization: number }>();
+// `size` is new in M2-21: this component's first real caller (ConversationContextCard.vue) needs
+// 50px, not the 36px every prior analytics call site used (Swift's own `UsageGaugeRing` has no
+// fixed size either -- each caller sets its own `.frame`). Optional, defaulting to 36, so nothing
+// about the existing markup/assertions changes for a caller that doesn't pass it.
+const props = defineProps<{ utilization: number; size?: number }>();
+const size = computed(() => props.size ?? 36);
 
 const WARNING_THRESHOLD = 80;
 const CRITICAL_THRESHOLD = 95;
@@ -31,8 +36,8 @@ const dashOffset = computed(() => CIRCUMFERENCE * (1 - fraction.value));
 <template>
   <svg
     viewBox="0 0 36 36"
-    width="36"
-    height="36"
+    :width="size"
+    :height="size"
     role="img"
     :aria-label="`${percent}% used`"
   >
