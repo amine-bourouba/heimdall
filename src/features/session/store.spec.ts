@@ -35,7 +35,7 @@ function makeSessionSummary(overrides: Partial<SessionSummary> = {}): SessionSum
     startedAt: '2026-01-01T00:00:00Z',
     endedAt: null,
     model: null,
-    tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } as unknown as SessionSummary['tokens'],
+    tokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
     turnCount: 0,
     isSidechain: false,
     parentSessionId: null,
@@ -49,7 +49,7 @@ function makeSessionSummary(overrides: Partial<SessionSummary> = {}): SessionSum
 }
 
 function makeMessage(id: string): Message {
-  return { id, role: 'user', timestamp: null, model: null, content: [] } as unknown as Message;
+  return { id, role: 'user', timestamp: null, model: null, usage: null, blocks: [] };
 }
 
 function makeLoadedSession(id: string, messages: Message[] = []): LoadedSession {
