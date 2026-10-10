@@ -35,6 +35,7 @@ import {
   Cpu,
   Database,
   Drama,
+  File,
   FileDown,
   FileSearch,
   FileText,
@@ -93,6 +94,7 @@ import {
   UserRound,
   UserRoundCog,
   Volume2,
+  Wrench,
   X,
   Zap,
   type LucideIcon,
@@ -184,6 +186,14 @@ export const iconMap: Record<string, LucideIcon> = {
   // ThinkingBlockView.swift's own wrap-toggle button (M2-17) -- exact real matches, no gap.
   'text.word.spacing': TextWrap,
   'arrow.right.to.line': ArrowRightToLine,
+  // ToolBlockView.swift's own tool icons/toggle buttons (M2-18) -- `doc.text.fill`/`doc.plaintext`
+  // reuse an existing mapping (the fill-gap convention; `doc.plaintext` gets `File` instead of
+  // `doc.richtext`'s own `FileText` so the raw/rendered toggle button visibly differs). The rest
+  // are exact real matches.
+  'doc.text.fill': FileText,
+  'doc.plaintext': File,
+  'text.magnifyingglass': FileSearch,
+  wrench: Wrench,
   'puzzlepiece.fill': Puzzle,
   'speaker.wave.3.fill': Volume2,
   'brain.head.profile.fill': Brain,

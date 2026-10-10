@@ -203,3 +203,12 @@ later milestone's own task, not M2-04's. Found while building M2-15's sessions l
 |---|---|---|
 | `text.word.spacing` | `TextWrap` | the wrap-toggle button's "wrapping on" state |
 | `arrow.right.to.line` | `ArrowRightToLine` | the wrap-toggle button's "wrapping off" (horizontal-scroll) state |
+
+## 9. Added after M2-04: `ToolBlockView.swift`'s own literals (task M2-18)
+
+| SF Symbol | Lucide icon | Note |
+|---|---|---|
+| `doc.text.fill` | `FileText` | the `Write` tool's own icon — fill-gap reuse of `doc.text`'s mapping |
+| `doc.plaintext` | `File` | the markdown-toggle button's "raw" state — deliberately not `doc.richtext`'s own `FileText`, so the two toggle states look different |
+| `text.magnifyingglass` | `FileSearch` | the `Grep` tool's own icon |
+| `wrench` | `Wrench` | the fallback icon for any tool name with no entry in the real tool-definitions table |
