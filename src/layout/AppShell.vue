@@ -10,12 +10,19 @@
 //    `useShortcuts.ts` already registers real handlers for `fontIncrease`/`fontDecrease`/
 //    `fontReset`/`back`/`forward` in that same registry, so wiring the listener is the only
 //    piece those five actions were missing to work end-to-end from the native macOS menu too.
+//  - `useShortcuts()` itself (flagged by M2-06/M2-09's own comment just above) was never actually
+//    called anywhere outside its own spec -- its document-level keydown listener was dead code,
+//    so Mod+T (M2-20's own "toggles the tool filter") could never have fired regardless of
+//    whether `SessionDetail.vue` registered a handler for it. Calling it here is this task's own
+//    fix, not new scope: it is the one call site that makes every binding in `useShortcuts.ts`
+//    (search, back/forward, tool filter, font scale, help, settings) live at all.
 import { onMounted, onUnmounted } from 'vue';
 import { onMenuAction } from '@/ipc/client';
 import { usePlatformStore } from '@/stores/platform';
 import { usePrefsStore } from '@/stores/prefs';
 import { useThemeStore } from '@/stores/theme';
 import { useAppActions } from '@/composables/useAppActions';
+import { useShortcuts } from '@/composables/useShortcuts';
 import ToastOverlay from '@/components/ToastOverlay.vue';
 import Sidebar from './Sidebar.vue';
 import Toolbar from './Toolbar.vue';
@@ -27,6 +34,7 @@ import ShortcutHelp from '@/features/help/ShortcutHelp.vue';
 const platformStore = usePlatformStore();
 const prefsStore = usePrefsStore();
 const themeStore = useThemeStore();
+useShortcuts();
 
 let unlistenMenuAction: (() => void) | undefined;
 
