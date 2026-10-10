@@ -3,12 +3,18 @@
 #![allow(unused_variables)]
 
 use heimdall_core::os_integration::launch::{EditorTarget, RevealTarget};
+use heimdall_core::os_integration::links;
 use heimdall_core::{AppError, Result};
 
 #[tauri::command]
 #[specta::specta]
 pub async fn open_external_url(url: String) -> Result<()> {
-    Err(AppError::not_implemented("open_external_url"))
+    // The allowlist check and the opener call both happen inside `links::open_external_url`
+    // (heimdall-core, tauri-free and directly unit-tested there, ADR 0010 control 2) -- this is
+    // only the real opener plugin wired in as the injected closure.
+    links::open_external_url(&url, |u| {
+        tauri_plugin_opener::open_url(u, None::<&str>).map_err(std::io::Error::other)
+    })
 }
 
 #[tauri::command]

@@ -8,6 +8,18 @@ use url::Url;
 /// enough to keep a crafted URL from hiding its real destination in an unreviewable wall of text.
 pub const MAX_URL_LENGTH: usize = 2048;
 
+/// Validates `raw` against the allowlist, then hands it to `opener` -- a rejected URL never
+/// reaches `opener` at all (ADR 0010 control 2). `opener` is injected (not a direct call to the
+/// Tauri opener plugin here) so this stays testable without a running app, and so heimdall-core
+/// keeps its own rule of never depending on `tauri` directly (ADR 0002) -- the real command in
+/// `src-tauri/src/commands/launch.rs` wires the real plugin call in as the closure.
+pub fn open_external_url(raw: &str, opener: impl FnOnce(&str) -> std::io::Result<()>) -> crate::Result<()> {
+    if !is_allowed_external_url(raw) {
+        return Err(crate::AppError::invalid_input("blocked by the external URL policy"));
+    }
+    opener(raw).map_err(|e| crate::AppError::io(e.to_string()))
+}
+
 /// True when `raw` may be handed to the OS's URL opener.
 ///
 /// A backslash is rejected outright, before any parsing: the WHATWG URL spec treats `\` as `/` in
@@ -33,6 +45,40 @@ pub fn is_allowed_external_url(raw: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
+
+    #[test]
+    fn open_external_url_rejects_a_disallowed_scheme_without_ever_calling_the_opener() {
+        let called = Cell::new(false);
+        let result = open_external_url("javascript:alert(1)", |_| {
+            called.set(true);
+            Ok(())
+        });
+        assert!(!called.get(), "the opener must never be reached for a rejected URL");
+        assert_eq!(
+            result,
+            Err(crate::AppError::invalid_input("blocked by the external URL policy"))
+        );
+    }
+
+    #[test]
+    fn open_external_url_calls_the_opener_with_the_exact_url_for_an_allowed_one() {
+        let seen = Cell::new(String::new());
+        let result = open_external_url("https://example.com", |url| {
+            seen.set(url.to_string());
+            Ok(())
+        });
+        assert!(result.is_ok());
+        assert_eq!(seen.into_inner(), "https://example.com");
+    }
+
+    #[test]
+    fn open_external_url_surfaces_a_real_opener_failure_as_an_io_error() {
+        let result = open_external_url("https://example.com", |_| {
+            Err(std::io::Error::other("no browser registered"))
+        });
+        assert_eq!(result, Err(crate::AppError::io("no browser registered")));
+    }
 
     #[test]
     fn accepts_ordinary_links() {
