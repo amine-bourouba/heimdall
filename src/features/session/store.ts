@@ -60,6 +60,12 @@ export const useSessionStore = defineStore('session', () => {
   const isSessionSearchActive = ref(false);
   const isToolFilterActive = ref(false);
   const activeToolFilters = ref<Set<string>>(new Set());
+  // AppState.swift:301,198,219 -- deliberately left unported by M2-14 ("session-detail-only UI
+  // state... for a later task to add"); M2-22 (session toolbar) is the first to need all three.
+  const allBlocksExpanded = ref(false);
+  const isShowingFileHistory = ref(false);
+  const showDebugLogSessionId = ref<string | null>(null);
+  const isShowingExportOptions = ref(false);
 
   const currentProject = computed(() => projects.value.find((p) => p.id === selectedProjectId.value) ?? null);
 
@@ -151,12 +157,15 @@ export const useSessionStore = defineStore('session', () => {
   function deselectSession() {
     selectedSession.value = null;
     isLoadingSession.value = false;
+    isShowingFileHistory.value = false;
   }
 
   // Ported from the race this session's own AppStateSessionLoadingTests guard against: a stale
   // load resolving after a *newer* selection must not stomp on it or reset its loading flag.
   // Poirot's own guard reads `selectedSession?.id == sessionId` in a `defer`; same check here.
   async function selectSession(projectId: string, sessionId: string) {
+    // AppState.swift:94 -- selecting a (possibly different) session always resets this.
+    isShowingFileHistory.value = false;
     selectedProjectId.value = projectId;
     const cached = cachedSession(sessionId);
     if (cached) {
@@ -235,6 +244,10 @@ export const useSessionStore = defineStore('session', () => {
     isSessionSearchActive,
     isToolFilterActive,
     activeToolFilters,
+    allBlocksExpanded,
+    isShowingFileHistory,
+    showDebugLogSessionId,
+    isShowingExportOptions,
     currentProject,
     filteredSortedProjects,
     load,

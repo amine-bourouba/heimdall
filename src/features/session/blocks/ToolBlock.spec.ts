@@ -10,6 +10,7 @@ import { mockIPC } from '@tauri-apps/api/mocks';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Prefs, ToolResult, ToolUse } from '@/ipc/bindings';
 import { usePrefsStore } from '@/stores/prefs';
+import { useSessionStore } from '../store';
 import ToolBlock from './ToolBlock.vue';
 
 vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({ writeText: vi.fn().mockResolvedValue(undefined) }));
@@ -212,5 +213,18 @@ describe('ToolBlock: expand/collapse and status', () => {
 
     const readError = await mountBlock(makeTool({ name: 'Read' }), makeResult({ isError: true }));
     expect(readError.text()).toContain('Error');
+  });
+
+  it('live-follows sessionStore.allBlocksExpanded (the one block that really does, per ToolBlockView.swift)', async () => {
+    const wrapper = await mountBlock(makeTool(), makeResult(), { autoExpandBlocks: false });
+    expect(wrapper.find('pre').exists()).toBe(false);
+
+    useSessionStore().allBlocksExpanded = true;
+    await flushPromises();
+    expect(wrapper.find('pre').exists()).toBe(true);
+
+    useSessionStore().allBlocksExpanded = false;
+    await flushPromises();
+    expect(wrapper.find('pre').exists()).toBe(false);
   });
 });

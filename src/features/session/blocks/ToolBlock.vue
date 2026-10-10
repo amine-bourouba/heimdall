@@ -10,16 +10,18 @@
 //
 // `isExpanded` reads `autoExpandBlocks` once on mount, same as `ThinkingBlock`/`SystemContent` --
 // but, confirmed directly in the real source, `ToolBlockView` is also the *one* block that
-// really does observe `appState.allBlocksExpanded`'s live toggle (`.onChange`); that preference
-// has no Heimdall store yet (M2-14 deliberately left session-detail-only UI state like it
-// unported), so that live-reactivity half is not wired in here -- flagged in Follow-ups.
-import { onMounted, ref } from 'vue';
+// really does observe `appState.allBlocksExpanded`'s live toggle (`.onChange`). M2-14 deliberately
+// left that preference unported ("session-detail-only UI state... for a later task to add");
+// M2-22 (session toolbar, the first real "Expand All" button) finally adds it to the session
+// store, so this live-reactivity half is wired in now too.
+import { onMounted, ref, watch } from 'vue';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import AppIcon from '@/components/AppIcon.vue';
 import MarkdownView from '@/lib/markdown/MarkdownView.vue';
 import EditDiff from './EditDiff.vue';
 import type { ToolResult, ToolUse } from '@/ipc/bindings';
 import { usePrefsStore } from '@/stores/prefs';
+import { useSessionStore } from '../store';
 
 const props = defineProps<{ tool: ToolUse; result?: ToolResult | null }>();
 
@@ -36,6 +38,7 @@ const TOOL_DEFINITIONS: Record<string, { displayName: string; icon: string }> = 
 };
 
 const prefsStore = usePrefsStore();
+const sessionStore = useSessionStore();
 const isExpanded = ref(false);
 const showAllLines = ref(false);
 // Poirot's own default really is raw/plain text, even for non-bash tools -- `isMarkdownContent`
@@ -48,6 +51,13 @@ const markdownCopied = ref(false);
 onMounted(() => {
   isExpanded.value = prefsStore.prefs?.autoExpandBlocks ?? false;
 });
+
+watch(
+  () => sessionStore.allBlocksExpanded,
+  (expanded) => {
+    isExpanded.value = expanded;
+  },
+);
 
 const isBash = () => props.tool.name === 'Bash';
 const isError = () => props.result?.isError ?? false;

@@ -212,3 +212,10 @@ later milestone's own task, not M2-04's. Found while building M2-15's sessions l
 | `doc.plaintext` | `File` | the markdown-toggle button's "raw" state — deliberately not `doc.richtext`'s own `FileText`, so the two toggle states look different |
 | `text.magnifyingglass` | `FileSearch` | the `Grep` tool's own icon |
 | `wrench` | `Wrench` | the fallback icon for any tool name with no entry in the real tool-definitions table |
+
+## 10. Added after M2-04: `SessionToolbarContent.swift`'s own literals (task M2-22)
+
+| SF Symbol | Lucide icon | Note |
+|---|---|---|
+| `arrow.uturn.forward` | `CornerUpRight` | the Resume button's own icon |
+| `arrow.up.left.and.arrow.down.right` | `Maximize2` | "Expand All" — the mirror of `arrow.down.right.and.arrow.up.left`'s own `Minimize2` ("Collapse All", table 3) |

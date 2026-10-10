@@ -36,6 +36,9 @@ import TextBlock from './blocks/TextBlock.vue';
 import ThinkingBlock from './blocks/ThinkingBlock.vue';
 import ToolBlock from './blocks/ToolBlock.vue';
 import ConversationContextCard from './ConversationContextCard.vue';
+import SessionToolbar from './SessionToolbar.vue';
+import DebugLogSheet from './DebugLogSheet.vue';
+import ExportOptionsDialog from './ExportOptionsDialog.vue';
 import { useSessionStore, type LoadedSession } from './store';
 import { formatModel, formatRelativeTime, formatTokenCount, totalTokens } from './format';
 import { useAppActions } from '@/composables/useAppActions';
@@ -196,12 +199,19 @@ onUnmounted(() => {
       <p class="mt-(--spacing-xs) text-(length:--text-small) text-(--text-tertiary)">
         {{ formatRelativeTime(session.detail.summary.startedAt) }} · {{ session.detail.summary.turnCount }} turn(s)
       </p>
+      <SessionToolbar
+        :summary="session.detail.summary"
+        class="mt-(--spacing-md)"
+      />
       <ConversationContextCard
         v-if="session.detail.context && session.detail.context.series.length > 0"
         :context="session.detail.context"
         class="mt-(--spacing-md)"
       />
     </div>
+
+    <DebugLogSheet v-if="sessionStore.showDebugLogSessionId" />
+    <ExportOptionsDialog v-if="sessionStore.isShowingExportOptions" />
 
     <div
       v-if="sessionStore.isToolFilterActive"

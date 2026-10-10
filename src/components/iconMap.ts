@@ -32,6 +32,7 @@ import {
   CircleX,
   ClipboardList,
   CloudUpload,
+  CornerUpRight,
   Cpu,
   Database,
   Drama,
@@ -61,6 +62,7 @@ import {
   ListFilter,
   Lock,
   Map,
+  Maximize2,
   MessageSquare,
   Minimize2,
   Minus,
@@ -235,4 +237,8 @@ export const iconMap: Record<string, LucideIcon> = {
   hammer: Hammer,
   'tray.full': Inbox,
   'magnifyingglass.circle': Search,
+
+  // SessionToolbarContent.swift's own literals (task M2-22) -- exact real matches, no gap.
+  'arrow.uturn.forward': CornerUpRight,
+  'arrow.up.left.and.arrow.down.right': Maximize2,
 };
