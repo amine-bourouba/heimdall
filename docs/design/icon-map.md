@@ -196,3 +196,10 @@ later milestone's own task, not M2-04's. Found while building M2-15's sessions l
 |---|---|---|
 | `list.bullet` | `List` | the layout-toggle button, shown when the grid is active |
 | `square.grid.2x2` | `Grid2x2` | the layout-toggle button, shown when the list is active |
+
+## 8. Added after M2-04: `ThinkingBlockView.swift`'s own literals (task M2-17)
+
+| SF Symbol | Lucide icon | Note |
+|---|---|---|
+| `text.word.spacing` | `TextWrap` | the wrap-toggle button's "wrapping on" state |
+| `arrow.right.to.line` | `ArrowRightToLine` | the wrap-toggle button's "wrapping off" (horizontal-scroll) state |

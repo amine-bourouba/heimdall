@@ -7,6 +7,7 @@
 import {
   ArrowDown,
   ArrowDownUp,
+  ArrowRightToLine,
   ArrowUpRight,
   BadgeCheck,
   Bell,
@@ -83,6 +84,7 @@ import {
   Table,
   Target,
   Terminal,
+  TextWrap,
   TriangleAlert,
   Trash,
   Users,
@@ -179,6 +181,9 @@ export const iconMap: Record<string, LucideIcon> = {
   // ProjectSessionsView.swift's own layout toggle (M2-16) -- exact real matches, no gap.
   'list.bullet': List,
   'square.grid.2x2': Grid2x2,
+  // ThinkingBlockView.swift's own wrap-toggle button (M2-17) -- exact real matches, no gap.
+  'text.word.spacing': TextWrap,
+  'arrow.right.to.line': ArrowRightToLine,
   'puzzlepiece.fill': Puzzle,
   'speaker.wave.3.fill': Volume2,
   'brain.head.profile.fill': Brain,
