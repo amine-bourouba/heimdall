@@ -7,7 +7,7 @@
 // apart silently if every rule only ever saw synthetic fixtures.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EXPECTED_CSP, EXPECTED_DEV_CSP, TRAY_PERMISSION_ALLOWLIST, lintTauriConf, lintCapability, lintCargoToml, lintRepo } from './lint-security-config.mjs';
+import { EXPECTED_CSP, EXPECTED_DEV_CSP, TRAY_PERMISSION_ALLOWLIST, AUTOSTART_PERMISSION_ALLOWLIST, lintTauriConf, lintCapability, lintCargoToml, lintRepo } from './lint-security-config.mjs';
 
 function cleanConf() {
   return {
@@ -100,6 +100,16 @@ test('lintCapability: fails on opener:allow-open-path', () => {
   const violations = lintCapability({ windows: ['main'], permissions: ['opener:allow-open-path'] });
   assert.equal(violations.length, 1);
   assert.match(violations[0], /opener:allow-open-path/);
+});
+
+test('lintCapability: the real autostart permissions (M3-59) are allowed, on any window', () => {
+  assert.deepEqual(lintCapability({ windows: ['main'], permissions: AUTOSTART_PERMISSION_ALLOWLIST }), []);
+});
+
+test('lintCapability: fails on an autostart permission outside its allowlist', () => {
+  const violations = lintCapability({ windows: ['main'], permissions: ['autostart:allow-is-registered'] });
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /autostart:allow-is-registered/);
 });
 
 test('lintCapability: fails on a scoped-object permission form too, not just plain strings', () => {

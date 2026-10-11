@@ -24,6 +24,12 @@ export const EXPECTED_DEV_CSP =
 // ADR 0010 point 4: "Tray: only get_tray_snapshot, open_in_main_window, get_prefs."
 export const TRAY_PERMISSION_ALLOWLIST = ['allow-get-tray-snapshot', 'allow-open-in-main-window', 'allow-get-prefs'];
 
+// M3-59's own AC: "Only autostart:allow-enable, autostart:allow-disable and
+// autostart:allow-is-enabled are added" -- unlike the tray allowlist above, this applies to every
+// capability file, not one specific window, since there is no legitimate reason any window would
+// ever need a broader autostart grant (e.g. a hypothetical future `autostart:default`).
+export const AUTOSTART_PERMISSION_ALLOWLIST = ['autostart:allow-enable', 'autostart:allow-disable', 'autostart:allow-is-enabled'];
+
 /** @param {unknown} conf parsed `tauri.conf.json` @returns {string[]} violations, empty if clean */
 export function lintTauriConf(conf) {
   const violations = [];
@@ -59,6 +65,9 @@ export function lintCapability(capability) {
     if (identifier.startsWith('fs:')) violations.push(`permission "${identifier}" grants the fs plugin`);
     if (identifier.startsWith('shell:')) violations.push(`permission "${identifier}" grants the shell plugin`);
     if (identifier.startsWith('opener:allow-open-path')) violations.push(`permission "${identifier}" grants opener:allow-open-path`);
+    if (identifier.startsWith('autostart:') && !AUTOSTART_PERMISSION_ALLOWLIST.includes(identifier)) {
+      violations.push(`permission "${identifier}" grants an autostart permission outside its allowlist (${AUTOSTART_PERMISSION_ALLOWLIST.join(', ')})`);
+    }
   }
 
   if (capability?.remote !== undefined) violations.push('capability declares a "remote" key, allowing remote URLs to use its permissions');
