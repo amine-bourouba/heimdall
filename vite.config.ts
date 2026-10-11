@@ -23,5 +23,9 @@ export default defineConfig({
     // WebView2 is Chromium-based; WKWebView and WebKitGTK are Safari-class engines.
     target: process.env.TAURI_ENV_PLATFORM === 'windows' ? 'chrome110' : 'safari16',
     sourcemap: Boolean(process.env.TAURI_ENV_DEBUG),
+    // `scripts/check-bundle-size.mjs` (M2-28) reads `dist/.vite/manifest.json` to tell the
+    // initial-route bundle apart from each lazy route's own chunk -- the officially documented
+    // way to do that, rather than guessing from chunk filenames.
+    manifest: true,
   },
 });

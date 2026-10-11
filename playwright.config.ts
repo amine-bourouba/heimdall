@@ -25,6 +25,10 @@ export default defineConfig({
     // names WebKit specifically (M2-26) -- WebKitGTK is the weakest/most permissive engine among
     // the three Heimdall ships on, the same reasoning P-13 already applies to visual baselines.
     { name: 'security', testDir: './e2e/security', use: { ...devices['Desktop Safari'] } },
+    // Frame-timing precision matters more than engine coverage here (M2-28) -- Chromium's own
+    // `requestAnimationFrame`/`performance.now()` timing is the most consistent of the three, and
+    // this is also the one engine that stands in for this dev machine's own OS (Windows/WebView2).
+    { name: 'perf', testDir: './e2e/perf', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
     // The build itself can take longer than Playwright's default web-server timeout on a loaded

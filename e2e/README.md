@@ -111,17 +111,40 @@ never parse in the first place.
 
 Run: `npx playwright test --project=security`.
 
+## Performance budgets (`e2e/perf/`, M2-28, the `perf` Playwright project)
+
+port-plan.md §9's two frontend-owned budgets: "Transcript scrolling at 10,000+ blocks" (median
+frame ≤ 16.7 ms, p95 ≤ 33 ms) and the JavaScript bundle size ceilings (initial route ≤ 250 KB
+gzip, each lazy route ≤ 150 KB gzip, ECharts confined to the analytics chunk). Chromium only —
+frame-timing precision matters more here than engine coverage.
+
+`scripts/gen-large-transcript.mjs` generates a 10,000+-block session (not a committed fixture —
+too large and synthetic to hand-build; regenerated fresh each run) that
+`e2e/perf/transcript-scroll.spec.ts` loads through the usual mocked-IPC harness, then drives a
+continuous `scrollTop` increment for 4 seconds while sampling `requestAnimationFrame` deltas.
+`scripts/check-bundle-size.mjs` reads `dist/.vite/manifest.json` (`vite.config.ts`'s
+`build.manifest: true`) to tell the initial-route chunk and each lazy route's own chunk apart from
+Shiki's own ~150 unrelated per-language dynamic-import chunks (several individually over 150 KB
+gzip on their own, and not a route at all).
+
+Run: `npx playwright test --project=perf` (scroll budget); `npm run build && node
+scripts/check-bundle-size.mjs` (bundle budget). Real measured numbers belong in
+`docs/perf-baseline.md`, copied there by hand after a run — neither script writes to it itself.
+
 ## Files
 
 | File | Owns |
 |---|---|
-| `playwright.config.ts` | Four projects, each with its own `testDir`: `chromium`/`webkit` → `e2e/mocked/`, `visual` → `e2e/visual/`, `security` → `e2e/security/`. `e2e/smoke/`'s WebdriverIO/mocha-style suite is never picked up by any of them. |
-| `e2e/support/mockIpc.ts` | The `window.__TAURI_INTERNALS__` shape `@tauri-apps/api/core`'s `invoke()` reads, replicated (not imported — `page.addInitScript` serializes a plain function, with no bundler) from `@tauri-apps/api/mocks`'s own real, dependency-free source. Also answers `get_session`/`get_session_messages`/`diff_lines` (a plain LCS line diff, visually reasonable, not Rust's real algorithm) for `e2e/visual/`'s and `e2e/security/`'s own full-session scenarios. |
-| `e2e/support/fixtures.ts` | Loads `fixtures/dto/*.json`, shapes it into the IPC responses `mockIpc.ts` answers with, and exports the Playwright fixtures `e2e/mocked/` (`mockedPage`), `e2e/visual/` (`buildVisualFixtures`) and `e2e/security/` (`buildMaliciousFixtures`) each use. |
+| `playwright.config.ts` | Five projects, each with its own `testDir`: `chromium`/`webkit` → `e2e/mocked/`, `visual` → `e2e/visual/`, `security` → `e2e/security/`, `perf` → `e2e/perf/`. `e2e/smoke/`'s WebdriverIO/mocha-style suite is never picked up by any of them. |
+| `e2e/support/mockIpc.ts` | The `window.__TAURI_INTERNALS__` shape `@tauri-apps/api/core`'s `invoke()` reads, replicated (not imported — `page.addInitScript` serializes a plain function, with no bundler) from `@tauri-apps/api/mocks`'s own real, dependency-free source. Also answers `get_session`/`get_session_messages`/`diff_lines` (a plain LCS line diff, visually reasonable, not Rust's real algorithm) for `e2e/visual/`'s, `e2e/security/`'s and `e2e/perf/`'s own full-session scenarios. |
+| `e2e/support/fixtures.ts` | Loads `fixtures/dto/*.json`, shapes it into the IPC responses `mockIpc.ts` answers with, and exports the Playwright fixtures `e2e/mocked/` (`mockedPage`), `e2e/visual/` (`buildVisualFixtures`), `e2e/security/` (`buildMaliciousFixtures`) and `e2e/perf/` (`buildPerfFixtures`) each use. |
 | `e2e/support/maliciousPayloads.ts` | Round-robin-splits `fixtures/security/xss-payloads.json` across the six locations ADR 0010's acceptance test names — the one function both `fixtures.ts`'s mocked session and the hand-built `fixtures/security/malicious-claude-home/` tree agree on. |
 | `e2e/visual/visualData.ts` | Tool/result/diff/thinking fixtures ported verbatim from `ScreenshotData.swift`. |
 | `e2e/visual/session.spec.ts` | The visual baseline spec itself (AC1/AC2). |
 | `e2e/security/malicious-transcript.spec.ts` | The mocked-WebKit half of the malicious-transcript acceptance test (M2-26). |
+| `scripts/gen-large-transcript.mjs` | Generates a 10,000+-block synthetic session (M2-28), consumed by `fixtures.ts`'s `buildPerfFixtures`. |
+| `e2e/perf/transcript-scroll.spec.ts` | The scroll frame-timing spec itself (M2-28). |
+| `scripts/check-bundle-size.mjs` | The bundle-size budget check (M2-28), run after `npm run build`. |
 | `e2e/support/tauriCdp.ts` | The Windows real-app smoke: the CDP-connection helper, the sidebar-render check, and (M2-26) `assertNoMaliciousTranscriptEscape`, all run directly via `main()`. |
 | `e2e/smoke/wdio.conf.mjs` | The Linux real-app smoke's WebdriverIO config (tauri-driver capabilities, binary path, `HEIMDALL_CLAUDE_HOME`); `CLAUDE_HOME` can be overridden via `HEIMDALL_E2E_CLAUDE_HOME` (M2-26). |
 | `e2e/smoke/app.smoke.mjs` | The Linux real-app smoke's own spec (mocha-style, run by `wdio`); its second `describe` block (M2-26) only runs when `HEIMDALL_E2E_CLAUDE_HOME` points at the malicious fixture. |

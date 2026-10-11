@@ -8,6 +8,7 @@ import { test as base, expect } from '@playwright/test';
 import { installMockIpc } from './mockIpc';
 import { allToolsBlocks, DIFFS, THINKING } from '../visual/visualData';
 import { joinedMaliciousContent } from './maliciousPayloads';
+import { generateLargeTranscriptMessages } from '../../scripts/gen-large-transcript.mjs';
 
 export const VISUAL_PROJECT_ID = 'visual-project';
 /** Stable session ids `e2e/visual/session.spec.ts` navigates to, one per scenario group -- kept
@@ -147,6 +148,25 @@ export function buildMaliciousFixtures(): MockFixtures {
   const summaries = Object.values(fixtures.sessionDetails).map((s) => (s.detail as { summary: SessionSummaryLike }).summary);
   fixtures.projects = [...fixtures.projects, { id: MALICIOUS_PROJECT_ID, name: 'malicious-fixtures', path: '/malicious-fixtures', pathSource: 'transcriptCwd', sessionCount: summaries.length, lastActivity: '2026-09-20T10:00:05Z', hasMemory: false }];
   fixtures.sessionsByProject[MALICIOUS_PROJECT_ID] = summaries;
+  return fixtures;
+}
+
+export const PERF_PROJECT_ID = 'perf-project';
+export const PERF_SESSION_ID = 'perf-session';
+
+/** `buildFixtures()` plus one session of 10,000+ blocks (`scripts/gen-large-transcript.mjs`,
+ * M2-28), for `e2e/perf/transcript-scroll.spec.ts`. `detail.messageCount` is set to the *full*
+ * generated message count up front, so the virtualizer's own real pagination
+ * (`sessionStore.loadMoreMessages`, 20 messages/page) runs exactly as it does for a real session
+ * of this size -- scrolling through the lazy-loading itself is part of what the scroll-smoothness
+ * budget is measuring, not something to fixture around. */
+export function buildPerfFixtures(minBlockCount = 10_000): MockFixtures {
+  const fixtures = buildFixtures();
+  const messages = generateLargeTranscriptMessages(minBlockCount);
+  const summary = sessionSummary(PERF_SESSION_ID, { projectId: PERF_PROJECT_ID, title: 'Performance fixture: 10k+ blocks', turnCount: messages.length });
+  fixtures.sessionDetails = { [PERF_SESSION_ID]: sessionDetail(summary, messages) };
+  fixtures.projects = [...fixtures.projects, { id: PERF_PROJECT_ID, name: 'perf-fixtures', path: '/perf-fixtures', pathSource: 'transcriptCwd', sessionCount: 1, lastActivity: '2026-01-01T00:00:00Z', hasMemory: false }];
+  fixtures.sessionsByProject[PERF_PROJECT_ID] = [summary];
   return fixtures;
 }
 

@@ -241,6 +241,7 @@ onUnmounted(() => {
 
     <div
       ref="scrollContainer"
+      data-testid="session-scroll-container"
       class="flex-1 overflow-y-auto px-(--spacing-xxxl) py-(--spacing-lg)"
       @scroll="onScroll"
     >
