@@ -27,5 +27,14 @@ export default defineConfig({
     // initial-route bundle apart from each lazy route's own chunk -- the officially documented
     // way to do that, rather than guessing from chunk filenames.
     manifest: true,
+    // Multi-page build (M3-57): `tray.html` gets its own entry and chunk, kept separate from
+    // `index.html`'s main-window bundle -- Vite's own documented pattern for more than one HTML
+    // entry point (https://vite.dev/guide/build.html#multi-page-app).
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        tray: fileURLToPath(new URL('./tray.html', import.meta.url)),
+      },
+    },
   },
 });

@@ -26,21 +26,63 @@ function gzipSize(filePath) {
   return gzipSync(readFileSync(filePath)).length;
 }
 
+/** Every chunk reachable from `key` by eager (non-dynamic) `imports`, `key` itself included --
+ * used to find everything the initial-route entry already loads, so a lazy route's own weight
+ * can exclude it (see `chunkWeightBytes`). */
+function collectEagerClosure(manifest, key, seen = new Set()) {
+  if (seen.has(key)) return seen;
+  seen.add(key);
+  for (const importedKey of manifest[key]?.imports ?? []) collectEagerClosure(manifest, importedKey, seen);
+  return seen;
+}
+
+/** A chunk's real *additional* weight is its own file plus every chunk it eagerly `imports`
+ * (recursively) that isn't already in `alreadyLoaded`. Two reasons this matters, both found
+ * empirically while actually running this against M3-57's new multi-page build, not assumed:
+ * (1) a second entry point (`tray.html`) makes Rollup factor out a shared chunk (e.g. Pinia) that
+ * both entries `import` instead of each bundling their own copy -- measuring `entry.file` alone
+ * would silently under-count exactly the part that got split out, for the *initial* route. (2)
+ * every lazy route chunk's own `imports` list includes the main entry itself (`index.html`) --
+ * Rollup's own bookkeeping for "this dynamic chunk assumes the entry's module registry is already
+ * loaded," true and free at runtime since the entry always loads first -- so summing a lazy
+ * route's imports *without* excluding what the entry already loaded would double-count the whole
+ * entry bundle into every single route's own budget (confirmed: before this exclusion, every
+ * stub page jumped to ~55 KB and `SessionsPage.vue` read as a false 175 KB "failure", for bytes
+ * that were never additional downloads). Dynamic (`import()`-lazy) imports are never followed
+ * into this sum at all -- those are each their own separate, separately-budgeted chunk. */
+function chunkWeightBytes(manifest, distDir, key, alreadyLoaded, seen = new Set()) {
+  if (seen.has(key) || alreadyLoaded.has(key)) return 0;
+  seen.add(key);
+  const chunk = manifest[key];
+  if (!chunk?.file) return 0;
+  let bytes = gzipSize(path.join(distDir, chunk.file));
+  for (const importedKey of chunk.imports ?? []) bytes += chunkWeightBytes(manifest, distDir, importedKey, alreadyLoaded, seen);
+  return bytes;
+}
+
 /** @param {unknown} manifest parsed `dist/.vite/manifest.json` @param {string} distDir */
 export function checkBundleSize(manifest, distDir) {
   const results = [];
 
-  const entryKey = Object.keys(manifest).find((k) => manifest[k].isEntry);
-  if (!entryKey) throw new Error('manifest.json has no isEntry chunk -- was it built with build.manifest: true?');
-  const entry = manifest[entryKey];
+  // Named explicitly, not `Object.keys(manifest).find(isEntry)`: M3-57's multi-page build
+  // (`tray.html`) means the manifest now has *two* `isEntry` chunks, and the budget this
+  // function checks ("initial route") is specifically the main window's own bundle, not
+  // whichever entry happens to iterate first.
+  const entry = manifest['index.html'];
+  if (!entry) throw new Error('manifest.json has no "index.html" entry -- was it built with build.manifest: true?');
 
-  const initialBytes = gzipSize(path.join(distDir, entry.file));
+  const initialBytes = chunkWeightBytes(manifest, distDir, 'index.html', new Set());
   results.push({ name: `initial route (${entry.file})`, bytes: initialBytes, budget: INITIAL_ROUTE_BUDGET_BYTES });
+
+  // Everything the initial route already loads -- excluded from each lazy route's own weight
+  // below, since it's already paid for by the time any route lazy-loads (see
+  // `chunkWeightBytes`'s own comment for why this matters, confirmed empirically).
+  const alreadyLoaded = collectEagerClosure(manifest, 'index.html');
 
   for (const routeModule of entry.dynamicImports ?? []) {
     const route = manifest[routeModule];
     if (!route?.file) continue;
-    const bytes = gzipSize(path.join(distDir, route.file));
+    const bytes = chunkWeightBytes(manifest, distDir, routeModule, alreadyLoaded);
     results.push({ name: `lazy route ${routeModule} (${route.file})`, bytes, budget: LAZY_ROUTE_BUDGET_BYTES });
   }
 
