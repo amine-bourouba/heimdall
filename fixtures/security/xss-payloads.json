@@ -1,0 +1,104 @@
+[
+  {
+    "id": "script-tag",
+    "category": "script",
+    "description": "A literal <script> tag, the baseline XSS vector.",
+    "markdown": "before <script>alert(document.domain)</script> after"
+  },
+  {
+    "id": "onerror-attribute",
+    "category": "event-handler",
+    "description": "An onerror handler on an otherwise-plausible <img>, firing without any user interaction.",
+    "markdown": "<img src=\"x\" onerror=\"alert(document.domain)\">"
+  },
+  {
+    "id": "svg-onload",
+    "category": "event-handler",
+    "description": "An <svg onload> handler, a common script-tag-filter bypass.",
+    "markdown": "<svg onload=\"alert(document.domain)\"></svg>"
+  },
+  {
+    "id": "link-javascript-scheme",
+    "category": "disallowed-uri",
+    "description": "A markdown link whose destination is a javascript: URI.",
+    "markdown": "[click here](javascript:alert(document.domain))"
+  },
+  {
+    "id": "link-data-scheme",
+    "category": "disallowed-uri",
+    "description": "A markdown link whose destination is a data: URI carrying an inline script.",
+    "markdown": "[click here](data:text/html,<script>alert(document.domain)</script>)"
+  },
+  {
+    "id": "link-file-scheme",
+    "category": "disallowed-uri",
+    "description": "A markdown link whose destination is a file: URI, probing local filesystem access.",
+    "markdown": "[click here](file:///etc/passwd)"
+  },
+  {
+    "id": "iframe-remote",
+    "category": "iframe",
+    "description": "An <iframe> pointed at an attacker-controlled origin.",
+    "markdown": "<iframe src=\"https://evil.example/\"></iframe>"
+  },
+  {
+    "id": "remote-image",
+    "category": "remote-image",
+    "description": "A markdown image pointed at a remote URL, which would otherwise beacon the viewer's IP/UA to the attacker on load.",
+    "markdown": "![tracking pixel](https://evil.example/track.png)"
+  },
+  {
+    "id": "style-attribute-clickjack",
+    "category": "style-attribute",
+    "description": "A style attribute attempting a full-viewport overlay (clickjacking), on an otherwise-allowed tag.",
+    "markdown": "<a href=\"https://example.com\" style=\"position:fixed;top:0;left:0;width:100%;height:100%;background:red;z-index:9999\">innocuous text</a>"
+  },
+  {
+    "id": "meta-refresh",
+    "category": "meta-refresh",
+    "description": "A <meta refresh> attempting an automatic, script-free redirect off the app origin.",
+    "markdown": "<meta http-equiv=\"refresh\" content=\"0;url=https://evil.example/\">"
+  },
+  {
+    "id": "markdown-link-smuggling-reference",
+    "category": "link-smuggling",
+    "description": "A reference-style link whose destination is defined far from its visible text, hiding a javascript: URI behind innocuous-looking link text.",
+    "markdown": "[Open the shared doc][ref]\n\n[ref]: javascript:alert(document.domain)"
+  },
+  {
+    "id": "markdown-link-smuggling-title",
+    "category": "link-smuggling",
+    "description": "A link whose title attribute, not its href, carries the payload attempt -- probing whether the sanitizer only checks href.",
+    "markdown": "[innocuous text](https://example.com \"javascript:alert(document.domain)\")"
+  },
+  {
+    "id": "entity-obfuscated-scheme-decimal",
+    "category": "entity-obfuscation",
+    "description": "A javascript: scheme with its first letter decimal-entity-encoded, probing whether the URI allowlist check runs before or after entity decoding.",
+    "markdown": "<a href=\"&#106;avascript:alert(document.domain)\">click</a>"
+  },
+  {
+    "id": "entity-obfuscated-scheme-hex",
+    "category": "entity-obfuscation",
+    "description": "A javascript: scheme with its first letter hex-entity-encoded.",
+    "markdown": "<a href=\"&#x6A;avascript:alert(document.domain)\">click</a>"
+  },
+  {
+    "id": "mixed-case-scheme",
+    "category": "entity-obfuscation",
+    "description": "A javascript: scheme in mixed case, probing whether the URI allowlist check is case-sensitive.",
+    "markdown": "<a href=\"JaVaScRiPt:alert(document.domain)\">click</a>"
+  },
+  {
+    "id": "html-in-fenced-code",
+    "category": "fenced-code",
+    "description": "Raw HTML (script tag and event handler) inside a fenced code block, which must render as highlighted literal text, not be parsed as markup.",
+    "markdown": "```html\n<script>alert(document.domain)</script>\n<img src=x onerror=\"alert(document.domain)\">\n```"
+  },
+  {
+    "id": "html-in-fenced-code-no-lang",
+    "category": "fenced-code",
+    "description": "The same raw HTML inside a language-less fenced code block.",
+    "markdown": "```\n<script>alert(document.domain)</script>\n```"
+  }
+]
