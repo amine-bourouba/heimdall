@@ -38,8 +38,13 @@ launched, loaded through the real `HEIMDALL_CLAUDE_HOME` fixture override (`fixt
 debug builds only, `state.rs`, M1-38), and rendered.
 
 Run:
-- Windows: `npm run test:e2e:windows-smoke` (needs a debug build at `src-tauri/target/debug/heimdall-desktop.exe` first — `cargo build` in `src-tauri/`).
-- Linux: `npm run test:e2e:linux-smoke` (needs a debug build at `src-tauri/target/debug/heimdall-desktop`, and `tauri-driver` installed via `cargo install tauri-driver`; wrap in `xvfb-run` on a CI container with no display).
+- Windows: `npm run test:e2e:windows-smoke` (needs a debug build at `target/debug/heimdall-desktop.exe` first — `cargo build -p heimdall-desktop`, which must run *after* `npm run build` since `tauri-build`'s own build.rs embeds whatever is already in `dist/`).
+- Linux: `npm run test:e2e:linux-smoke` (needs a debug build at `target/debug/heimdall-desktop`, and `tauri-driver` installed via `cargo install tauri-driver`; wrap in `xvfb-run` on a CI container with no display).
+
+(`target/`, not `src-tauri/target/`: `src-tauri` is a cargo workspace *member* — root `Cargo.toml`'s
+`members = ["crates/heimdall-core", "src-tauri"]` — so `cargo build` always outputs to the shared
+workspace target directory regardless of which member's own directory you run it from. M2-29 found
+both scripts hard-coding the wrong path the first time anything actually tried to launch it.)
 
 M2-26 extends both with the real-app half of ADR 0010's malicious-transcript acceptance test (the
 mocked-WebKit half is `e2e/security/` below), pointed at `fixtures/security/malicious-claude-home/`

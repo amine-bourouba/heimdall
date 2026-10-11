@@ -11,7 +11,15 @@ import { chromium, type Browser, type Page } from '@playwright/test';
 
 const CDP_PORT = 9223;
 const CDP_URL = `http://127.0.0.1:${CDP_PORT}`;
-const BINARY_PATH = 'src-tauri/target/debug/heimdall-desktop.exe';
+// `src-tauri` is a cargo workspace *member* (root Cargo.toml: `members = ["crates/heimdall-core",
+// "src-tauri"]`), so `cargo build` -- run from any directory inside the workspace, not only the
+// repo root -- outputs to the *workspace's* shared `target/`, never `src-tauri/target/` (no
+// `.cargo/config.toml` or `CARGO_TARGET_DIR` override exists anywhere in this repo). Confirmed
+// directly, not just reasoned about: a real (if stale) debug binary already sits at
+// `target/debug/heimdall-desktop.exe` on this machine, and `src-tauri/target/` doesn't exist at
+// all. M2-29 found this the first time anything actually tried to launch the path this constant
+// used to hard-code.
+const BINARY_PATH = 'target/debug/heimdall-desktop.exe';
 
 async function waitForCdp(timeoutMs: number): Promise<void> {
   const deadline = Date.now() + timeoutMs;

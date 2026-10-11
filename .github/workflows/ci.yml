@@ -1,8 +1,11 @@
 name: CI
 
-# Task M1-58. Runs on every push and pull request (unlike golden-oracle.yml, which is manual-only)
-# — this is the day-to-day gate for the Rust workspace: formatting, lints, tests, supply-chain
-# checks, the generated-bindings drift check and the heimdall-core coverage gate.
+# Task M1-58 (the `rust` job); M2-29 adds `frontend`, `e2e-mocked` and `e2e-real-app-smoke`. Runs
+# on every push and pull request (unlike golden-oracle.yml, which is manual-only) — this is the
+# day-to-day gate for the whole repo: Rust formatting/lints/tests/supply-chain checks, the
+# generated-bindings and DTO-fixture drift checks, the heimdall-core coverage gate, frontend
+# lint/typecheck/coverage/audit/security-lint/bundle-size, and both halves of the Playwright and
+# real-app E2E suites (e2e/README.md).
 
 on:
   push:
@@ -101,6 +104,18 @@ jobs:
         if: runner.os == 'Linux'
         run: node scripts/check-bindings.mjs
 
+      # M2-29: fixtures/dto/README's own documented plan ("A drift check in CI (M2-29) fails if
+      # the committed copy and a fresh regeneration differ"). Needs cargo, same as the bindings
+      # check above, so it lives here rather than in the Node-only `frontend` job.
+      - name: Check fixtures/dto/ is up to date
+        if: runner.os == 'Linux'
+        run: |
+          cargo run --quiet -p heimdall-core --example export_dto_fixtures
+          if ! git diff --exit-code -- fixtures/dto/; then
+            echo "::error::fixtures/dto/ is out of date — regenerate it locally (cargo run -p heimdall-core --example export_dto_fixtures) and commit the result."
+            exit 1
+          fi
+
       # M1-56: heimdall-core line coverage gate. Only runs on Linux — the same
       # profiler_builtins gap documented in that task's own progress-log entry means this can't
       # run on windows-gnu, and there is no reason to run the same gate three times regardless.
@@ -110,3 +125,153 @@ jobs:
           rustup component add llvm-tools-preview
           cargo install cargo-llvm-cov --locked
           bash scripts/coverage-core.sh
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: npm ci
+        run: npm ci
+
+      - name: npm run lint
+        run: npm run lint
+
+      - name: npm run typecheck
+        run: npm run typecheck
+
+      - name: npm run test:coverage
+        run: npm run test:coverage
+
+      - name: npm audit --audit-level=high
+        run: npm audit --audit-level=high
+
+      # M2-27.
+      - name: Security configuration lint
+        run: node scripts/lint-security-config.mjs
+
+      # Needed before the bundle-size check below can read dist/.vite/manifest.json.
+      - name: npm run build
+        run: npm run build
+
+      # M2-28.
+      - name: Bundle size budgets
+        run: node scripts/check-bundle-size.mjs
+
+  e2e-mocked:
+    name: E2E (mocked, Playwright)
+    needs: frontend
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: npm ci
+        run: npm ci
+
+      # `--with-deps` installs both browser binaries and the OS packages they need; xvfb itself
+      # (a virtual display, not a browser dependency) is separate -- Playwright's own WebKit on
+      # Linux is documented to need a real X display for some operations even when run
+      # "headless", the same reason the `rust` job already wraps `cargo test` in `xvfb-run`.
+      - name: Install Playwright browsers and system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          npx playwright install --with-deps chromium webkit
+
+      # chromium/webkit (M2-23 AC1), visual (M2-24 AC1/AC2 -- committed Linux baselines live here,
+      # P-13), security (M2-26 AC2), perf (M2-28 AC1). `visual` fails until this job's own first
+      # real run produces baselines for a human to review and commit -- documented in
+      # e2e/visual/session.spec.ts's own progress-log entry, not something this workflow commits
+      # on its own.
+      - name: Playwright (all mocked projects)
+        run: xvfb-run --auto-servernum npx playwright test --project=chromium --project=webkit --project=visual --project=security --project=perf
+
+      - name: Upload Playwright report and test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  e2e-real-app-smoke:
+    name: E2E real-app smoke (${{ matrix.os }})
+    needs: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev xvfb
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: npm ci
+        run: npm ci
+
+      # tauri-build's own build.rs (src-tauri/build.rs) embeds whatever already exists under
+      # dist/ -- this has to run before `cargo build`, not after.
+      - name: npm run build
+        run: npm run build
+
+      # Debug build, not release: real-app smoke only needs a window that opens and renders, and
+      # a debug build is both faster to produce and the one both e2e/support/tauriCdp.ts and
+      # e2e/smoke/wdio.conf.mjs already expect at target/debug/ (M2-29: both scripts previously
+      # hard-coded src-tauri/target/debug/ instead, which never existed at all -- src-tauri is a
+      # cargo workspace *member*, so every build lands in the shared workspace target/).
+      - name: cargo build -p heimdall-desktop
+        run: cargo build -p heimdall-desktop
+
+      - name: Linux real-app smoke (tauri-driver)
+        if: runner.os == 'Linux'
+        run: |
+          cargo install tauri-driver
+          xvfb-run --auto-servernum npm run test:e2e:linux-smoke
+
+      - name: Windows real-app smoke (CDP)
+        if: runner.os == 'Windows'
+        run: npm run test:e2e:windows-smoke

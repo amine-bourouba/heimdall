@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:windows-smoke": "node --experimental-strip-types e2e/support/tauriCdp.ts",
     "test:e2e:linux-smoke": "wdio run e2e/smoke/wdio.conf.mjs",

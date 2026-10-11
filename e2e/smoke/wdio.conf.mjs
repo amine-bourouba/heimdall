@@ -14,7 +14,11 @@ import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BINARY_PATH = path.resolve(__dirname, '../../src-tauri/target/debug/heimdall-desktop');
+// `src-tauri` is a cargo workspace *member*, not its own workspace root (root `Cargo.toml`:
+// `members = ["crates/heimdall-core", "src-tauri"]`), so `cargo build` always outputs to the
+// shared workspace `target/` -- never `src-tauri/target/`, which doesn't exist at all (confirmed
+// directly, not just reasoned about, in `tauriCdp.ts`'s own matching fix, M2-29).
+const BINARY_PATH = path.resolve(__dirname, '../../target/debug/heimdall-desktop');
 // `HEIMDALL_E2E_CLAUDE_HOME` (this test harness's own env var, unrelated to the app's own
 // `HEIMDALL_CLAUDE_HOME` read below) lets `npm run test:e2e:linux-smoke:security` (M2-26) point
 // this same spec at `fixtures/security/malicious-claude-home` instead, without a second wdio
