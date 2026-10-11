@@ -21,6 +21,10 @@ export default defineConfig({
     // the closest engine Playwright ships to it, and the only one worth comparing against a
     // Linux-captured baseline at all (M2-24's own task, e2e/visual/).
     { name: 'visual', testDir: './e2e/visual', use: { ...devices['Desktop Safari'] } },
+    // ADR 0010's own acceptance test ("Playwright run on a malicious fixture transcript...")
+    // names WebKit specifically (M2-26) -- WebKitGTK is the weakest/most permissive engine among
+    // the three Heimdall ships on, the same reasoning P-13 already applies to visual baselines.
+    { name: 'security', testDir: './e2e/security', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: {
     // The build itself can take longer than Playwright's default web-server timeout on a loaded

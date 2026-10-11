@@ -41,6 +41,20 @@ Run:
 - Windows: `npm run test:e2e:windows-smoke` (needs a debug build at `src-tauri/target/debug/heimdall-desktop.exe` first — `cargo build` in `src-tauri/`).
 - Linux: `npm run test:e2e:linux-smoke` (needs a debug build at `src-tauri/target/debug/heimdall-desktop`, and `tauri-driver` installed via `cargo install tauri-driver`; wrap in `xvfb-run` on a CI container with no display).
 
+M2-26 extends both with the real-app half of ADR 0010's malicious-transcript acceptance test (the
+mocked-WebKit half is `e2e/security/` below), pointed at `fixtures/security/malicious-claude-home/`
+instead of `fixtures/screenshot/claude-home`:
+- Windows: `npm run test:e2e:windows-smoke -- fixtures/security/malicious-claude-home` (the script's
+  existing `claudeHome` CLI arg; `tauriCdp.ts`'s own `main()` runs the extra checks whenever that
+  path contains `"malicious"`). WebView2 is Chromium-based, so this gets the same
+  `page.on('request')` network visibility the mocked spec uses.
+- Linux: `npm run test:e2e:linux-smoke:security` (sets `HEIMDALL_E2E_CLAUDE_HOME`, which
+  `wdio.conf.mjs` reads instead of its own default fixture; `app.smoke.mjs`'s own second
+  `describe` block is gated on that same variable, so the ordinary run above never executes it).
+  tauri-driver/WebKitGTK's WebDriver protocol has no CDP-style network interception at all, unlike
+  Windows' CDP connection or the mocked spec's Playwright one — this half honestly checks window
+  count, in-page alert dialogs and the URL's origin, not off-origin requests.
+
 **Neither real-app smoke could be executed on this dev machine**: this machine's own Rust
 toolchain is missing `windres` (a pre-existing, already-documented gap since M2-12 — `docs/progress-log.md`),
 which blocks `cargo build`/`cargo check` for the `heimdall-desktop` crate entirely, so no debug
@@ -71,16 +85,44 @@ Swift's own tests snapshot one `View` in isolation rather than a whole screen.
 Run: `npx playwright test --project=visual` (add `--update-snapshots` to regenerate baselines —
 only ever meaningful on Linux CI, per the above).
 
+## Malicious transcript (`e2e/security/`, M2-26, the `security` Playwright project)
+
+ADR 0010's own acceptance test: "Playwright run on a malicious fixture transcript asserting no
+dialog, navigation, off-origin request or new window." This is the mocked-WebKit half; the
+real-app half (Linux and Windows, against `fixtures/security/malicious-claude-home/` instead of
+the in-memory mocked session below) is the "Real-app smoke" section above.
+
+The mocked session is built at test time from the M2-25 XSS corpus
+(`fixtures/security/xss-payloads.json`), round-robin-split across the four locations that have a
+real, built view today (user text, assistant text, tool output, thinking — `e2e/support/
+maliciousPayloads.ts` is the one function both this fixture and `fixtures/security/
+malicious-claude-home/`'s hand-built content agree on, so they can't silently drift apart). The
+plan and memory file buckets have no UI to click through yet (`PlansPage.vue` and
+`src/features/memory` are still M2-06-era stubs) — their payloads exist only in the real fixture
+tree, ready for whichever M3 task builds those screens.
+
+The spec attaches `page.on('dialog'|'popup'|'request')` listeners before navigating, loads the
+session, flips `ToolBlock`'s own "Show rendered markdown" toggle (the one way its tool-output
+content actually reaches `MarkdownView`'s v-html path, rather than the raw-text display every
+tool shows by default), and clicks the one real link markdown-it's `linkify: true` produces from
+otherwise-inert escaped text (a bare `https://evil.example/` substring) — proving
+`MarkdownView.vue`'s click-interception holds even for that link, not just that dangerous tags
+never parse in the first place.
+
+Run: `npx playwright test --project=security`.
+
 ## Files
 
 | File | Owns |
 |---|---|
-| `playwright.config.ts` | Three projects, each with its own `testDir`: `chromium`/`webkit` → `e2e/mocked/`, `visual` → `e2e/visual/`. `e2e/smoke/`'s WebdriverIO/mocha-style suite is never picked up by any of them. |
-| `e2e/support/mockIpc.ts` | The `window.__TAURI_INTERNALS__` shape `@tauri-apps/api/core`'s `invoke()` reads, replicated (not imported — `page.addInitScript` serializes a plain function, with no bundler) from `@tauri-apps/api/mocks`'s own real, dependency-free source. Also answers `get_session`/`get_session_messages`/`diff_lines` (a plain LCS line diff, visually reasonable, not Rust's real algorithm) for `e2e/visual/`'s own full-session scenarios. |
-| `e2e/support/fixtures.ts` | Loads `fixtures/dto/*.json`, shapes it into the IPC responses `mockIpc.ts` answers with, and exports the Playwright fixtures both `e2e/mocked/` (`mockedPage`) and `e2e/visual/` (`buildVisualFixtures`, plus four stable visual-session ids) use. |
+| `playwright.config.ts` | Four projects, each with its own `testDir`: `chromium`/`webkit` → `e2e/mocked/`, `visual` → `e2e/visual/`, `security` → `e2e/security/`. `e2e/smoke/`'s WebdriverIO/mocha-style suite is never picked up by any of them. |
+| `e2e/support/mockIpc.ts` | The `window.__TAURI_INTERNALS__` shape `@tauri-apps/api/core`'s `invoke()` reads, replicated (not imported — `page.addInitScript` serializes a plain function, with no bundler) from `@tauri-apps/api/mocks`'s own real, dependency-free source. Also answers `get_session`/`get_session_messages`/`diff_lines` (a plain LCS line diff, visually reasonable, not Rust's real algorithm) for `e2e/visual/`'s and `e2e/security/`'s own full-session scenarios. |
+| `e2e/support/fixtures.ts` | Loads `fixtures/dto/*.json`, shapes it into the IPC responses `mockIpc.ts` answers with, and exports the Playwright fixtures `e2e/mocked/` (`mockedPage`), `e2e/visual/` (`buildVisualFixtures`) and `e2e/security/` (`buildMaliciousFixtures`) each use. |
+| `e2e/support/maliciousPayloads.ts` | Round-robin-splits `fixtures/security/xss-payloads.json` across the six locations ADR 0010's acceptance test names — the one function both `fixtures.ts`'s mocked session and the hand-built `fixtures/security/malicious-claude-home/` tree agree on. |
 | `e2e/visual/visualData.ts` | Tool/result/diff/thinking fixtures ported verbatim from `ScreenshotData.swift`. |
 | `e2e/visual/session.spec.ts` | The visual baseline spec itself (AC1/AC2). |
-| `e2e/support/tauriCdp.ts` | The Windows real-app smoke, both the CDP-connection helper and (run directly) the smoke check itself. |
-| `e2e/smoke/wdio.conf.mjs` | The Linux real-app smoke's WebdriverIO config (tauri-driver capabilities, binary path, `HEIMDALL_CLAUDE_HOME`). |
-| `e2e/smoke/app.smoke.mjs` | The Linux real-app smoke's own spec (mocha-style, run by `wdio`). |
+| `e2e/security/malicious-transcript.spec.ts` | The mocked-WebKit half of the malicious-transcript acceptance test (M2-26). |
+| `e2e/support/tauriCdp.ts` | The Windows real-app smoke: the CDP-connection helper, the sidebar-render check, and (M2-26) `assertNoMaliciousTranscriptEscape`, all run directly via `main()`. |
+| `e2e/smoke/wdio.conf.mjs` | The Linux real-app smoke's WebdriverIO config (tauri-driver capabilities, binary path, `HEIMDALL_CLAUDE_HOME`); `CLAUDE_HOME` can be overridden via `HEIMDALL_E2E_CLAUDE_HOME` (M2-26). |
+| `e2e/smoke/app.smoke.mjs` | The Linux real-app smoke's own spec (mocha-style, run by `wdio`); its second `describe` block (M2-26) only runs when `HEIMDALL_E2E_CLAUDE_HOME` points at the malicious fixture. |
 | `e2e/mocked/app.smoke.spec.ts` | The mocked smoke spec itself (AC1) — not in this task's own Outputs list, but a real, necessary addition: nothing else makes that AC mean anything. |

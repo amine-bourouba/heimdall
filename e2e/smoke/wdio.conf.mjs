@@ -15,7 +15,13 @@ import os from 'node:os';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BINARY_PATH = path.resolve(__dirname, '../../src-tauri/target/debug/heimdall-desktop');
-const CLAUDE_HOME = path.resolve(__dirname, '../../fixtures/screenshot/claude-home');
+// `HEIMDALL_E2E_CLAUDE_HOME` (this test harness's own env var, unrelated to the app's own
+// `HEIMDALL_CLAUDE_HOME` read below) lets `npm run test:e2e:linux-smoke:security` (M2-26) point
+// this same spec at `fixtures/security/malicious-claude-home` instead, without a second wdio
+// config or spec file duplicating this one almost entirely.
+const CLAUDE_HOME = process.env.HEIMDALL_E2E_CLAUDE_HOME
+  ? path.resolve(__dirname, '../..', process.env.HEIMDALL_E2E_CLAUDE_HOME)
+  : path.resolve(__dirname, '../../fixtures/screenshot/claude-home');
 
 let tauriDriver;
 

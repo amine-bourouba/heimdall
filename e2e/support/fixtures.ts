@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { test as base, expect } from '@playwright/test';
 import { installMockIpc } from './mockIpc';
 import { allToolsBlocks, DIFFS, THINKING } from '../visual/visualData';
+import { joinedMaliciousContent } from './maliciousPayloads';
 
 export const VISUAL_PROJECT_ID = 'visual-project';
 /** Stable session ids `e2e/visual/session.spec.ts` navigates to, one per scenario group -- kept
@@ -93,6 +94,60 @@ export function buildVisualSessionDetails(): MockFixtures['sessionDetails'] {
     [VISUAL_DIFFS_SESSION_ID]: sessionDetail(sessionSummary(VISUAL_DIFFS_SESSION_ID, { title: 'Visual regression: edit diffs' }), diffMessages, { toolNames: ['Edit'] }),
     [VISUAL_EMPTY_SESSION_ID]: sessionDetail(sessionSummary(VISUAL_EMPTY_SESSION_ID, { title: 'Visual regression: empty session' }), []),
   };
+}
+
+export const MALICIOUS_PROJECT_ID = 'malicious-project';
+export const MALICIOUS_SESSION_ID = 'malicious-session';
+
+/** `fixtures/security/malicious-claude-home/`'s own session, rebuilt here in Heimdall's DTO
+ * shape (not raw Claude JSONL) for the mocked-WebKit half of M2-26's two run modes -- the real
+ * `~/.claude` tree is what the real-app Linux/Windows run loads instead. Both pull the identical
+ * corpus from the same round-robin split (`maliciousPayloads.ts`), so "payloads sit in user text,
+ * assistant text, tool output, thinking" (the four locations with a real, built view today --
+ * `TextBlock`/`ToolBlock` through `MarkdownView`, `ThinkingBlock` through plain interpolation) is
+ * true of this mocked session too, not just the real-app fixture tree. The plan and memory file
+ * buckets have no UI to click through at all yet (`PlansPage.vue`/`src/features/memory` are
+ * M2-06-era stubs) -- only the real-app fixture tree carries those two today.
+ */
+export function buildMaliciousSessionDetails(): MockFixtures['sessionDetails'] {
+  const toolUseId = 'malicious-tool-use';
+  const messages = [
+    { id: 'm0', role: 'user', timestamp: '2026-09-20T10:00:00Z', model: null, usage: null, blocks: [{ kind: 'text', id: 'm0b0', text: joinedMaliciousContent('user'), system: null }] },
+    {
+      id: 'm1',
+      role: 'assistant',
+      timestamp: '2026-09-20T10:00:05Z',
+      model: 'claude-opus-4-6',
+      usage: { input: 100, output: 50, cacheRead: 0, cacheCreation: 0 },
+      blocks: [
+        { kind: 'thinking', id: 'm1b0', text: joinedMaliciousContent('thinking') },
+        { kind: 'text', id: 'm1b1', text: joinedMaliciousContent('assistant'), system: null },
+        // `Read`, not `Bash`: `ToolBlock.vue`'s own `showRawContent` starts `true` for every tool
+        // and there's no toggle to leave raw text at all for Bash (`v-if="!isBash()"`) -- tool
+        // output only ever reaches `MarkdownView`'s real v-html/DOMPurify path for a non-Bash
+        // tool, and only once "Show rendered markdown" is actually clicked.
+        { kind: 'toolUse', id: 'm1b2', toolUseId, name: 'Read', inputPretty: '{}', command: null, filePath: '/Users/fixture/malicious-project/suspicious-file.txt', edit: null },
+        { kind: 'toolResult', id: 'm1b3', toolUseId, content: joinedMaliciousContent('tool-output'), isError: false },
+      ],
+    },
+  ];
+
+  return {
+    [MALICIOUS_SESSION_ID]: sessionDetail(sessionSummary(MALICIOUS_SESSION_ID, { projectId: MALICIOUS_PROJECT_ID, title: 'Malicious transcript fixture', preview: joinedMaliciousContent('user'), turnCount: 2 }), messages),
+  };
+}
+
+/** `buildFixtures()` plus the malicious-transcript session, mirroring `buildVisualFixtures()`'s
+ * own "inject a synthetic project with real session-summary rows" shape for the same reason:
+ * `sessionStore.selectSession` resolves the summary from `projects.value` before ever calling
+ * `get_session`. */
+export function buildMaliciousFixtures(): MockFixtures {
+  const fixtures = buildFixtures();
+  fixtures.sessionDetails = buildMaliciousSessionDetails();
+  const summaries = Object.values(fixtures.sessionDetails).map((s) => (s.detail as { summary: SessionSummaryLike }).summary);
+  fixtures.projects = [...fixtures.projects, { id: MALICIOUS_PROJECT_ID, name: 'malicious-fixtures', path: '/malicious-fixtures', pathSource: 'transcriptCwd', sessionCount: summaries.length, lastActivity: '2026-09-20T10:00:05Z', hasMemory: false }];
+  fixtures.sessionsByProject[MALICIOUS_PROJECT_ID] = summaries;
+  return fixtures;
 }
 
 const FIXTURES_DIR = fileURLToPath(new URL('../../fixtures/dto', import.meta.url));

@@ -72,16 +72,62 @@ export async function launchTauriAppOverCdp(claudeHome: string): Promise<Launche
   };
 }
 
+/** ADR 0010's acceptance test ("Playwright run on a malicious fixture transcript asserting no
+ * dialog, navigation, off-origin request or new window", M2-26) -- the Windows half, against the
+ * real binary over the same CDP connection `launchTauriAppOverCdp` already gives every caller
+ * here. WebView2 is Chromium-based, so (unlike the Linux/tauri-driver half in
+ * `e2e/smoke/app.smoke.mjs`) this gets the exact same `page.on('request')` network visibility the
+ * mocked-WebKit spec (`e2e/security/malicious-transcript.spec.ts`) uses. */
+export async function assertNoMaliciousTranscriptEscape(page: Page): Promise<void> {
+  const dialogs: string[] = [];
+  page.on('dialog', (dialog) => {
+    dialogs.push(`${dialog.type()}: ${dialog.message()}`);
+    void dialog.dismiss();
+  });
+
+  const popups: string[] = [];
+  page.on('popup', (popup) => popups.push(popup.url()));
+
+  await page.route('**evil.example**', (route) => route.abort());
+
+  const offOriginRequests: string[] = [];
+  const appOrigin = new URL(page.url()).origin;
+  page.on('request', (request) => {
+    if (new URL(request.url()).origin !== appOrigin) offOriginRequests.push(request.url());
+  });
+
+  // The fixture's only project has exactly one session -- clicking the first/only session row
+  // rather than matching an exact title, since the real session's title is Rust-derived from the
+  // transcript's own (attacker-controlled) first message text, not a clean string knowable ahead
+  // of time the way the mocked spec's hand-set title is.
+  await page.locator('nav[aria-label="Sessions"] li button').first().click();
+  await page.waitForSelector('h1', { timeout: 10_000 });
+  await page.waitForTimeout(500);
+
+  if (dialogs.length > 0) throw new Error(`unexpected dialog(s): ${dialogs.join(', ')}`);
+  if (popups.length > 0) throw new Error(`unexpected new window/tab: ${popups.join(', ')}`);
+  if (offOriginRequests.length > 0) throw new Error(`unexpected off-origin request(s): ${offOriginRequests.join(', ')}`);
+  if (!page.url().startsWith(appOrigin)) throw new Error(`navigated away from the app origin to ${page.url()}`);
+}
+
 /** The Windows real-app smoke itself (AC2): no separate spec file owns this -- there is nothing
  * in this task's Outputs to run it as a Playwright Test Runner spec, since it drives a real OS
- * process rather than a mocked page. Run directly: `node e2e/support/tauriCdp.ts`. */
+ * process rather than a mocked page. Run directly: `node e2e/support/tauriCdp.ts [claudeHome]`
+ * (M2-26: `node e2e/support/tauriCdp.ts fixtures/security/malicious-claude-home` runs the
+ * malicious-transcript check above too, keyed off the path containing "malicious"). */
 async function main() {
   const claudeHome = process.argv[2] ?? 'fixtures/screenshot/claude-home';
   const app = await launchTauriAppOverCdp(claudeHome);
   try {
     await app.page.waitForSelector('nav[aria-label="Primary"]', { timeout: 10_000 });
-     
+
     console.log('OK: sidebar rendered');
+
+    if (claudeHome.includes('malicious')) {
+      await assertNoMaliciousTranscriptEscape(app.page);
+
+      console.log('OK: malicious transcript produced no dialog, popup, off-origin request or navigation');
+    }
   } finally {
     await app.close();
   }

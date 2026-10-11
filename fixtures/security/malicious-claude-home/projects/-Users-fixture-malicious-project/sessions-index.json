@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "originalPath": "/Users/fixture/malicious-project",
+  "entries": [
+    {
+      "sessionId": "55555555-5555-4555-8555-555555555555",
+      "created": "2026-09-20T10:00:00.000Z",
+      "isSidechain": false,
+      "projectPath": "/Users/fixture/malicious-project",
+      "firstPrompt": "before <script>alert(document.domain)</script> after"
+    }
+  ]
+}
