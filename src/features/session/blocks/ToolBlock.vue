@@ -122,6 +122,7 @@ async function copyAsMarkdown() {
 
 <template>
   <div
+    data-testid="tool-block"
     class="overflow-hidden rounded-md border"
     :class="isError() ? 'border-(--color-red)/20' : 'border-(--border)'"
   >

@@ -45,7 +45,10 @@ async function copy() {
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div
+    data-testid="thinking-block"
+    class="flex flex-col"
+  >
     <button
       type="button"
       class="flex w-fit items-center gap-(--spacing-xs) rounded-full bg-(--color-purple)/8 px-(--spacing-md) py-(--spacing-xs) text-(--color-purple)"

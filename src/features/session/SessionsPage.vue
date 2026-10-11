@@ -28,10 +28,18 @@ const route = useRoute();
 const router = useRouter();
 
 // Store -> route: mirror the current selection into the URL so it becomes a real history entry.
+// `selectSession`'s own first synchronous write sets `selectedProjectId` before the async
+// `get_session` fetch resolves `selectedSession` -- a real, confirmed-the-hard-way race: without
+// this guard, that split-second "projectId set, session not yet" state looked like "navigated to
+// a project with no session," and got pushed to the URL, stripping the session id a caller (a
+// direct link, or this component's own {immediate:true} route-to-store sync on mount) had just
+// asked for. Skipping while a fetch is in flight lets the watcher fire once more when it settles,
+// with the real, complete state.
 watch(
   () => [sessionStore.selectedProjectId, sessionStore.selectedSession?.id] as const,
   ([projectId, sessionId]) => {
     if (route.name !== 'sessions' && route.name !== 'session-detail') return;
+    if (sessionStore.isLoadingSession) return;
     if (route.params.projectId === projectId && route.params.sessionId === (sessionId ?? undefined)) return;
     if (!projectId) {
       void router.push({ name: 'sessions' });
@@ -49,11 +57,21 @@ watch(
   ([projectId, sessionId]) => {
     if (sessionStore.selectedProjectId === (projectId ?? null) && sessionStore.selectedSession?.id === sessionId) return;
     if (!projectId) {
+      sessionStore.selectedProjectId = null;
       sessionStore.deselectSession();
       return;
     }
-    if (sessionId) void sessionStore.selectSession(projectId, sessionId);
-    else sessionStore.deselectSession();
+    if (sessionId) {
+      void sessionStore.selectSession(projectId, sessionId);
+    } else {
+      // A real bug, caught the hard way (a project-only URL landed on the "nothing selected"
+      // empty state instead of ProjectSessions): `deselectSession()` only clears the *session*
+      // half of the selection, by design (`selectSession` itself relies on that -- it sets
+      // `selectedProjectId` first and does not want this watcher's own reaction to clear it back
+      // out mid-fetch). A project-only route has to set `selectedProjectId` itself.
+      sessionStore.selectedProjectId = projectId;
+      sessionStore.deselectSession();
+    }
   },
   { immediate: true },
 );

@@ -42,7 +42,10 @@ async function copy() {
 </script>
 
 <template>
-  <div class="relative bg-(--bg-code)">
+  <div
+    data-testid="edit-diff"
+    class="relative bg-(--bg-code)"
+  >
     <p
       v-if="!result"
       class="p-(--spacing-lg) text-center text-(length:--text-code) text-(--text-tertiary)"

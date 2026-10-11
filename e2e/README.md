@@ -50,13 +50,36 @@ would be needed (`tauriCdp.ts` run directly: a missing-binary spawn failure is c
 cleanly, not an unhandled process crash — a real bug found and fixed this way). Real verification
 is Windows and Linux CI.
 
+## Visual baselines (`e2e/visual/`, M2-24, the `visual` Playwright project)
+
+Committed screenshot baselines for the session screens, ported from `PoirotTests/Screenshots/
+ScreenshotTests_{Sidebar,SessionDetail,ToolBlocks,ThinkingBlocks,EditDiff,FullViews,Standalone,
+Windows}.swift`. Runs through the same mocked-IPC harness as `e2e/mocked/`, but in **WebKit only**:
+port-plan.md decision P-13 commits Linux baselines only (WebKitGTK is the weakest/most-divergent
+engine, so it is the one worth a committed reference for), and a baseline captured in any other
+engine — or on any other OS, since font rendering differs even within WebKit — would be the wrong
+answer, not just a noisier one. **Baselines in this repo must come from a real Linux CI run**
+(`--update-snapshots` on an `ubuntu-latest` job), never generated locally.
+
+Fixture data for individual block types (every tool, every thinking-block variant, every diff
+pair) is ported verbatim from `PoirotTests/Mocks/ScreenshotData.swift` into `e2e/visual/visualData.ts`
+— the same hand-built fixtures the real Swift screenshot tests render, not newly invented data.
+Each block component under test carries a `data-testid` (`tool-block`, `thinking-block`,
+`edit-diff`) specifically so a visual spec can target *one instance* precisely, the same way
+Swift's own tests snapshot one `View` in isolation rather than a whole screen.
+
+Run: `npx playwright test --project=visual` (add `--update-snapshots` to regenerate baselines —
+only ever meaningful on Linux CI, per the above).
+
 ## Files
 
 | File | Owns |
 |---|---|
-| `playwright.config.ts` | The mocked harness's own config — `testDir` scoped to `e2e/mocked/` specifically so Playwright's test runner never picks up `e2e/smoke/`'s WebdriverIO/mocha-style suite. |
-| `e2e/support/mockIpc.ts` | The `window.__TAURI_INTERNALS__` shape `@tauri-apps/api/core`'s `invoke()` reads, replicated (not imported — `page.addInitScript` serializes a plain function, with no bundler) from `@tauri-apps/api/mocks`'s own real, dependency-free source. |
-| `e2e/support/fixtures.ts` | Loads `fixtures/dto/*.json`, shapes it into the IPC responses `mockIpc.ts` answers with, and exports the one Playwright fixture (`mockedPage`) every mocked spec uses. |
+| `playwright.config.ts` | Three projects, each with its own `testDir`: `chromium`/`webkit` → `e2e/mocked/`, `visual` → `e2e/visual/`. `e2e/smoke/`'s WebdriverIO/mocha-style suite is never picked up by any of them. |
+| `e2e/support/mockIpc.ts` | The `window.__TAURI_INTERNALS__` shape `@tauri-apps/api/core`'s `invoke()` reads, replicated (not imported — `page.addInitScript` serializes a plain function, with no bundler) from `@tauri-apps/api/mocks`'s own real, dependency-free source. Also answers `get_session`/`get_session_messages`/`diff_lines` (a plain LCS line diff, visually reasonable, not Rust's real algorithm) for `e2e/visual/`'s own full-session scenarios. |
+| `e2e/support/fixtures.ts` | Loads `fixtures/dto/*.json`, shapes it into the IPC responses `mockIpc.ts` answers with, and exports the Playwright fixtures both `e2e/mocked/` (`mockedPage`) and `e2e/visual/` (`buildVisualFixtures`, plus four stable visual-session ids) use. |
+| `e2e/visual/visualData.ts` | Tool/result/diff/thinking fixtures ported verbatim from `ScreenshotData.swift`. |
+| `e2e/visual/session.spec.ts` | The visual baseline spec itself (AC1/AC2). |
 | `e2e/support/tauriCdp.ts` | The Windows real-app smoke, both the CDP-connection helper and (run directly) the smoke check itself. |
 | `e2e/smoke/wdio.conf.mjs` | The Linux real-app smoke's WebdriverIO config (tauri-driver capabilities, binary path, `HEIMDALL_CLAUDE_HOME`). |
 | `e2e/smoke/app.smoke.mjs` | The Linux real-app smoke's own spec (mocha-style, run by `wdio`). |

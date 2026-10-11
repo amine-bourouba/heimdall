@@ -32,6 +32,45 @@ function installMockIpcInPage(fixtures: MockFixtures) {
 
   const listeners = new Map<string, number[]>();
 
+  // A plain LCS line diff -- not Rust's own real algorithm, which this mock has no access to
+  // (it runs inside the browser, self-contained). Good enough for what this mock exists for:
+  // visually reasonable screenshots of small, known fixture pairs, not diff-engine correctness
+  // (`diff.rs`'s own unit tests already cover that, in Rust, where the real algorithm lives).
+  function computeLineDiff(oldText: string, newText: string) {
+    const oldLines = oldText.split('\n');
+    const newLines = newText.split('\n');
+    const n = oldLines.length;
+    const m = newLines.length;
+    const lcs: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+    for (let i = n - 1; i >= 0; i--) {
+      for (let j = m - 1; j >= 0; j--) {
+        lcs[i][j] = oldLines[i] === newLines[j] ? lcs[i + 1][j + 1] + 1 : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+      }
+    }
+    const lines: { kind: 'context' | 'add' | 'remove'; oldLine: number | null; newLine: number | null; text: string }[] = [];
+    let i = 0;
+    let j = 0;
+    let oldLineNo = 1;
+    let newLineNo = 1;
+    while (i < n && j < m) {
+      if (oldLines[i] === newLines[j]) {
+        lines.push({ kind: 'context', oldLine: oldLineNo++, newLine: newLineNo++, text: oldLines[i] });
+        i++;
+        j++;
+      } else if (lcs[i + 1][j] >= lcs[i][j + 1]) {
+        lines.push({ kind: 'remove', oldLine: oldLineNo++, newLine: null, text: oldLines[i] });
+        i++;
+      } else {
+        lines.push({ kind: 'add', oldLine: null, newLine: newLineNo++, text: newLines[j] });
+        j++;
+      }
+    }
+    while (i < n) lines.push({ kind: 'remove', oldLine: oldLineNo++, newLine: null, text: oldLines[i++] });
+    while (j < m) lines.push({ kind: 'add', oldLine: null, newLine: newLineNo++, text: newLines[j++] });
+    const maxLineNumber = Math.max(oldLineNo - 1, newLineNo - 1);
+    return { lines, truncated: false, maxLineNumber };
+  }
+
   async function invoke(cmd: string, args?: Record<string, unknown>): Promise<unknown> {
     switch (cmd) {
       case 'plugin:event|listen': {
@@ -59,6 +98,19 @@ function installMockIpcInPage(fixtures: MockFixtures) {
       case 'list_sessions': {
         const projectId = (args as { projectId: string }).projectId;
         return { value: fixtures.sessionsByProject[projectId] ?? [], skipped: 0 };
+      }
+      case 'get_session': {
+        const sessionId = (args as { sessionId: string }).sessionId;
+        return fixtures.sessionDetails[sessionId]?.detail ?? null;
+      }
+      case 'get_session_messages': {
+        const { sessionId, start, count } = args as { sessionId: string; start: number; count: number };
+        const all = fixtures.sessionDetails[sessionId]?.messages ?? [];
+        return { start, messages: all.slice(start, start + count), total: all.length };
+      }
+      case 'diff_lines': {
+        const { oldText, newText } = args as { oldText: string; newText: string };
+        return computeLineDiff(oldText, newText);
       }
       default:
          
