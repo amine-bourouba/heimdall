@@ -1,3 +1,3 @@
-//! macOS launch execution.
-//!
-//! Placeholder created by M1-03 (port-plan §5.4); owned by M3-52.
+//! macOS launch execution: no OS-specific preparation needed before a spawn (M3-52).
+
+pub fn prepare(_command: &mut std::process::Command) {}
