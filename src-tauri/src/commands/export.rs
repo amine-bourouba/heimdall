@@ -3,7 +3,7 @@
 //! stubs (M3-36). Every body runs through `state::blocking` (contract §1).
 
 use heimdall_core::export::session_markdown::{self, ExportOptions};
-use heimdall_core::export::{CsvKind, ExportDestination, PngKind};
+use heimdall_core::export::{CsvKind, ExportDestination, PngKind, analytics_csv};
 use heimdall_core::{AppError, Result, WriteOutcome};
 use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -138,24 +138,68 @@ pub async fn export_edit_patch(
     .await
 }
 
-#[tauri::command]
-#[specta::specta]
-pub async fn export_analytics_csv(kind: CsvKind) -> Result<WriteOutcome> {
-    let _ = kind;
-    Err(AppError::not_implemented("export_analytics_csv"))
+fn export_analytics_csv_inner(
+    state: &AppState,
+    kind: CsvKind,
+    picked: Option<std::path::PathBuf>,
+) -> Result<WriteOutcome> {
+    let Some(path) = picked else {
+        return Ok(WriteOutcome::Cancelled);
+    };
+    let claude_home = &state.claude_home;
+    let stats =
+        heimdall_core::data::stats_cache::load_analytics(&claude_home.stats_cache_file(), &claude_home.projects_dir())
+            .ok_or_else(|| AppError::not_found("no stats cache and nothing to compute from (no sessions yet)"))?;
+    let csv = analytics_csv::export(&stats.stats, kind);
+    std::fs::write(&path, csv).map_err(|e| AppError::from_io(&e, &path))?;
+    Ok(WriteOutcome::Written)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn save_png(kind: PngKind, bytes: Vec<u8>) -> Result<WriteOutcome> {
-    let _ = (kind, bytes);
-    Err(AppError::not_implemented("save_png"))
+pub async fn export_analytics_csv(app: AppHandle, kind: CsvKind) -> Result<WriteOutcome> {
+    blocking(move || {
+        let picked = pick_export_path(&app, analytics_csv::suggested_file_name(kind), "csv");
+        export_analytics_csv_inner(&app.state::<AppState>(), kind, picked)
+    })
+    .await
+}
+
+/// `PngKind` has no Swift equivalent filename convention to port (`presentImageSavePanel` took its
+/// suggested name from its own caller, which the IPC contract's bare `save_png(kind, bytes)` has
+/// no room for) -- a plain kebab-case name matching `analytics_csv::suggested_file_name`'s own
+/// style for the other export kind in this file.
+fn png_file_name(kind: PngKind) -> &'static str {
+    match kind {
+        PngKind::Analytics => "analytics.png",
+        PngKind::EditDiff => "edit-diff.png",
+    }
+}
+
+fn save_png_inner(bytes: &[u8], picked: Option<std::path::PathBuf>) -> Result<WriteOutcome> {
+    heimdall_core::export::validate_png(bytes)?;
+    let Some(path) = picked else {
+        return Ok(WriteOutcome::Cancelled);
+    };
+    std::fs::write(&path, bytes).map_err(|e| AppError::from_io(&e, &path))?;
+    Ok(WriteOutcome::Written)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn save_png(app: AppHandle, kind: PngKind, bytes: Vec<u8>) -> Result<WriteOutcome> {
+    blocking(move || {
+        let picked = pick_export_path(&app, png_file_name(kind), "png");
+        save_png_inner(&bytes, picked)
+    })
+    .await
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use heimdall_core::paths::ClaudeHome;
+    use std::path::Path;
 
     #[test]
     fn sanitize_filename_replaces_path_separators_and_truncates() {
@@ -289,5 +333,79 @@ mod tests {
             export_edit_patch_inner(&state, "proj", "s1", &block_id, Some(out)).unwrap_err(),
             AppError::InvalidInput { .. }
         ));
+    }
+
+    // MARK: - export_analytics_csv
+
+    fn state_from_fixture(fixture_root: &str) -> AppState {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../fixtures")
+            .join(fixture_root);
+        AppState {
+            claude_home: ClaudeHome::new(root.join("claude-home"), root.join("claude.json")),
+            cache: crate::state::Cache::default(),
+        }
+    }
+
+    #[test]
+    fn export_analytics_csv_no_path_picked_is_cancelled() {
+        let state = state_from_fixture("screenshot");
+        assert_eq!(
+            export_analytics_csv_inner(&state, CsvKind::DailyActivity, None).unwrap(),
+            WriteOutcome::Cancelled
+        );
+    }
+
+    #[test]
+    fn export_analytics_csv_confirmed_writes_a_real_csv_table() {
+        // `fixtures/screenshot` has real transcripts but no `stats-cache.json`, so this exercises
+        // a real recompute end to end, the same path `analytics.rs`'s own tests already confirmed
+        // works against this fixture.
+        let state = state_from_fixture("screenshot");
+        let out = tempfile::tempdir().unwrap().keep().join("daily-activity.csv");
+        assert_eq!(
+            export_analytics_csv_inner(&state, CsvKind::DailyActivity, Some(out.clone())).unwrap(),
+            WriteOutcome::Written
+        );
+        let csv = std::fs::read_to_string(&out).unwrap();
+        assert!(csv.starts_with("Date,Messages,Sessions,Tool Calls\n"));
+    }
+
+    // MARK: - save_png
+
+    const REAL_PNG_PREFIX: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+
+    #[test]
+    fn save_png_rejects_bytes_without_the_png_signature() {
+        let out = tempfile::tempdir().unwrap().keep().join("x.png");
+        assert!(matches!(
+            save_png_inner(b"not a png", Some(out)).unwrap_err(),
+            AppError::InvalidInput { .. }
+        ));
+    }
+
+    #[test]
+    fn save_png_no_path_picked_is_cancelled() {
+        let mut bytes = REAL_PNG_PREFIX.to_vec();
+        bytes.extend_from_slice(b"rest of the file");
+        assert_eq!(save_png_inner(&bytes, None).unwrap(), WriteOutcome::Cancelled);
+    }
+
+    #[test]
+    fn save_png_confirmed_writes_the_real_bytes() {
+        let mut bytes = REAL_PNG_PREFIX.to_vec();
+        bytes.extend_from_slice(b"rest of the file");
+        let out = tempfile::tempdir().unwrap().keep().join("x.png");
+        assert_eq!(
+            save_png_inner(&bytes, Some(out.clone())).unwrap(),
+            WriteOutcome::Written
+        );
+        assert_eq!(std::fs::read(&out).unwrap(), bytes);
+    }
+
+    #[test]
+    fn png_file_name_is_kebab_case_per_kind() {
+        assert_eq!(png_file_name(PngKind::Analytics), "analytics.png");
+        assert_eq!(png_file_name(PngKind::EditDiff), "edit-diff.png");
     }
 }
