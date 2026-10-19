@@ -181,6 +181,13 @@ pub fn update<R: Runtime>(app: &AppHandle<R>, patch: PrefsPatch) -> Result<Prefs
     validate_patch(&patch, TargetOs::current())?;
     let updated = apply_patch(load(app)?, patch);
     save(app, &updated)?;
+    // AC3 (M3-56): a live toggle, not just the next-launch value `init_window_tray`/`init_linux`
+    // already read at startup. `try_state` (not `state`, which panics if the tray never managed
+    // one) mirrors `reregister_watched_folders`'s own tolerance for a handle that may not exist
+    // yet -- true today only in tests that build an `AppState` without also calling `tray::init`.
+    if let Some(tray) = app.try_state::<crate::tray::TrayHandle>() {
+        tray.set_visible(updated.show_menu_bar_icon);
+    }
     Ok(updated)
 }
 

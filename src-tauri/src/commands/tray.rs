@@ -30,7 +30,9 @@ pub async fn get_tray_snapshot(app: AppHandle, query: Option<String>) -> Result<
 /// Shows and focuses the main window (creating it is `window::init`'s own job at startup; this
 /// never happens before that has run), then emits `Navigate` for the router to act on
 /// (`src-tauri/src/events.rs`'s own doc comment already named this as `Navigate`'s one caller).
-fn open_in_main_window_inner<R: Runtime>(app: &AppHandle<R>, target: NavTarget) -> Result<()> {
+/// `pub(crate)`: `crate::tray`'s own Linux menu (M3-56) reuses this exact logic for its "Open
+/// Heimdall" and per-session items, rather than duplicating show/focus/emit a second time.
+pub(crate) fn open_in_main_window_inner<R: Runtime>(app: &AppHandle<R>, target: NavTarget) -> Result<()> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| AppError::not_found("no main window"))?;
