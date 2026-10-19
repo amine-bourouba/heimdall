@@ -254,17 +254,24 @@ jobs:
         run: npm ci
 
       # tauri-build's own build.rs (src-tauri/build.rs) embeds whatever already exists under
-      # dist/ -- this has to run before `cargo build`, not after.
+      # dist/ -- this has to run before building the app, not after.
       - name: npm run build
         run: npm run build
 
-      # Debug build, not release: real-app smoke only needs a window that opens and renders, and
-      # a debug build is both faster to produce and the one both e2e/support/tauriCdp.ts and
-      # e2e/smoke/wdio.conf.mjs already expect at target/debug/ (M2-29: both scripts previously
-      # hard-coded src-tauri/target/debug/ instead, which never existed at all -- src-tauri is a
-      # cargo workspace *member*, so every build lands in the shared workspace target/).
-      - name: cargo build -p heimdall-desktop
-        run: cargo build -p heimdall-desktop
+      # Not a plain `cargo build -p heimdall-desktop`: confirmed directly (a real, fresh binary,
+      # both debug and release profile) that a bare `cargo build` always produces a binary that
+      # tries Vite's dev server at localhost:1420 and gets ERR_CONNECTION_REFUSED, never the
+      # bundled dist/ assets npm run build above just produced -- this is not a debug-vs-release
+      # distinction at all (an earlier version of this comment guessed `--release` would fix it;
+      # it does not). The `tauri` CLI's own `build` command is what correctly wires frontendDist
+      # instead of devUrl; `--debug` keeps it an unoptimized debug build (fast, and the one both
+      # e2e/support/tauriCdp.ts and e2e/smoke/wdio.conf.mjs already expect at target/debug/) and
+      # `--no-bundle` skips installer/package creation real-app smoke has no use for. Still lands
+      # at target/debug/heimdall-desktop[.exe] (M2-29: both scripts previously hard-coded
+      # src-tauri/target/debug/ instead, which never existed at all -- src-tauri is a cargo
+      # workspace *member*, so every build lands in the shared workspace target/).
+      - name: tauri build --debug --no-bundle
+        run: npx tauri build --debug --no-bundle
 
       - name: Linux real-app smoke (tauri-driver)
         if: runner.os == 'Linux'

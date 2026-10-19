@@ -113,8 +113,14 @@ export async function assertNoMaliciousTranscriptEscape(page: Page): Promise<voi
   // The fixture's only project has exactly one session -- clicking the first/only session row
   // rather than matching an exact title, since the real session's title is Rust-derived from the
   // transcript's own (attacker-controlled) first message text, not a clean string knowable ahead
-  // of time the way the mocked spec's hand-set title is.
-  await page.locator('nav[aria-label="Sessions"] li button').first().click();
+  // of time the way the mocked spec's hand-set title is. Waiting for the row to actually exist
+  // first (not just the sidebar's own shell, which renders before the real, asynchronously
+  // loaded session list does) matters: a real click against a not-yet-populated list looked
+  // exactly like a route-sync bug the first time this was tried without the wait -- confirmed to
+  // be a test-timing artifact, not a real defect, only after adding it.
+  const sessionButton = page.locator('nav[aria-label="Sessions"] li button').first();
+  await sessionButton.waitFor({ timeout: 10_000 });
+  await sessionButton.click();
   await page.waitForSelector('h1', { timeout: 10_000 });
   await page.waitForTimeout(500);
 
