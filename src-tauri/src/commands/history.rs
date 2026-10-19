@@ -1,13 +1,16 @@
 //! Commands in commands/history.rs (docs/ipc-contract.md §6): typed stubs frozen in M1-37,
-//! `list_history`'s real body lands here (M1-43); `delete_history_entry`/`clear_history_older_than`
-//! stay stubs (M3-46). Every body runs through `state::blocking` (contract §1).
+//! `list_history`'s real body landed in M1-43; `delete_history_entry`/`clear_history_older_than`
+//! land here (M3-46). Every body runs through `state::blocking` (contract §1).
+
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use heimdall_core::data::history;
 use heimdall_core::data::history::HistoryPage;
-use heimdall_core::{AppError, Result, WriteOutcome};
+use heimdall_core::data::history_write;
+use heimdall_core::{Result, WriteOutcome};
 use tauri::{AppHandle, Manager};
 
-use crate::state::{AppState, blocking};
+use crate::state::{AppState, blocking, confirm_delete};
 
 fn list_history_inner(state: &AppState, offset: u32, limit: u32) -> Result<HistoryPage> {
     history::page(&state.claude_home.history_file(), offset, limit)
@@ -19,18 +22,48 @@ pub async fn list_history(app: AppHandle, offset: u32, limit: u32) -> Result<His
     blocking(move || list_history_inner(&app.state::<AppState>(), offset, limit)).await
 }
 
-#[tauri::command]
-#[specta::specta]
-pub async fn delete_history_entry(entry_id: String) -> Result<WriteOutcome> {
-    let _ = entry_id;
-    Err(AppError::not_implemented("delete_history_entry"))
+fn delete_history_entry_inner(state: &AppState, entry_id: &str, confirmed: bool) -> Result<WriteOutcome> {
+    if !confirmed {
+        return Ok(WriteOutcome::Cancelled);
+    }
+    history_write::delete_entry(&state.claude_home.history_file(), entry_id)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn clear_history_older_than(days: u32) -> Result<WriteOutcome> {
-    let _ = days;
-    Err(AppError::not_implemented("clear_history_older_than"))
+pub async fn delete_history_entry(app: AppHandle, entry_id: String) -> Result<WriteOutcome> {
+    blocking(move || {
+        let confirmed = confirm_delete(&app, "Delete this prompt from history? This cannot be undone.");
+        delete_history_entry_inner(&app.state::<AppState>(), &entry_id, confirmed)
+    })
+    .await
+}
+
+fn now_ms() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
+}
+
+fn clear_history_older_than_inner(state: &AppState, days: u32, confirmed: bool) -> Result<WriteOutcome> {
+    if !confirmed {
+        return Ok(WriteOutcome::Cancelled);
+    }
+    history_write::clear_older_than(&state.claude_home.history_file(), days, now_ms())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn clear_history_older_than(app: AppHandle, days: u32) -> Result<WriteOutcome> {
+    blocking(move || {
+        let confirmed = confirm_delete(
+            &app,
+            &format!("Delete every history entry older than {days} days? This cannot be undone."),
+        );
+        clear_history_older_than_inner(&app.state::<AppState>(), days, confirmed)
+    })
+    .await
 }
 
 #[cfg(test)]
@@ -74,5 +107,69 @@ mod tests {
         };
         let page = list_history_inner(&state, 0, 10).unwrap();
         assert_eq!((page.entries.len(), page.total, page.skipped), (0, 0, 0));
+    }
+
+    /// A fresh tempdir with its own `history.jsonl` -- never the shared `fixtures/synthetic` tree
+    /// read above, since these tests delete from it.
+    fn state_with_history(content: &str) -> AppState {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("history.jsonl"), content).unwrap();
+        // `ClaudeHome::new`'s `root` leaks for the test's lifetime by boxing the tempdir away --
+        // simplest is to just forget the guard so the file outlives this function.
+        let root = dir.keep();
+        AppState {
+            claude_home: ClaudeHome::new(&root, root.join(".claude.json")),
+            cache: crate::state::Cache::default(),
+        }
+    }
+
+    fn line(display: &str, ts: i64) -> String {
+        format!(r#"{{"display":"{display}","pastedContents":{{}},"timestamp":{ts},"project":"/x"}}"#)
+    }
+
+    #[test]
+    fn delete_history_entry_declined_is_cancelled_and_writes_nothing() {
+        let state = state_with_history(&line("a", 1000));
+        let before = std::fs::read(state.claude_home.history_file()).unwrap();
+        assert_eq!(
+            delete_history_entry_inner(&state, "anything", false).unwrap(),
+            WriteOutcome::Cancelled
+        );
+        assert_eq!(std::fs::read(state.claude_home.history_file()).unwrap(), before);
+    }
+
+    #[test]
+    fn delete_history_entry_confirmed_removes_the_matching_line() {
+        let state = state_with_history(&line("a", 1000));
+        let id = list_history_inner(&state, 0, 10).unwrap().entries[0].id.clone();
+        assert_eq!(
+            delete_history_entry_inner(&state, &id, true).unwrap(),
+            WriteOutcome::Written
+        );
+        assert!(list_history_inner(&state, 0, 10).unwrap().entries.is_empty());
+    }
+
+    #[test]
+    fn clear_history_older_than_declined_is_cancelled_and_writes_nothing() {
+        let state = state_with_history(&line("a", 1000));
+        let before = std::fs::read(state.claude_home.history_file()).unwrap();
+        assert_eq!(
+            clear_history_older_than_inner(&state, 0, false).unwrap(),
+            WriteOutcome::Cancelled
+        );
+        assert_eq!(std::fs::read(state.claude_home.history_file()).unwrap(), before);
+    }
+
+    #[test]
+    fn clear_history_older_than_confirmed_removes_entries_before_the_cutoff() {
+        let day_ms: i64 = 86_400_000;
+        let now = now_ms();
+        let state = state_with_history(&[line("old", now - 10 * day_ms), line("new", now)].join("\n"));
+        assert_eq!(
+            clear_history_older_than_inner(&state, 1, true).unwrap(),
+            WriteOutcome::Written
+        );
+        let remaining = list_history_inner(&state, 0, 10).unwrap().entries;
+        assert_eq!((remaining.len(), remaining[0].display.as_str()), (1, "new"));
     }
 }

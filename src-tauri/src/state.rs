@@ -17,6 +17,8 @@ use std::time::SystemTime;
 use heimdall_core::classify::Area;
 use heimdall_core::error::{AppError, Result};
 use heimdall_core::paths::ClaudeHome;
+use tauri::{AppHandle, Runtime};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 /// `HEIMDALL_CLAUDE_HOME` lets a debug build point at a fixture tree instead of the real
 /// `~/.claude`. Reading it in a release build would let an attacker-controlled environment
@@ -138,6 +140,21 @@ where
     tauri::async_runtime::spawn_blocking(f)
         .await
         .expect("blocking task panicked")
+}
+
+/// A native "are you sure?" dialog for a delete command (M3-46's own Goal: "confirm natively and
+/// then delete through core") -- blocks the calling (blocking-pool) thread until answered, the
+/// same pattern `prefs::pick_folder` already uses for its own native dialog. `true` only if the
+/// user pressed the destructive button; a command's own `*_inner` function takes that as a plain
+/// `bool` so it stays testable without ever showing a real dialog (`prefs::pick_config_project`'s
+/// own `picked: Option<String>` parameter is the same shape, for the same reason).
+pub fn confirm_delete<R: Runtime>(app: &AppHandle<R>, message: &str) -> bool {
+    app.dialog()
+        .message(message)
+        .title("Confirm Delete")
+        .kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::OkCancelCustom("Delete".into(), "Cancel".into()))
+        .blocking_show()
 }
 
 #[cfg(test)]

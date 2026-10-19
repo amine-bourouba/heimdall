@@ -1,5 +1,5 @@
 //! Commands in commands/sessions.rs (docs/ipc-contract.md §6): typed stubs frozen in M1-37,
-//! real bodies land here (M1-41) for the MVP rows; `delete_session`/`delete_project` stay stubs
+//! real bodies landed in M1-41 for the MVP rows; `delete_session`/`delete_project` land here
 //! (M3-46). Every body runs through `state::blocking` (contract §1).
 
 use std::collections::BTreeSet;
@@ -13,12 +13,13 @@ use heimdall_core::models::message::MessagePage;
 use heimdall_core::models::project::{Project, ProjectSummary};
 use heimdall_core::models::session::{Session, SessionDetail, SessionSummary};
 use heimdall_core::paths::{ClaudeHome, TargetOs, plain_file_name};
+use heimdall_core::projects::delete as delete_core;
 use heimdall_core::projects::discovery::{discover, load_project};
 use heimdall_core::transcript::full::{self, ParseContext};
 use heimdall_core::{AppError, Loaded, Result, WriteOutcome};
 use tauri::{AppHandle, Manager};
 
-use crate::state::{AppState, blocking};
+use crate::state::{AppState, blocking, confirm_delete};
 
 /// Resolves a `ProjectId` to its folder under `~/.claude/projects/`; rejects a malformed id
 /// before it ever becomes a path (ADR 0010) and one that does not exist as `notFound` (contract §4).
@@ -270,18 +271,47 @@ pub async fn list_recent_sessions(app: AppHandle, limit: u32) -> Result<Vec<Rece
     blocking(move || list_recent_sessions_inner(&app.state::<AppState>(), limit)).await
 }
 
-#[tauri::command]
-#[specta::specta]
-pub async fn delete_session(project_id: String, session_id: String) -> Result<WriteOutcome> {
-    let _ = (project_id, session_id);
-    Err(AppError::not_implemented("delete_session"))
+fn delete_session_inner(state: &AppState, project_id: &str, session_id: &str, confirmed: bool) -> Result<WriteOutcome> {
+    if !confirmed {
+        return Ok(WriteOutcome::Cancelled);
+    }
+    let claude_home = &state.claude_home;
+    delete_core::delete_session(
+        &claude_home.projects_dir(),
+        &claude_home.todos_dir(),
+        project_id,
+        session_id,
+    )
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn delete_project(project_id: String) -> Result<WriteOutcome> {
-    let _ = project_id;
-    Err(AppError::not_implemented("delete_project"))
+pub async fn delete_session(app: AppHandle, project_id: String, session_id: String) -> Result<WriteOutcome> {
+    blocking(move || {
+        let confirmed = confirm_delete(&app, "Delete this session? This cannot be undone.");
+        delete_session_inner(&app.state::<AppState>(), &project_id, &session_id, confirmed)
+    })
+    .await
+}
+
+fn delete_project_inner(state: &AppState, project_id: &str, confirmed: bool) -> Result<WriteOutcome> {
+    if !confirmed {
+        return Ok(WriteOutcome::Cancelled);
+    }
+    delete_core::delete_project(&state.claude_home.projects_dir(), project_id)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn delete_project(app: AppHandle, project_id: String) -> Result<WriteOutcome> {
+    blocking(move || {
+        let confirmed = confirm_delete(
+            &app,
+            "Delete this whole project, including every session in it? This cannot be undone.",
+        );
+        delete_project_inner(&app.state::<AppState>(), &project_id, confirmed)
+    })
+    .await
 }
 
 #[cfg(test)]
@@ -442,5 +472,64 @@ mod tests {
     #[test]
     fn list_recent_sessions_limit_zero_returns_nothing() {
         assert!(list_recent_sessions_inner(&state(), 0).unwrap().is_empty());
+    }
+
+    /// A fresh tempdir with one project and one session file -- never the shared
+    /// `fixtures/screenshot` tree `state()` reads above, since these tests delete from it.
+    fn state_with_project(project_id: &str, session_id: &str) -> AppState {
+        let dir = tempfile::tempdir().unwrap();
+        let project_dir = dir.path().join("projects").join(project_id);
+        std::fs::create_dir_all(&project_dir).unwrap();
+        std::fs::write(project_dir.join(format!("{session_id}.jsonl")), "{}").unwrap();
+        std::fs::create_dir_all(dir.path().join("todos")).unwrap();
+        let root = dir.keep();
+        AppState {
+            claude_home: ClaudeHome::new(&root, root.join(".claude.json")),
+            cache: crate::state::Cache::default(),
+        }
+    }
+
+    #[test]
+    fn delete_session_declined_is_cancelled_and_writes_nothing() {
+        let state = state_with_project("proj", "s1");
+        let path = state.claude_home.projects_dir().join("proj").join("s1.jsonl");
+        assert_eq!(
+            delete_session_inner(&state, "proj", "s1", false).unwrap(),
+            WriteOutcome::Cancelled
+        );
+        assert!(path.exists());
+    }
+
+    #[test]
+    fn delete_session_confirmed_removes_the_file() {
+        let state = state_with_project("proj", "s1");
+        let path = state.claude_home.projects_dir().join("proj").join("s1.jsonl");
+        assert_eq!(
+            delete_session_inner(&state, "proj", "s1", true).unwrap(),
+            WriteOutcome::Written
+        );
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn delete_project_declined_is_cancelled_and_writes_nothing() {
+        let state = state_with_project("proj", "s1");
+        let dir = state.claude_home.projects_dir().join("proj");
+        assert_eq!(
+            delete_project_inner(&state, "proj", false).unwrap(),
+            WriteOutcome::Cancelled
+        );
+        assert!(dir.exists());
+    }
+
+    #[test]
+    fn delete_project_confirmed_removes_the_whole_folder() {
+        let state = state_with_project("proj", "s1");
+        let dir = state.claude_home.projects_dir().join("proj");
+        assert_eq!(
+            delete_project_inner(&state, "proj", true).unwrap(),
+            WriteOutcome::Written
+        );
+        assert!(!dir.exists());
     }
 }
