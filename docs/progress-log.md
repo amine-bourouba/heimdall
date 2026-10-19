@@ -1981,3 +1981,23 @@ Append-only record of every task. Gate-review tasks (M1-59, M2-30, M3-20, M3-62,
   - `cargo check -p heimdall-desktop --all-targets`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo fmt --check` all clean. `cargo test -p heimdall-core` → **708 passed** (695 before this task + 13 new). `node scripts/check-bindings.mjs` confirms zero binding drift.
 - **Deviations:** `validate_png` living in `export/mod.rs` rather than a file of its own is a small placement choice, not a scope change — `PngKind`/`ExportDestination`/`CsvKind` already live there as the shared types every export kind needs, and one function used by exactly one caller didn't need its own module. Otherwise none: both of this task's own ACs are satisfied by the named Outputs alone.
 - **Follow-ups:** The stray `crates/heimdall-core/src/export/session_markdown.rs.bak_debug` file M3-09's own entry already flagged is still there, still outside any one task's own scope to clean up unilaterally — now flagged a second time. The `STATUS_ENTRYPOINT_NOT_FOUND` defect (M1-59) now blocks real local execution of 84 tests across eight tasks (M3-09, M3-30, M3-36, M3-44, M3-45, M3-46, M3-52, M3-53) on this machine alone — this count keeps growing every task that touches `src-tauri` at all, and is by far the single biggest unresolved risk to this session's own ability to verify its own work.
+
+### M4-15 · Retire the Swift golden harness (conditional) · 2026-10-19
+
+- **Agent:** swift-expert   **Reviewers:** pending (legacy-modernizer, qa-expert — this task's own named reviewers)
+- **Status:** done, but **out of order and against this task's own precondition** — see Deviations. Taken now at the user's explicit direction, bundled with a repo-wide request to remove Poirot references, not because the natural condition was met.
+- **Files touched:** `tools/golden-oracle/` — delete (`GoldenOracleTests.swift`, `README.md`), the named Output.
+- **Evidence:**
+  - AC2 (`fixtures/golden/` and `golden_parity.rs` remain and still pass): neither was touched by this deletion; `golden_parity.rs` compares already-committed fixture JSON under `fixtures/golden/` and has no dependency on `tools/golden-oracle/` or the workflow that produced it, confirmed by reading its own imports before deleting anything.
+- **Deviations:** AC1 is **not** satisfied and this task's own precondition was not checked true before acting — MVP parity across Windows and Linux is not established (the M3 frontend backlog is still in progress) and `docs/spec/test-carryover.md`'s parser rows were not re-audited. The user asked directly for the harness and its workflow retired now, as part of removing "Poirot" from the codebase; this entry records that as what actually happened rather than silently marking AC1 satisfied. If MVP parity work later surfaces a real need for the oracle, it is recoverable from git history (this commit and its parent).
+- **Follow-ups:** M4-16 (workflow deletion) follows immediately. Should MVP parity verification (M4-14 and friends) later need the oracle again, re-add it from git history rather than rebuilding from scratch — the Swift harness, its "known gaps" notes and the copy-in procedure it depended on are all still in this repository's history, just not its current tree.
+
+### M4-16 · Retire the golden-oracle workflow · 2026-10-19
+
+- **Agent:** deployment-engineer   **Reviewers:** pending (architect-reviewer, security-auditor — this task's own named reviewers)
+- **Status:** done
+- **Files touched:** `.github/workflows/golden-oracle.yml` — delete, the named Output.
+- **Evidence:**
+  - AC1 (no workflow references `tools/golden-oracle`): the only workflow that ever did is this one, now deleted; confirmed with `git grep -l golden-oracle .github/workflows` returning nothing afterward.
+- **Deviations:** Same as M4-15's own entry immediately above — taken ahead of M4-15's natural precondition, at the user's explicit direction, bundled with a repo-wide Poirot-reference removal rather than as an independent, organically-triggered retirement.
+- **Follow-ups:** None beyond M4-15's own. `docs/adr/0001-repo-layout-and-swift-reference.md` point 4 was updated in the same change to record the retirement and its real date.

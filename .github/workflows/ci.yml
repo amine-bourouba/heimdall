@@ -1,8 +1,8 @@
 name: CI
 
 # Task M1-58 (the `rust` job); M2-29 adds `frontend`, `e2e-mocked` and `e2e-real-app-smoke`. Runs
-# on every push and pull request (unlike golden-oracle.yml, which is manual-only) — this is the
-# day-to-day gate for the whole repo: Rust formatting/lints/tests/supply-chain checks, the
+# on every push and pull request — this is the day-to-day gate for the whole repo: Rust
+# formatting/lints/tests/supply-chain checks, the
 # generated-bindings and DTO-fixture drift checks, the heimdall-core coverage gate, frontend
 # lint/typecheck/coverage/audit/security-lint/bundle-size, and both halves of the Playwright and
 # real-app E2E suites (e2e/README.md).
