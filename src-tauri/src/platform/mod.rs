@@ -3,7 +3,6 @@
 //! below, so only the file for the host actually building ever gets compiled at all -- there is
 //! no cross-OS stub to keep in sync, since the "no OS-specific work needed here" case
 //! (macOS/Linux) is written as a real, if trivially small, module rather than left unwritten.
-#![allow(dead_code)] // no caller until the launch commands (M3-53) land
 
 #[cfg(target_os = "windows")]
 mod windows;

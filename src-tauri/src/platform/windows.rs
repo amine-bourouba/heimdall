@@ -1,5 +1,4 @@
 //! Windows launch execution (M3-52's own AC1: `CREATE_NO_WINDOW`).
-#![allow(dead_code)] // no caller until the launch commands (M3-53) land
 
 /// Suppresses the console window Windows would otherwise flash open for a console-subsystem
 /// program (`cmd.exe`, `powershell.exe`) -- harmless to apply unconditionally to every spawn,

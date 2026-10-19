@@ -38,7 +38,7 @@ pub(super) fn project_dir(claude_home: &ClaudeHome, project_id: &str) -> Result<
 /// UUID/`agent-` shape (`os_integration::launch::valid_session_id`), which real Claude Code ids
 /// always satisfy but this task's own fixture data (`fixtures/screenshot`, short names like
 /// `conv-001` from ScreenshotData.swift) does not.
-fn find_session<'a>(project: &'a Project, session_id: &str) -> Result<&'a Session> {
+pub(super) fn find_session<'a>(project: &'a Project, session_id: &str) -> Result<&'a Session> {
     plain_file_name(session_id)?;
     project
         .sessions

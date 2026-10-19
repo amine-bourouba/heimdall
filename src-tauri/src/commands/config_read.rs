@@ -383,7 +383,7 @@ pub async fn list_memory_sources(app: AppHandle) -> Result<Vec<MemorySource>> {
 
 /// Every memory file of the source `sourceId` names — `project:<id>` or `folder:<index>` into
 /// `Prefs.customMemoryFolders` (contract `MemorySourceId`).
-fn memory_files_for_source<R: tauri::Runtime>(
+pub(super) fn memory_files_for_source<R: tauri::Runtime>(
     app: &AppHandle<R>,
     state: &AppState,
     source_id: &str,
