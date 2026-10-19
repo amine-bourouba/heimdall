@@ -6,6 +6,7 @@
 // `e2e/smoke/` rather than another tauri-driver target: tauri-driver has no Windows benefit over
 // just connecting directly, and A-10 already rules it out for macOS.
 import { spawn, type ChildProcess } from 'node:child_process';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium, type Browser, type Page } from '@playwright/test';
 
@@ -45,10 +46,15 @@ export interface LaunchedTauriApp {
 /** Launches the real debug binary with a fixture `HEIMDALL_CLAUDE_HOME`, waits for WebView2's CDP
  * endpoint, and connects Playwright to the window it actually opened. */
 export async function launchTauriAppOverCdp(claudeHome: string): Promise<LaunchedTauriApp> {
+  // `state.rs`'s own `resolve_claude_home` rejects a relative `HEIMDALL_CLAUDE_HOME` outright
+  // ("must be an absolute path") -- confirmed directly against a real, freshly built binary,
+  // which panicked on exactly this the first time this script ever ran against one. `claudeHome`
+  // is relative by default (and by convention in every caller here, e.g. `fixtures/screenshot/
+  // claude-home`), so it must be resolved before being handed to the child process.
   const child = spawn(BINARY_PATH, [], {
     env: {
       ...process.env,
-      HEIMDALL_CLAUDE_HOME: claudeHome,
+      HEIMDALL_CLAUDE_HOME: path.resolve(claudeHome),
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${CDP_PORT}`,
     },
     stdio: 'pipe',
