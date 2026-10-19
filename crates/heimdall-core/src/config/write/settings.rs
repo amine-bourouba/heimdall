@@ -15,7 +15,7 @@ use serde_json::{Map, Value};
 
 use super::json_doc::JsonDoc;
 use crate::error::{AppError, Result, WriteOutcome};
-use crate::models::config::hook::{HookGroupInput, HookHandler};
+use crate::models::config::hook::{HookEntry, HookGroupInput, HookHandler};
 use crate::models::config::scope::ConfigScope;
 
 fn global_settings_path(claude_home: &Path) -> PathBuf {
@@ -286,6 +286,32 @@ pub fn import_hooks(
     }
     doc.save()?;
     Ok(count)
+}
+
+/// `{"hooks": {<event>: [<group>, ...]}}`, the same wrapper shape [`import_hooks`] reads back and
+/// `SettingsWriter.exportHooksAsJSON` writes. Pure serialization of already-loaded entries
+/// (`config::read::hooks::load`, M3-44's own caller) -- no file read, no safe-write primitive,
+/// nothing that can fail, so (unlike every write above) this returns the bytes directly rather
+/// than a `Result`.
+pub fn export_hooks(entries: &[HookEntry]) -> Vec<u8> {
+    let mut hooks = Map::new();
+    for entry in entries {
+        let mut group = Map::new();
+        if let Some(matcher) = &entry.matcher {
+            group.insert("matcher".to_string(), Value::String(matcher.clone()));
+        }
+        let handlers: Vec<Value> = entry.handlers.iter().map(|h| Value::Object(h.to_json())).collect();
+        group.insert("hooks".to_string(), Value::Array(handlers));
+        hooks
+            .entry(entry.event.clone())
+            .or_insert_with(|| Value::Array(Vec::new()))
+            .as_array_mut()
+            .expect("just inserted as an array")
+            .push(Value::Object(group));
+    }
+    let mut wrapper = Map::new();
+    wrapper.insert("hooks".to_string(), Value::Object(hooks));
+    serde_json::to_vec_pretty(&Value::Object(wrapper)).expect("built entirely from safe, already-valid JSON values")
 }
 
 #[cfg(test)]
@@ -564,6 +590,68 @@ mod tests {
         let v = read(&d.path().join("settings.json"));
         assert_eq!(v["hooks"]["PreToolUse"].as_array().unwrap().len(), 2);
         assert_eq!(v["hooks"]["Stop"].as_array().unwrap().len(), 1);
+    }
+
+    // MARK: - Hook export
+
+    #[test]
+    fn export_then_import_round_trips_every_entry() {
+        let entries = vec![HookEntry {
+            event: "PreToolUse".to_string(),
+            matcher_group_index: 0,
+            matcher: Some("Edit|Write".to_string()),
+            handlers: vec![
+                HookHandler::from_json(
+                    json!({"type": "command", "command": "a.sh", "timeout": 30})
+                        .as_object()
+                        .unwrap(),
+                )
+                .unwrap(),
+                HookHandler::from_json(json!({"type": "http", "url": "https://h"}).as_object().unwrap()).unwrap(),
+            ],
+            scope: ConfigScope::Global,
+        }];
+        let bytes = export_hooks(&entries);
+        let d = tempfile::tempdir().unwrap();
+        let count = import_hooks(d.path(), ConfigScope::Global, None, &bytes).unwrap();
+        assert_eq!(count, 1);
+        let v = read(&d.path().join("settings.json"));
+        let group = &v["hooks"]["PreToolUse"][0];
+        assert_eq!(group["matcher"], "Edit|Write");
+        assert_eq!(group["hooks"][0]["command"], "a.sh");
+        assert_eq!(group["hooks"][0]["timeout"], 30);
+        assert_eq!(group["hooks"][1]["url"], "https://h");
+    }
+
+    #[test]
+    fn export_groups_multiple_entries_under_the_same_event() {
+        let handlers = |cmd: &str| {
+            vec![HookHandler::from_json(json!({"type": "command", "command": cmd}).as_object().unwrap()).unwrap()]
+        };
+        let entries = vec![
+            HookEntry {
+                event: "PreToolUse".to_string(),
+                matcher_group_index: 0,
+                matcher: None,
+                handlers: handlers("a.sh"),
+                scope: ConfigScope::Global,
+            },
+            HookEntry {
+                event: "PreToolUse".to_string(),
+                matcher_group_index: 1,
+                matcher: None,
+                handlers: handlers("b.sh"),
+                scope: ConfigScope::Project,
+            },
+        ];
+        let wrapper: Value = serde_json::from_slice(&export_hooks(&entries)).unwrap();
+        assert_eq!(wrapper["hooks"]["PreToolUse"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn exporting_no_entries_is_an_empty_hooks_object() {
+        let wrapper: Value = serde_json::from_slice(&export_hooks(&[])).unwrap();
+        assert_eq!(wrapper, json!({"hooks": {}}));
     }
 
     #[test]

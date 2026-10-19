@@ -142,19 +142,45 @@ where
         .expect("blocking task panicked")
 }
 
-/// A native "are you sure?" dialog for a delete command (M3-46's own Goal: "confirm natively and
-/// then delete through core") -- blocks the calling (blocking-pool) thread until answered, the
+/// A native confirmation dialog -- blocks the calling (blocking-pool) thread until answered, the
 /// same pattern `prefs::pick_folder` already uses for its own native dialog. `true` only if the
-/// user pressed the destructive button; a command's own `*_inner` function takes that as a plain
-/// `bool` so it stays testable without ever showing a real dialog (`prefs::pick_config_project`'s
-/// own `picked: Option<String>` parameter is the same shape, for the same reason).
-pub fn confirm_delete<R: Runtime>(app: &AppHandle<R>, message: &str) -> bool {
+/// user pressed `confirm_label`; a command's own `*_inner` function takes that as a plain `bool`
+/// so it stays testable without ever showing a real dialog (`prefs::pick_config_project`'s own
+/// `picked: Option<String>` parameter is the same shape, for the same reason). Used both for a
+/// plain "are you sure?" delete (M3-46) and for ADR 0010 control 6's own stricter requirement --
+/// showing the exact command/URL/argument values about to be written, for hook save and import
+/// (M3-44) -- the two differ only in their wording and button label, never in the mechanism.
+pub fn confirm<R: Runtime>(app: &AppHandle<R>, title: &str, message: &str, confirm_label: &str) -> bool {
     app.dialog()
         .message(message)
-        .title("Confirm Delete")
+        .title(title)
         .kind(MessageDialogKind::Warning)
-        .buttons(MessageDialogButtons::OkCancelCustom("Delete".into(), "Cancel".into()))
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            confirm_label.into(),
+            "Cancel".into(),
+        ))
         .blocking_show()
+}
+
+/// Opens a native "choose a file" dialog restricted to `extension` (ADR 0010 rule 5: the webview
+/// never supplies a path). `None` for a dismissed dialog or a picked path `tauri_plugin_dialog`
+/// could not resolve to a real filesystem path.
+pub fn pick_import_path<R: Runtime>(app: &AppHandle<R>, extension: &str) -> Option<PathBuf> {
+    app.dialog()
+        .file()
+        .add_filter(extension.to_uppercase(), &[extension])
+        .blocking_pick_file()
+        .and_then(|f| f.into_path().ok())
+}
+
+/// Opens a native "save as" dialog suggesting `default_name`, restricted to `extension`.
+pub fn pick_export_path<R: Runtime>(app: &AppHandle<R>, default_name: &str, extension: &str) -> Option<PathBuf> {
+    app.dialog()
+        .file()
+        .add_filter(extension.to_uppercase(), &[extension])
+        .set_file_name(default_name)
+        .blocking_save_file()
+        .and_then(|f| f.into_path().ok())
 }
 
 #[cfg(test)]

@@ -19,7 +19,7 @@ use heimdall_core::transcript::full::{self, ParseContext};
 use heimdall_core::{AppError, Loaded, Result, WriteOutcome};
 use tauri::{AppHandle, Manager};
 
-use crate::state::{AppState, blocking, confirm_delete};
+use crate::state::{AppState, blocking, confirm};
 
 /// Resolves a `ProjectId` to its folder under `~/.claude/projects/`; rejects a malformed id
 /// before it ever becomes a path (ADR 0010) and one that does not exist as `notFound` (contract §4).
@@ -288,7 +288,12 @@ fn delete_session_inner(state: &AppState, project_id: &str, session_id: &str, co
 #[specta::specta]
 pub async fn delete_session(app: AppHandle, project_id: String, session_id: String) -> Result<WriteOutcome> {
     blocking(move || {
-        let confirmed = confirm_delete(&app, "Delete this session? This cannot be undone.");
+        let confirmed = confirm(
+            &app,
+            "Confirm Delete",
+            "Delete this session? This cannot be undone.",
+            "Delete",
+        );
         delete_session_inner(&app.state::<AppState>(), &project_id, &session_id, confirmed)
     })
     .await
@@ -305,9 +310,11 @@ fn delete_project_inner(state: &AppState, project_id: &str, confirmed: bool) -> 
 #[specta::specta]
 pub async fn delete_project(app: AppHandle, project_id: String) -> Result<WriteOutcome> {
     blocking(move || {
-        let confirmed = confirm_delete(
+        let confirmed = confirm(
             &app,
+            "Confirm Delete",
             "Delete this whole project, including every session in it? This cannot be undone.",
+            "Delete",
         );
         delete_project_inner(&app.state::<AppState>(), &project_id, confirmed)
     })

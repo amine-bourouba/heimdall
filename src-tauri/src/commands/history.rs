@@ -10,7 +10,7 @@ use heimdall_core::data::history_write;
 use heimdall_core::{Result, WriteOutcome};
 use tauri::{AppHandle, Manager};
 
-use crate::state::{AppState, blocking, confirm_delete};
+use crate::state::{AppState, blocking, confirm};
 
 fn list_history_inner(state: &AppState, offset: u32, limit: u32) -> Result<HistoryPage> {
     history::page(&state.claude_home.history_file(), offset, limit)
@@ -33,7 +33,12 @@ fn delete_history_entry_inner(state: &AppState, entry_id: &str, confirmed: bool)
 #[specta::specta]
 pub async fn delete_history_entry(app: AppHandle, entry_id: String) -> Result<WriteOutcome> {
     blocking(move || {
-        let confirmed = confirm_delete(&app, "Delete this prompt from history? This cannot be undone.");
+        let confirmed = confirm(
+            &app,
+            "Confirm Delete",
+            "Delete this prompt from history? This cannot be undone.",
+            "Delete",
+        );
         delete_history_entry_inner(&app.state::<AppState>(), &entry_id, confirmed)
     })
     .await
@@ -57,9 +62,11 @@ fn clear_history_older_than_inner(state: &AppState, days: u32, confirmed: bool) 
 #[specta::specta]
 pub async fn clear_history_older_than(app: AppHandle, days: u32) -> Result<WriteOutcome> {
     blocking(move || {
-        let confirmed = confirm_delete(
+        let confirmed = confirm(
             &app,
+            "Confirm Delete",
             &format!("Delete every history entry older than {days} days? This cannot be undone."),
+            "Delete",
         );
         clear_history_older_than_inner(&app.state::<AppState>(), days, confirmed)
     })
