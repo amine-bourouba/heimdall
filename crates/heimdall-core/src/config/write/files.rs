@@ -14,42 +14,17 @@
 //! never need this check at all: their own uniqueness loop already skips straight past any name
 //! that already exists (symlink or not), so a planted symlink is simply never written through.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::error::{AppError, Result, WriteOutcome};
 use crate::models::config::scope::{ConfigKind, ConfigRef};
 use crate::models::config::sub_agent::AgentInput;
+use crate::paths::ensure_within_root;
 
 use super::super::read::{config_ref, item_path, kind_dir};
 
 fn ensure_directory(dir: &Path) -> Result<()> {
     std::fs::create_dir_all(dir).map_err(|e| AppError::from_io(&e, dir))
-}
-
-/// Canonicalises `path` (resolving every symlink) and refuses it unless the result still lies
-/// inside `root`'s own canonical form. `path` may not exist yet (a template about to be created);
-/// in that case its *parent* is canonicalised instead, which still resolves any symlink an
-/// ancestor directory might be, and the (already slug-validated, separator-free) file name is
-/// rejoined untouched.
-fn ensure_within_root(path: &Path, root: &Path) -> Result<PathBuf> {
-    let canonical_root = root.canonicalize().map_err(|e| AppError::from_io(&e, root))?;
-    let canonical = if path.exists() {
-        path.canonicalize().map_err(|e| AppError::from_io(&e, path))?
-    } else {
-        let parent = path
-            .parent()
-            .ok_or_else(|| AppError::invalid_input("path has no parent directory").with_path(path))?;
-        let canonical_parent = parent.canonicalize().map_err(|e| AppError::from_io(&e, parent))?;
-        canonical_parent.join(
-            path.file_name()
-                .ok_or_else(|| AppError::invalid_input("path has no file name").with_path(path))?,
-        )
-    };
-    if canonical.starts_with(&canonical_root) {
-        Ok(canonical)
-    } else {
-        Err(AppError::invalid_input("path escapes its resolved root").with_path(path))
-    }
 }
 
 fn agent_slug(name: &str) -> String {

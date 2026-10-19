@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use crate::error::{AppError, Loaded, Result};
 use crate::models::session_todo::{TodoItem, TodoList};
 
-const AGENT_INFIX: &str = "-agent-";
+pub(crate) const AGENT_INFIX: &str = "-agent-";
 
 /// The todos of one session, from all its files. `skipped` counts files that are not a JSON array
 /// and items that do not parse.

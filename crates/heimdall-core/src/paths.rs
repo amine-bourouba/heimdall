@@ -299,6 +299,35 @@ pub fn plain_file_name(name: &str) -> Result<&str> {
     }
 }
 
+/// Canonicalises `path` (resolving every symlink) and refuses it unless the result still lies
+/// inside `root`'s own canonical form. `path` may not exist yet (a template about to be created,
+/// or a delete target already gone); in that case its *parent* is canonicalised instead, which
+/// still resolves any symlink an ancestor directory might be, and the (already slug-validated,
+/// separator-free) file name is rejoined untouched. Shared by `config::write::files` (M3-42) and
+/// `projects::delete` (M3-43): both delete or rename-replace a path derived from a caller-supplied
+/// slug/id inside a known root, where a planted symlink at that path could otherwise redirect the
+/// operation outside the Claude home.
+pub fn ensure_within_root(path: &Path, root: &Path) -> Result<PathBuf> {
+    let canonical_root = root.canonicalize().map_err(|e| AppError::from_io(&e, root))?;
+    let canonical = if path.exists() {
+        path.canonicalize().map_err(|e| AppError::from_io(&e, path))?
+    } else {
+        let parent = path
+            .parent()
+            .ok_or_else(|| AppError::invalid_input("path has no parent directory").with_path(path))?;
+        let canonical_parent = parent.canonicalize().map_err(|e| AppError::from_io(&e, parent))?;
+        canonical_parent.join(
+            path.file_name()
+                .ok_or_else(|| AppError::invalid_input("path has no file name").with_path(path))?,
+        )
+    };
+    if canonical.starts_with(&canonical_root) {
+        Ok(canonical)
+    } else {
+        Err(AppError::invalid_input("path escapes its resolved root").with_path(path))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
