@@ -8,7 +8,7 @@ use std::path::Path;
 use chrono::{Local, TimeZone};
 
 use super::stats;
-use crate::models::stats_cache::StatsCache;
+use crate::models::stats_cache::{StatsCache, StatsSource, StatsView};
 
 /// The cache, or `None` when it is missing or does not parse.
 pub fn load(path: &Path) -> Option<StatsCache> {
@@ -31,20 +31,34 @@ pub fn is_stale(cache: &StatsCache, latest_session_day: Option<&str>) -> bool {
     latest_session_day.is_some_and(|day| last_tokens < day || last_activity < day)
 }
 
-/// The analytics source: the cache when it is fresh, else a recomputation, else the stale cache.
-pub fn load_analytics(cache_path: &Path, projects_dir: &Path) -> Option<StatsCache> {
+/// The analytics source: the cache when it is fresh, else a recomputation, else the stale cache
+/// (still reported as [`StatsSource::Cache`] -- it did not come from a recomputation, there was
+/// just nothing to recompute from, e.g. no transcripts at all).
+pub fn load_analytics(cache_path: &Path, projects_dir: &Path) -> Option<StatsView> {
     load_analytics_in(cache_path, projects_dir, &Local)
 }
 
-pub fn load_analytics_in<Tz: TimeZone>(cache_path: &Path, projects_dir: &Path, tz: &Tz) -> Option<StatsCache>
+pub fn load_analytics_in<Tz: TimeZone>(cache_path: &Path, projects_dir: &Path, tz: &Tz) -> Option<StatsView>
 where
     Tz::Offset: Display,
 {
     let cache = load(cache_path);
     let latest = stats::latest_session_day_in(projects_dir, tz);
     match cache {
-        Some(c) if !is_stale(&c, latest.as_deref()) => Some(c),
-        cache => stats::compute_in(projects_dir, tz).or(cache),
+        Some(c) if !is_stale(&c, latest.as_deref()) => Some(StatsView {
+            stats: c,
+            source: StatsSource::Cache,
+        }),
+        cache => match stats::compute_in(projects_dir, tz) {
+            Some(computed) => Some(StatsView {
+                stats: computed,
+                source: StatsSource::Computed,
+            }),
+            None => cache.map(|stats| StatsView {
+                stats,
+                source: StatsSource::Cache,
+            }),
+        },
     }
 }
 
@@ -115,7 +129,9 @@ mod tests {
             serde_json::to_vec(&cache(&[("2026-03-15", 1)], &[("2026-03-15", 999)])).unwrap(),
         )
         .unwrap();
-        let s = load_analytics_in(&cache_path, &root.path().join("projects"), &utc()).unwrap();
+        let v = load_analytics_in(&cache_path, &root.path().join("projects"), &utc()).unwrap();
+        assert_eq!(v.source, StatsSource::Computed);
+        let s = &v.stats;
         assert!(s.daily_model_tokens.iter().any(|d| d.date == "2026-08-20"));
         assert!(
             !s.daily_model_tokens
@@ -136,11 +152,12 @@ mod tests {
         fresh.daily_model_tokens[0].tokens_by_model = [("kept-model".to_string(), 1234)].into();
         let cache_path = root.path().join("stats-cache.json");
         std::fs::write(&cache_path, serde_json::to_vec(&fresh).unwrap()).unwrap();
-        let s = load_analytics_in(&cache_path, &projects, &utc()).unwrap();
+        let v = load_analytics_in(&cache_path, &projects, &utc()).unwrap();
+        assert_eq!(v.source, StatsSource::Cache);
         assert_eq!(
             (
-                s.daily_activity[0].message_count,
-                s.daily_model_tokens[0].tokens_by_model.get("kept-model")
+                v.stats.daily_activity[0].message_count,
+                v.stats.daily_model_tokens[0].tokens_by_model.get("kept-model")
             ),
             (42, Some(&1234))
         );
@@ -155,12 +172,7 @@ mod tests {
             serde_json::to_vec(&cache(&[("2026-03-15", 1)], &[])).unwrap(),
         )
         .unwrap();
-        assert_eq!(
-            load_analytics_in(&cache_path, &root.path().join("projects"), &utc())
-                .unwrap()
-                .daily_activity
-                .len(),
-            1
-        );
+        let v = load_analytics_in(&cache_path, &root.path().join("projects"), &utc()).unwrap();
+        assert_eq!((v.stats.daily_activity.len(), v.source), (1, StatsSource::Cache));
     }
 }
