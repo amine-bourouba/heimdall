@@ -44,7 +44,7 @@ pub async fn open_external_url(url: String) -> Result<()> {
 /// is that *that* function returns a `SessionDetail` DTO built for IPC, not the raw `Session` a
 /// tool block needs to be searched within -- and reuses the cache, which an infrequent,
 /// user-initiated "open in editor" click has no real need for.
-fn load_full_session(state: &AppState, project_id: &str, session_id: &str) -> Result<Session> {
+pub(super) fn load_full_session(state: &AppState, project_id: &str, session_id: &str) -> Result<Session> {
     let dir = project_dir(&state.claude_home, project_id)?;
     let project = load_project(&dir, TargetOs::current()).value;
     let found = find_session(&project, session_id)?;
@@ -67,7 +67,7 @@ fn load_full_session(state: &AppState, project_id: &str, session_id: &str) -> Re
 /// `block_id` is `<messageId>:<index>` (`ContentBlock`'s own doc comment) -- the message half
 /// narrows the search before confirming the exact block, rather than scanning every block of
 /// every message for an id match.
-fn find_tool_block<'a>(session: &'a Session, block_id: &str) -> Result<&'a ToolUse> {
+pub(super) fn find_tool_block<'a>(session: &'a Session, block_id: &str) -> Result<&'a ToolUse> {
     let message_id = block_id.split(':').next().unwrap_or(block_id);
     session
         .messages
