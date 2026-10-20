@@ -79,7 +79,7 @@ pub(crate) fn scopes<'a>(
     v
 }
 
-/// `global` or `project`, the prefix of Poirot's item ids.
+/// `global` or `project`, the prefix of the Swift reference app's item ids.
 pub(crate) fn scope_name(scope: ConfigScope) -> &'static str {
     match scope {
         ConfigScope::Global => "global",
@@ -95,7 +95,7 @@ pub(crate) fn config_ref(kind: ConfigKind, project: &Option<ProjectContext>, slu
     }
 }
 
-/// Case-insensitive name order, as Poirot's `localizedCaseInsensitiveCompare`.
+/// Case-insensitive name order, as the Swift reference app's `localizedCaseInsensitiveCompare`.
 pub(crate) fn sort_by_name<T>(items: &mut [T], name: impl Fn(&T) -> &str) {
     items.sort_by_cached_key(|t| name(t).to_lowercase());
 }

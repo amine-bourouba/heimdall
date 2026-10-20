@@ -1,4 +1,4 @@
-//! Project path resolution, cwd first (ADR 0003). Poirot turned the folder name back into a path,
+//! Project path resolution, cwd first (ADR 0003). The Swift reference app turned the folder name back into a path,
 //! which is lossy (`-` stands for every separator and punctuation mark); transcripts record the
 //! real folder in `cwd`.
 

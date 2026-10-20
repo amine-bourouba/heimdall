@@ -117,7 +117,7 @@ impl StatsCache {
         v
     }
 
-    /// StatsCache.friendlyModelName: a short label for the models Poirot knew; anything else unchanged.
+    /// StatsCache.friendlyModelName: a short label for the models the Swift reference app knew; anything else unchanged.
     pub fn friendly_model_name(model_id: &str) -> String {
         const KNOWN: [(&str, &str); 5] = [
             ("opus-4-6", "Opus 4.6"),

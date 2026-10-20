@@ -1,7 +1,7 @@
 //! Agent, command, skill and output-style file writes (`ClaudeConfigLoader.swift:650-862`): agent
 //! save (a rename deletes the old file), template scaffolding with unique names, generic
 //! config-item delete by [`ConfigRef`], and agent import/export as JSON. Global scope only, the
-//! same scope Poirot's own functions use (`agentsDir`, `claudeDir.appendingPathComponent(...)`,
+//! same scope the Swift reference app's own functions use (`agentsDir`, `claudeDir.appendingPathComponent(...)`,
 //! no project parameter anywhere in the Swift source) -- a caller resolving a project-scoped
 //! `claude_dir` instead is free to, these functions never assume `~/.claude` specifically.
 //!
@@ -109,7 +109,7 @@ const SKILL_TEMPLATE: &str = "---\nname: New Skill\ndescription: Describe what t
 const OUTPUT_STYLE_TEMPLATE: &str = "---\nname: New Style\ndescription: Describe this output style\n---\n\nDefine your output formatting instructions here.";
 
 /// `docs/ipc-contract.md`'s own `create_config_template(kind, project)`. Plans have no template
-/// in Poirot at all (no `createPlanTemplate` exists in the Swift source) and none is invented
+/// in the Swift reference app at all (no `createPlanTemplate` exists in the Swift source) and none is invented
 /// here -- this task's own Goal names exactly "agent, command, skill and output-style".
 pub fn create_template(claude_dir: &Path, kind: ConfigKind) -> Result<ConfigRef> {
     let (base, template) = match kind {
@@ -153,7 +153,7 @@ pub fn delete_item(claude_dir: &Path, config_ref: &ConfigRef) -> Result<WriteOut
 /// `{"name", "description", "tools", "model", "color", "prompt", "memory"}`, every optional field
 /// as an empty string when absent -- matching `SettingsWriter.exportAgentAsJSON`'s own exact shape
 /// byte for byte, since this is an interop format (export, then import, possibly by a different
-/// Poirot or Heimdall user) rather than an internal IPC contract type free to use `null`.
+/// the Swift reference app or Heimdall user) rather than an internal IPC contract type free to use `null`.
 pub fn export_agent_json(claude_dir: &Path, slug: &str) -> Result<Vec<u8>> {
     let path = item_path(claude_dir, ConfigKind::Agent, slug)?;
     let text = std::fs::read_to_string(&path).map_err(|e| AppError::from_io(&e, &path))?;

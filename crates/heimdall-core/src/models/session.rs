@@ -32,7 +32,7 @@ pub fn strip_xml_tags(s: &str) -> String {
 }
 
 /// A parsed session. `cached_*` fields come from the summary tier or the sessions index and win
-/// over values derived from `messages`, as in Poirot.
+/// over values derived from `messages`, as in the Swift reference app.
 #[derive(Debug, Clone, Default)]
 pub struct Session {
     pub id: String,

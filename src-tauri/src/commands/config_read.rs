@@ -197,7 +197,7 @@ fn list_config_items_inner<R: tauri::Runtime>(
             let loaded = skills::load(claude_home.root(), scope);
             Loaded::new(loaded.value.iter().map(skill_summary).collect(), loaded.skipped)
         }
-        // Plans and agents have no per-project half in Poirot either (M1-24); the project scope is
+        // Plans and agents have no per-project half in the Swift reference app either (M1-24); the project scope is
         // still validated above, but has nothing further to apply here.
         ConfigKind::Plan => {
             let loaded = plans::load(claude_home.root());

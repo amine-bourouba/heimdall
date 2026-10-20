@@ -20,7 +20,7 @@ pub struct ModelsView {
 
 /// `discovered_ids` are session `model` values; `settings_model` and `project_model` are the raw
 /// `model` values of the global and project settings (ids such as `claude-opus-4-6`, aliases such
-/// as `opus`, or display names Poirot wrote).
+/// as `opus`, or display names the Swift reference app wrote).
 pub fn models_view(discovered_ids: &[String], settings_model: Option<&str>, project_model: Option<&str>) -> ModelsView {
     ModelsView {
         models: models(discovered_ids),

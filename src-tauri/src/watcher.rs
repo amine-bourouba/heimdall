@@ -1,6 +1,6 @@
 //! One recursive filesystem watcher over `~/.claude`, `~/.claude.json` (through its parent, with a
 //! file filter) and the custom memory folders, debounced and classified into `data-changed`
-//! events (ADR 0006). Poirot's `FileWatcher.swift` watches one folder at a time, non-recursively,
+//! events (ADR 0006). The Swift reference app's `FileWatcher.swift` watches one folder at a time, non-recursively,
 //! with a hand-rolled 1 s debounce, started from 13 call sites across 8 files
 //! (`docs/spec/claude-home-inventory.md` §4) — this is a from-scratch design with no Swift
 //! equivalent to port; ADR 0006 is the spec.
@@ -20,7 +20,7 @@ use crate::events::{DataChanged, WatcherMode, WatcherStatus};
 use crate::state::AppState;
 
 /// Matches `notify-debouncer-full`'s own recommended timeout (its docs' own example uses 2s; ADR
-/// 0006 says "starting at 1s" for Poirot parity) — long enough to coalesce a burst of saves from
+/// 0006 says "starting at 1s" for parity with the Swift reference app) — long enough to coalesce a burst of saves from
 /// one edit, short enough that the 2.5s acceptance budget still has headroom.
 const DEBOUNCE: Duration = Duration::from_millis(1000);
 
@@ -36,7 +36,7 @@ pub struct WatcherHandle {
 impl WatcherHandle {
     /// Unwatches every previously registered custom folder and watches `folders` instead. Best
     /// effort: a folder that fails to watch (for example, one the user removed from disk) is
-    /// simply skipped, the same as Poirot silently doing nothing for a folder `open(2)` cannot see.
+    /// simply skipped, the same as the Swift reference app silently doing nothing for a folder `open(2)` cannot see.
     pub fn set_custom_folders(&self, folders: &[String]) {
         let mut debouncer = self.debouncer.lock().expect("watcher lock");
         let mut current = self.custom_folders.lock().expect("watcher lock");

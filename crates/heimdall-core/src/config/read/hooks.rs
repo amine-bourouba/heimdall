@@ -12,7 +12,7 @@ use crate::models::config::scope::ConfigScope;
 
 /// Global entries, then the project's, sorted by event name (stable, so file order holds within
 /// an event). Events are kept as text, so events newer than Heimdall still show; handlers of an
-/// unknown type are dropped, and a group left with none is skipped, as in Poirot. `skipped` counts
+/// unknown type are dropped, and a group left with none is skipped, as in the Swift reference app. `skipped` counts
 /// settings files that exist but do not parse.
 pub fn load(claude_home: &Path, project_root: Option<&Path>) -> Loaded<Vec<HookEntry>> {
     let mut files = vec![(claude_home.join("settings.json"), ConfigScope::Global)];

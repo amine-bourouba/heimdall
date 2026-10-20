@@ -1,4 +1,4 @@
-//! Curated MCP server catalog (Models/Config/MCPServerCatalog.swift). Icons are Poirot's SF Symbol
+//! Curated MCP server catalog (Models/Config/MCPServerCatalog.swift). Icons are the Swift reference app's SF Symbol
 //! names; the webview maps them to Lucide (M2-04 icon map).
 
 use serde::Serialize;
@@ -91,7 +91,7 @@ impl McpCatalogEntry {
     }
 }
 
-/// The 15 bundled entries, in Poirot's order.
+/// The 15 bundled entries, in the Swift reference app's order.
 pub fn entries() -> Vec<McpCatalogEntry> {
     use McpCatalogCategory::*;
     let npx =

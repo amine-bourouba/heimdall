@@ -4,7 +4,7 @@
 
 use url::Url;
 
-/// A practical safety cap, not a Poirot-derived figure: long enough for any legitimate link, short
+/// A practical safety cap, not a figure derived from the Swift reference app: long enough for any legitimate link, short
 /// enough to keep a crafted URL from hiding its real destination in an unreviewable wall of text.
 pub const MAX_URL_LENGTH: usize = 2048;
 

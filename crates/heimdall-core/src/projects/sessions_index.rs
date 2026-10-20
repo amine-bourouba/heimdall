@@ -8,7 +8,7 @@ use serde_json::Value;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SessionsIndex {
     /// The project path: the first entry's `projectPath`, else the top-level `projectPath` or
-    /// `originalPath` (two Poirot readers used different keys; inventory D-1).
+    /// `originalPath` (two the Swift reference app readers used different keys; inventory D-1).
     pub project_path: Option<String>,
     pub entries: Vec<Entry>,
 }

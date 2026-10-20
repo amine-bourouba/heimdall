@@ -43,7 +43,7 @@ pub struct TodoGroup {
 }
 
 impl TodoItem {
-    /// Stable id from the content (Poirot used `content.hashValue`, which changes between runs):
+    /// Stable id from the content (the Swift reference app used `content.hashValue`, which changes between runs):
     /// 64-bit FNV-1a, so the same content always gets the same id.
     pub fn id(&self) -> u64 {
         crate::stable_hash(self.content.as_bytes())

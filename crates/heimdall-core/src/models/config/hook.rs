@@ -6,7 +6,7 @@ use specta::Type;
 
 use super::scope::ConfigScope;
 
-/// The 18 hook events Poirot knows, with their settings.json spelling.
+/// The 18 hook events the Swift reference app knows, with their settings.json spelling.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Type)]
 pub enum HookEvent {
     PreToolUse,

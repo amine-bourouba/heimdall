@@ -3,7 +3,7 @@
 //! run. Every builder returns data — a program with an argument array, or a URL string — never a
 //! shell string, for `src-tauri/src/platform/*.rs` (M3-52) to spawn or open.
 //!
-//! Heimdall drops Poirot's AppleScript "run this command" path (it had no callers) for one
+//! Heimdall drops the Swift reference app's AppleScript "run this command" path (it had no callers) for one
 //! behaviour on every OS: copy `claude --resume <id>` to the clipboard, then open the terminal at
 //! the project folder with no command injected (port-plan C-5, ADR 0003).
 
@@ -409,7 +409,7 @@ mod tests {
         assert_eq!(argv.args.len(), 2);
     }
 
-    /// Poirot's own examples of characters a shell would treat specially; this table proves every
+    /// the Swift reference app's own examples of characters a shell would treat specially; this table proves every
     /// terminal on every OS carries such a cwd through as one intact argv element (or `Command`'s
     /// working directory), never splitting or otherwise re-interpreting it — the safety property
     /// that using argv instead of a shell string is meant to provide.

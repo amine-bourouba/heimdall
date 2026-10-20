@@ -2,7 +2,7 @@
 //! category's candidates, scores them, and groups the top 5 of each in the fixed category order.
 //!
 //! Providers do no I/O: every input is data the caller already loaded (`SearchInput`), matching
-//! Poirot's "load once per overlay session" model (docs/spec/search-overlay.md §8). The one
+//! The Swift reference app's "load once per overlay session" model (docs/spec/search-overlay.md §8). The one
 //! exception is [`scan_file_history_sessions`], a pure filesystem scan with no parsing choices of
 //! its own, kept here because its cap (50 session folders) is part of this task's contract.
 
@@ -75,7 +75,7 @@ fn find_session<'a>(projects: &'a [Project], session_id: &str) -> Option<(&'a Pr
         .find_map(|p| p.sessions.iter().find(|s| s.id == session_id).map(|s| (p, s)))
 }
 
-/// A session found by id, else `navigateTo(.sessions)` — the fallback Poirot uses when a
+/// A session found by id, else `navigateTo(.sessions)` — the fallback the Swift reference app uses when a
 /// file-history or facets entry outlives the session it names (SearchOverlayView.swift:273-283, :544-554).
 fn session_or_sessions_screen(projects: &[Project], session_id: &str) -> SearchAction {
     match find_session(projects, session_id) {
@@ -576,7 +576,7 @@ pub fn search(input: &SearchInput, query: &str, mode: SearchMode) -> SearchResul
     SearchResults { groups }
 }
 
-/// Session ids under `~/.claude/file-history/` (first 50 folders, sorted for determinism — Poirot's
+/// Session ids under `~/.claude/file-history/` (first 50 folders, sorted for determinism — the Swift reference app's
 /// directory order is filesystem-native and not guaranteed) that have at least one tracked file,
 /// paired with those files' tracked names (SearchOverlayView.scanFileHistorySessions).
 pub fn scan_file_history_sessions(

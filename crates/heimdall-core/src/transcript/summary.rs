@@ -196,7 +196,7 @@ mod tests {
         assert_eq!(run(&lines).unwrap().model.as_deref(), Some("claude-sonnet-4-6"));
     }
     #[test]
-    /// Deviation (D5): msg_1 counts its last record (200 + 100), where Poirot counted the first
+    /// Deviation (D5): msg_1 counts its last record (200 + 100), where the Swift reference app counted the first
     /// (100 + 50) and expected 600.
     fn parse_summary_sums_tokens_per_group() {
         let lines = [

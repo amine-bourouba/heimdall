@@ -1,5 +1,5 @@
 //! PATH search for `claude` and editor CLIs (Views/Onboarding/OnboardingView.swift:281-297,
-//! Utilities/EditorLauncher.swift:39-48), replacing Poirot's four hardcoded macOS paths.
+//! Utilities/EditorLauncher.swift:39-48), replacing the Swift reference app's four hardcoded macOS paths.
 //!
 //! Every function takes `PATH`, `PATHEXT`, the home directory and an `exists` check as plain
 //! values, so the same code runs — and is tested — on every OS from any host (ADR 0003).

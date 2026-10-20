@@ -66,7 +66,7 @@ pub fn init(app: &mut tauri::App) -> tauri::Result<()> {
 }
 
 /// macOS: an overlay title bar with hidden title, so the traffic lights float over the app's own
-/// content instead of a native bar (PoirotApp.swift:38-46's `.windowStyle(.hiddenTitleBar)`).
+/// content instead of a native bar (the Swift reference app's PoirotApp.swift:38-46's `.windowStyle(.hiddenTitleBar)`).
 /// `TitleBarStyle::Overlay`'s own doc caveat is real and not fully addressable from this task
 /// alone: it needs a `data-tauri-drag-region` element in the frontend to stay draggable, which
 /// does not exist until M2-09 builds the real app shell -- recorded honestly in this task's own

@@ -178,7 +178,7 @@ pub async fn open_in_editor(app: AppHandle, target: EditorTarget) -> Result<()> 
 /// "open a terminal here" has nothing to resume) and opens the preferred terminal at the
 /// project's own working directory. No command is ever passed to the terminal itself
 /// (`heimdall_core::os_integration::launch::open_terminal`'s own doc comment explains why);
-/// Poirot's own `TerminalLauncher.run` injects the command via AppleScript instead
+/// the Swift reference app's own `TerminalLauncher.run` injects the command via AppleScript instead
 /// (`TerminalLauncher.swift:4-16`), the one behaviour this task's own AC2 deliberately does not
 /// port (port-plan C-5).
 fn open_terminal_inner<R: Runtime>(

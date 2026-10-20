@@ -290,7 +290,7 @@ export type EditorTarget = { kind: "toolBlock"; projectId: string; sessionId: st
  */
 export type ExportDestination = "clipboard" | "file";
 
-/**  The four export toggles (`ExportOptionsView`); Poirot's defaults are kept. */
+/**  The four export toggles (`ExportOptionsView`); the Swift reference app's defaults are kept. */
 export type ExportOptions = {
 	timestamps: boolean,
 	toolResults: boolean,
@@ -453,7 +453,7 @@ export type McpServerInput = {
 
 export type McpServerInputTransport = "stdio" | "http" | "sse";
 
-/**  Where a server was configured. Poirot folds the first three into one `user` value; Heimdall keeps them apart. */
+/**  Where a server was configured. The Swift reference app folds the first three into one `user` value; Heimdall keeps them apart. */
 export type McpServerSource = 
 /**  Top-level `mcpServers` in `~/.claude.json`. */
 "user" | 
@@ -603,7 +603,7 @@ export type Prefs = {
 	textEditor?: PreferredEditor,
 	preferredTerminal?: PreferredTerminal,
 	openTerminalOnBash?: boolean,
-	/**  `None` means search PATH (Poirot defaulted to `/usr/local/bin/claude`). */
+	/**  `None` means search PATH (the Swift reference app defaulted to `/usr/local/bin/claude`). */
 	claudeCodePath?: string | null,
 	showAnimations?: boolean,
 	wrapCodeLines?: boolean,

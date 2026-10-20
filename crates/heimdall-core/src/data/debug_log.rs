@@ -156,7 +156,7 @@ mod tests {
     }
     const MISSING: &str = "/nonexistent/3c9d1e0f";
 
-    // Ported from PoirotTests/Services/DebugLogLoaderTests.swift.
+    // Ported from the Swift reference's own test suite (Services/DebugLogLoaderTests.swift).
     #[test]
     fn parse_empty_string_returns_empty() {
         assert!(parse("").is_empty());

@@ -1,4 +1,4 @@
-//! MCP servers from their five sources (ClaudeConfigLoader.loadMCPServers), in Poirot's
+//! MCP servers from their five sources (ClaudeConfigLoader.loadMCPServers), in the Swift reference app's
 //! precedence:
 //! 1. user: top-level `mcpServers` in `~/.claude.json`;
 //! 2. local: `projects.<project path>.mcpServers` in `~/.claude.json`, overriding user servers;

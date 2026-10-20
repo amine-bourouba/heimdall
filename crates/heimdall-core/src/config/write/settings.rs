@@ -4,7 +4,7 @@
 //! file, keeps unknown keys and the file's own formatting, and never falls back to writing an
 //! empty document.
 //!
-//! No Poirot unit tests cover these functions directly: `SettingsWriterMCPTests.swift` (this
+//! No the Swift reference app unit tests cover these functions directly: `SettingsWriterMCPTests.swift` (this
 //! task's own named Input) tests `MCPServerCatalog`/`MCPEnvKey` instead, already carried over to
 //! `models/catalog/mcp_catalog.rs` by M1-10 (`docs/spec/test-carryover.md`'s own line 12 says so
 //! explicitly). The tests below are written directly from this task's own acceptance criteria.
@@ -37,8 +37,8 @@ fn ensure_parent_dir(path: &Path) -> Result<()> {
 
 /// Resolves which `settings.json` a scoped write targets. Kept as two independent parameters
 /// (`scope` and `project_root`), not one collapsed `Option`, specifically so the inconsistent
-/// combination Poirot's own bug sat on -- `scope == .project` with no real project path --
-/// is representable here at all, and therefore reachable to reject. Poirot's
+/// combination the Swift reference app's own bug sat on -- `scope == .project` with no real project path --
+/// is representable here at all, and therefore reachable to reject. The Swift reference app's
 /// `SettingsWriter.settingsURL(scope:projectPath:)` (`SettingsWriter.swift:316-329`) silently
 /// returned the *global* settings file in that case; every one of its own callers
 /// (`loadSettingsDictFor`/`writeSettingsDictFor`, used by `saveHook`/`deleteHook`/
@@ -430,7 +430,7 @@ mod tests {
         };
         let err = save_hook(d.path(), ConfigScope::Project, None, "PreToolUse", &group, None).unwrap_err();
         assert!(matches!(err, AppError::InvalidInput { .. }), "{err:?}");
-        // The *global* file (which a Poirot-style fallback would have silently written to instead)
+        // The *global* file (which a the Swift reference app-style fallback would have silently written to instead)
         // is untouched.
         assert_eq!(read(&d.path().join("settings.json")), json!({"untouched": true}));
     }

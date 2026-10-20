@@ -1,4 +1,4 @@
-//! Native macOS app menu emitting `menu-action` events (PoirotApp.swift:47-104,
+//! Native macOS app menu emitting `menu-action` events (the Swift reference app's PoirotApp.swift:47-104,
 //! docs/ipc-contract.md §7).
 //!
 //! Windows and Linux keep no native menu bar (this task's own goal) -- every action here is

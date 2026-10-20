@@ -398,7 +398,7 @@ mod tests {
     }
 
     #[test]
-    fn decodes_folder_names_by_probing_like_poirot() {
+    fn decodes_folder_names_by_probing_like_swift_reference() {
         let dirs = ["/Users", "/Users/me", "/Users/me/my-app"];
         let exists = |p: &str| dirs.contains(&p);
         assert_eq!(

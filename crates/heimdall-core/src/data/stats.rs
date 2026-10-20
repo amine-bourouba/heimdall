@@ -2,8 +2,8 @@
 //! transcripts themselves, for when Claude Code's `stats-cache.json` is missing or stale.
 //!
 //! Only main sessions (UUID-named transcripts, non-sidechain records) are read, so sub-agent
-//! usage is left out as in Poirot. Days and hours are in the given time zone (local in the app).
-//! Token usage counts each API message once, from its last record (D5); Poirot added every
+//! usage is left out as in the Swift reference app. Days and hours are in the given time zone (local in the app).
+//! Token usage counts each API message once, from its last record (D5); the Swift reference app added every
 //! record's copy of the usage.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -479,7 +479,7 @@ pub(crate) mod tests {
         ));
         let s = compute_in(root.path(), &utc()).unwrap();
         let m = &s.model_usage["x"];
-        // Poirot would report 6 input, 225 output and 1500 cache reads.
+        // the Swift reference app would report 6 input, 225 output and 1500 cache reads.
         assert_eq!(
             (m.input_tokens, m.output_tokens, m.cache_read_input_tokens),
             (2, 209, 500)

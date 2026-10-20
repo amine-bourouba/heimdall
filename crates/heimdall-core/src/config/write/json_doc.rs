@@ -1,4 +1,4 @@
-//! The only way Heimdall changes a Claude Code JSON file (ADR 0009). Poirot fell back to an empty
+//! The only way Heimdall changes a Claude Code JSON file (ADR 0009). The Swift reference app fell back to an empty
 //! document when a file did not parse and wrote that back, wiping the user's configuration.
 //!
 //! [`JsonDoc`] fails closed on a file that does not parse, keeps key order (serde_json

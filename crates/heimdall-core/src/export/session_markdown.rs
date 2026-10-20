@@ -10,7 +10,7 @@ use specta::Type;
 use crate::models::message::{ContentBlock, Message, Role, ToolResult, ToolUse};
 use crate::models::session::Session;
 
-/// The four export toggles (`ExportOptionsView`); Poirot's defaults are kept.
+/// The four export toggles (`ExportOptionsView`); the Swift reference app's defaults are kept.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ExportOptions {
@@ -31,7 +31,7 @@ impl Default for ExportOptions {
     }
 }
 
-/// Tool input values longer than this are truncated with `…` (500 in Poirot, but Characters; this
+/// Tool input values longer than this are truncated with `…` (500 in the Swift reference app, but Characters; this
 /// counts Unicode scalars, the difference noted elsewhere in the port for very long non-ASCII text).
 const INPUT_TRUNCATE: usize = 500;
 /// Same, for a tool result's output.
@@ -98,7 +98,7 @@ where
     };
     let mut lines = vec![format!("## Turn{turn_tag} — {role_label}")];
 
-    // Poirot's Message.timestamp always has a value (missing ones default to `.distantPast`);
+    // the Swift reference app's Message.timestamp always has a value (missing ones default to `.distantPast`);
     // Heimdall's carries `None` instead, so the line is left out rather than printing a fake time.
     if options.timestamps
         && let Some(ts) = message.timestamp
@@ -181,7 +181,7 @@ fn tool_block_lines(tool: &ToolUse) -> Vec<String> {
     if let Some(path) = &tool.file_path {
         lines.push(format!("`{path}`"));
     }
-    // A BTreeMap, unlike Poirot's `[String: String]`, so the field order here is stable — a
+    // A BTreeMap, unlike the Swift reference app's `[String: String]`, so the field order here is stable — a
     // deliberate improvement, not a literal port of Swift's unordered dictionary iteration.
     for (key, value) in &tool.input {
         if key == "file_path" || key == "path" {
@@ -386,7 +386,7 @@ mod tests {
         let lines = tool_block_lines(&tool);
         assert_eq!(lines[0], "### Tool: Grep");
         assert_eq!(lines[1], "`/x`"); // shown once, from file_path/path, before the input list
-        // "path" is excluded from the input list itself; the rest come out key-sorted (Poirot's
+        // "path" is excluded from the input list itself; the rest come out key-sorted (the Swift reference app's
         // Swift dictionary had no defined order at all).
         assert_eq!(
             lines[2..],

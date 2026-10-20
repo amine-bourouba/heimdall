@@ -53,7 +53,7 @@ pub struct SidebarCounts {
 /// `project` scopes the per-project-aware loaders (commands, skills, output styles, hooks, MCP
 /// servers) to that project's own `<root>/.claude/`; `None` is the global scope every other count
 /// already uses regardless (todos, history, plans, memory, models and sub-agents have no
-/// per-project half in Poirot either).
+/// per-project half in the Swift reference app either).
 pub fn sidebar_counts(claude_home: &ClaudeHome, project: Option<ProjectScope>) -> Result<SidebarCounts> {
     let home_root = claude_home.root();
     let project_root = project.map(|s| s.root);
@@ -79,7 +79,7 @@ pub fn sidebar_counts(claude_home: &ClaudeHome, project: Option<ProjectScope>) -
     })
 }
 
-/// Total memory files across every project's `~/.claude/projects/<id>/memory/` folder (Poirot's
+/// Total memory files across every project's `~/.claude/projects/<id>/memory/` folder (the Swift reference app's
 /// `ClaudeConfigLoader.totalMemoryFileCount`: every project, always, with no project scoping).
 fn total_memory_file_count(claude_home: &ClaudeHome) -> u32 {
     let Ok(entries) = std::fs::read_dir(claude_home.projects_dir()) else {
@@ -94,7 +94,7 @@ fn total_memory_file_count(claude_home: &ClaudeHome) -> u32 {
 /// `detect_claude_cli`: whether the `claude` binary is on `PATH` (or in one of ADR 0003's
 /// fallback locations) and whether any project has ever been recorded (`OnboardingView.swift:281-297`
 /// checked six hardcoded macOS paths and a directory listing; this reuses the cross-platform PATH
-/// search M1-31 already built instead of Poirot's OS-specific literal list).
+/// search M1-31 already built instead of the Swift reference app's OS-specific literal list).
 pub fn cli_status(
     claude_home: &ClaudeHome,
     home_dir: &Path,
@@ -121,7 +121,7 @@ mod tests {
         ClaudeHome::new(root.join("claude-home"), root.join("claude.json"))
     }
 
-    // Ported from PoirotTests/App: `AppState.computeSidebarCounts` has no dedicated Swift test
+    // Ported from the Swift reference's own test suite (App): `AppState.computeSidebarCounts` has no dedicated Swift test
     // suite (checked: no AppStateTests.swift exists), so this cross-checks the formula against
     // each loader called directly, plus concrete counts read off the fixture tree itself.
     #[test]

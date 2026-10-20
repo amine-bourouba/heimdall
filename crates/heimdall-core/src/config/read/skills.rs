@@ -1,5 +1,5 @@
 //! Skills (ClaudeConfigLoader.loadSkills): `skills/<name>/SKILL.md`, global and project. Claude
-//! Code's newer `skills/synced/<id>/<name>/` layout is not read, as in Poirot (parity row E12).
+//! Code's newer `skills/synced/<id>/<name>/` layout is not read, as in the Swift reference app (parity row E12).
 
 use std::path::Path;
 

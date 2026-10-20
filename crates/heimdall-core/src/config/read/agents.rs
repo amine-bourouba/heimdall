@@ -1,6 +1,6 @@
 //! Sub-agents (ClaudeConfigLoader.loadCustomAgents and SubAgent.builtIn): the four agents Claude
 //! Code ships, then the custom `~/.claude/agents/*.md` files. Only the global folder is read, as
-//! in Poirot.
+//! in the Swift reference app.
 
 use std::path::Path;
 
@@ -79,7 +79,7 @@ mod tests {
                 Some("claude-opus-4-6")
             )
         );
-        // `memory: project` is not one Poirot knows, so it is left unset.
+        // `memory: project` is not one the Swift reference app knows, so it is left unset.
         assert_eq!(
             (r.memory, r.scope, r.config_ref.as_ref().map(|c| c.slug.as_str())),
             (None, AgentScope::Global, Some("reviewer"))

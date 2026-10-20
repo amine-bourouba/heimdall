@@ -35,7 +35,7 @@ pub fn load_all(facets_dir: &Path) -> Result<Loaded<BTreeMap<String, SessionFace
             continue;
         }
         match read(&path) {
-            // Keyed by the id inside the file, as Poirot does; the file name when that is missing.
+            // Keyed by the id inside the file, as the Swift reference app does; the file name when that is missing.
             Some(f) => {
                 let key = if f.session_id.is_empty() {
                     stem.to_string()

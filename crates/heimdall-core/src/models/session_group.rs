@@ -26,7 +26,7 @@ impl SessionGroup {
 
     /// Sub-agents attach to the parent named by `parent_session_id`, sorted oldest first. A sidechain
     /// session without a parent id becomes its own group. Groups are sorted newest parent first.
-    /// As in Poirot, a sub-agent whose parent is not in the list is not shown.
+    /// As in the Swift reference app, a sub-agent whose parent is not in the list is not shown.
     pub fn group(sessions: Vec<SessionSummary>) -> Vec<SessionGroup> {
         let mut parents = Vec::new();
         let mut children: HashMap<String, Vec<SessionSummary>> = HashMap::new();

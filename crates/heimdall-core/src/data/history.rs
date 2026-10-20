@@ -1,7 +1,7 @@
 //! `~/.claude/history.jsonl` reader (Services/HistoryLoader.swift): every prompt typed into
 //! Claude Code, newest first, in pages.
 //!
-//! Poirot's ids were `<timestamp>-<line index>`, so deleting after Claude Code appended a line
+//! The Swift reference app's ids were `<timestamp>-<line index>`, so deleting after Claude Code appended a line
 //! removed the wrong one (port-plan C-23). Here an id is derived from the line itself
 //! ([`entry_id`]), so the delete command (M3-46) can find the same line again.
 
@@ -145,7 +145,7 @@ fn parse_line(line: &str, occurrence: u32) -> Option<HistoryEntry> {
     Some(HistoryEntry {
         id: entry_id(line, ms, occurrence),
         display: raw.display,
-        // Poirot expected string values and dropped the whole line otherwise; pasted items stored
+        // The Swift reference app expected string values and dropped the whole line otherwise; pasted items stored
         // as objects keep their `content`.
         pasted_contents: raw
             .pasted_contents
@@ -185,7 +185,7 @@ mod tests {
     }
     const MISSING: &str = "/nonexistent/7f0c6a1e/history.jsonl";
 
-    // Ported from PoirotTests/Services/HistoryLoaderTests.swift.
+    // Ported from the Swift reference's own test suite (Services/HistoryLoaderTests.swift).
     #[test]
     fn load_all_non_existent_file_returns_empty() {
         assert!(load_all(Path::new(MISSING)).unwrap().value.is_empty());

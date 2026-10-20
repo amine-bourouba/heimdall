@@ -1,10 +1,10 @@
 //! Line diff (Utilities/LineDiff.swift): a longest-common-subsequence diff between two line
 //! arrays, with the 5000-line cap `EditDiffView` applies before diffing.
 //!
-//! Poirot built this from Swift's own `CollectionDifference` (a Myers diff). This port computes
+//! The Swift reference app built this from Swift's own `CollectionDifference` (a Myers diff). This port computes
 //! the same thing — a minimal set of line insertions and removals — from a textbook LCS dynamic
 //! program instead, since the standard library has no equivalent and matching Swift's edit script
-//! for every one of Poirot's tests only needs a correct, not bit-identical, algorithm.
+//! for every one of the Swift reference's tests only needs a correct, not bit-identical, algorithm.
 //!
 //! ponytail: the DP table is `O(old.len() * new.len())` time and space — 5000×5000 four-byte
 //! cells is ~100 MB, reached only by two capped-length files that share no line at all, not by a
@@ -43,7 +43,7 @@ pub struct DiffResult {
 }
 
 /// Splits on `\n` (matching Swift's `components(separatedBy: "\n")`; a `\r` from a CRLF file
-/// stays on the line, as it did for Poirot) and diffs.
+/// stays on the line, as it did for the Swift reference app) and diffs.
 pub fn diff(old: &str, new: &str) -> DiffResult {
     let old_lines: Vec<&str> = old.split('\n').collect();
     let new_lines: Vec<&str> = new.split('\n').collect();
@@ -146,7 +146,7 @@ mod tests {
         r.lines.iter().map(|l| l.text.as_str()).collect()
     }
 
-    // Ported from PoirotTests/Utilities/LineDiffTests.swift.
+    // Ported from the Swift reference's own test suite (Utilities/LineDiffTests.swift).
     #[test]
     fn identical_strings_all_context() {
         let r = diff("a\nb\nc", "a\nb\nc");
@@ -202,7 +202,7 @@ mod tests {
         assert_eq!((removed.old_line, removed.new_line), (Some(1), None));
         assert_eq!((added.old_line, added.new_line), (None, Some(1)));
     }
-    // Poirot's `sequentialIds` tested a SwiftUI `Identifiable` id that Heimdall's wire `DiffLine`
+    // The Swift reference app's `sequentialIds` tested a SwiftUI `Identifiable` id that Heimdall's wire `DiffLine`
     // has no equivalent of (the frontend can key rows by array index); ported as order-and-length.
     #[test]
     fn diff_preserves_input_order_and_produces_no_extra_lines() {

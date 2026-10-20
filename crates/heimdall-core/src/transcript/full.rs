@@ -480,7 +480,7 @@ mod tests {
         assert!(matches!(&m.blocks[1], ContentBlock::ToolUse(t) if t.name == "Read"));
     }
     #[test]
-    /// Deviation (D5): the group's usage is its last record's, where Poirot kept the first (100, 50).
+    /// Deviation (D5): the group's usage is its last record's, where the Swift reference app kept the first (100, 50).
     fn parse_usage_deduplicated_per_group() {
         let lines = [
             assistant_with(

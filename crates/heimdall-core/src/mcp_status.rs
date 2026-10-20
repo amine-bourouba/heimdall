@@ -1,4 +1,4 @@
-//! MCP server status (Services/Config/MCPServerStatusChecker.swift). Poirot shelled out to
+//! MCP server status (Services/Config/MCPServerStatusChecker.swift). The Swift reference app shelled out to
 //! `/usr/bin/pgrep`; Heimdall reads the process list once through `sysinfo` and matches the same
 //! patterns against each process's joined command line, on every OS.
 //!
@@ -186,7 +186,7 @@ mod tests {
         v.iter().map(|s| s.to_string()).collect()
     }
 
-    // Ported from PoirotTests/Services/MCPServerStatusCheckerTests.swift (process list injected).
+    // Ported from the Swift reference's own test suite (Services/MCPServerStatusCheckerTests.swift; process list injected).
     #[test]
     fn auth_cache_detection() {
         assert_eq!(
@@ -423,7 +423,7 @@ mod tests {
 
     #[test]
     fn literal_parts_do_not_act_as_regex() {
-        // Poirot passed arguments to pgrep unescaped, so `server.js` also matched `serverXjs`.
+        // The Swift reference app passed arguments to pgrep unescaped, so `server.js` also matched `serverXjs`.
         let s = user("x", Some("stdio"), Some("node"), &["server.js"], None);
         assert_eq!(
             status(&s, &BTreeSet::new(), &strings(&["node serverXjs"]), TargetOs::Linux),

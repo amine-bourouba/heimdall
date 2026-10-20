@@ -132,7 +132,7 @@ impl PreferredEditor {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum PreferredTerminal {
-    // macOS (Poirot's set)
+    // macOS (the Swift reference app's set)
     Terminal,
     Iterm2,
     Warp,
@@ -222,7 +222,7 @@ pub struct Prefs {
     pub text_editor: PreferredEditor,
     pub preferred_terminal: PreferredTerminal,
     pub open_terminal_on_bash: bool,
-    /// `None` means search PATH (Poirot defaulted to `/usr/local/bin/claude`).
+    /// `None` means search PATH (the Swift reference app defaulted to `/usr/local/bin/claude`).
     pub claude_code_path: Option<String>,
     pub show_animations: bool,
     pub wrap_code_lines: bool,
@@ -319,7 +319,7 @@ mod tests {
     fn all_cases_has_four_editors() {
         assert_eq!(PreferredEditor::ALL.len(), 4);
     }
-    /// Deviation: the stored value for VS Code is `vscode` (ADR 0007), not Poirot's `code`.
+    /// Deviation: the stored value for VS Code is `vscode` (ADR 0007), not the Swift reference app's `code`.
     #[test]
     fn editor_raw_values_match_expected() {
         let raw = PreferredEditor::ALL.map(|e| serde_json::to_value(e).unwrap());
@@ -353,7 +353,7 @@ mod tests {
         );
     }
 
-    // Ported from PoirotTests/Models/PreferredTerminalTests.swift; Poirot's six are the macOS set.
+    // Ported from PoirotTests/Models/PreferredTerminalTests.swift; the Swift reference app's six are the macOS set.
     #[test]
     fn all_cases_has_six_terminals() {
         assert_eq!(PreferredTerminal::options(TargetOs::Macos).len(), 6);

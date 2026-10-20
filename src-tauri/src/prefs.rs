@@ -201,7 +201,7 @@ fn folder_index(source_id: &str) -> Result<usize> {
 }
 
 /// `add_memory_folder`: opens a folder picker; a folder already present (compared the same way
-/// Poirot's `standardizedFileURL` de-dup did) is a no-op, matching `MemorySourcesStore.add`.
+/// the Swift reference app's `standardizedFileURL` de-dup did) is a no-op, matching `MemorySourcesStore.add`.
 pub fn add_memory_folder<R: Runtime>(app: &AppHandle<R>, picked: Option<String>) -> Result<WriteOutcome> {
     let Some(folder) = picked else {
         return Ok(WriteOutcome::Cancelled);
@@ -413,7 +413,7 @@ mod tests {
         assert_eq!(load(app.handle()).unwrap(), before);
     }
 
-    // Ported from PoirotTests/App/MemorySourcesStoreTests.swift.
+    // Ported from the Swift reference app's PoirotTests/App/MemorySourcesStoreTests.swift.
     #[test]
     fn add_memory_folder_appends_and_persists() {
         let app = app();

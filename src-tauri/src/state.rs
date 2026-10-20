@@ -2,7 +2,7 @@
 //! read (ADR 0006 decision 4) — a missed watcher event (M1-47) makes cached data late, never
 //! wrong, since a changed file's own metadata always disagrees with what was cached for it.
 //!
-//! Poirot's own transcript cache (`AppState.swift:303`) is never invalidated at all — `clearCache()`
+//! The Swift reference app's own transcript cache (`AppState.swift:303`) is never invalidated at all — `clearCache()`
 //! has no callers outside its tests (ADR 0006's own Context section calls this out as a known bug).
 //! `AppStateCacheTests`' three cases (store-and-retrieve, miss on an unknown id, clear-removes-all)
 //! are ported below as the hit/miss/clear-everything cases; the staleness and per-area invalidation
@@ -192,7 +192,7 @@ mod tests {
         SystemTime::UNIX_EPOCH + Duration::from_secs(secs)
     }
 
-    // Ported from PoirotTests/App/AppStateCacheTests.swift.
+    // Ported from the Swift reference app's PoirotTests/App/AppStateCacheTests.swift.
     #[test]
     fn cache_session_stores_and_retrieves() {
         let cache = Cache::default();

@@ -104,7 +104,7 @@ pub struct EditPair {
 }
 
 impl ToolUse {
-    /// Build from the stringified input map, as Poirot does (ToolUse.input is `[String: String]`).
+    /// Build from the stringified input map, as the Swift reference app does (ToolUse.input is `[String: String]`).
     pub fn from_input(
         id: impl Into<String>,
         tool_use_id: impl Into<String>,

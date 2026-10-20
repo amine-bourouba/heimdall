@@ -101,7 +101,7 @@ impl McpServerStatus {
     }
 }
 
-/// Where a server was configured. Poirot folds the first three into one `user` value; Heimdall keeps them apart.
+/// Where a server was configured. The Swift reference app folds the first three into one `user` value; Heimdall keeps them apart.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum McpServerSource {

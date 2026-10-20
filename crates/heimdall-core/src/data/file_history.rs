@@ -194,7 +194,7 @@ mod tests {
         e.versions.iter().map(|v| v.version).collect()
     }
 
-    // Ported from PoirotTests/Services/FileHistoryLoaderTests.swift.
+    // Ported from the Swift reference's own test suite (Services/FileHistoryLoaderTests.swift).
     #[test]
     fn load_includes_delta_versions_missing_from_snapshots() {
         let h = harness(concat!(

@@ -149,11 +149,11 @@ fn session_counts_match() {
     }
 }
 
-/// Decision D5 (port-plan.md, answered 2026-09-26, user-approved): Poirot takes a message's usage
+/// Decision D5 (port-plan.md, answered 2026-09-26, user-approved): the Swift reference app takes a message's usage
 /// from its *first* streamed record; Heimdall deliberately takes the *last* one instead, and
 /// additionally counts each message id's usage only once even when a tool-result interruption
 /// splits one message into two same-id groups (`transcript/full.rs`'s own `usage_by_id` map — see
-/// its header comment). Poirot's own rule double-counts such a message's full usage a second time,
+/// its header comment). The Swift reference app's own rule double-counts such a message's full usage a second time,
 /// so golden's totals are only ever >= Heimdall's on real transcripts that hit this, never <. This
 /// is a real, already-decided, deliberate divergence, not a bug — `fixtures/golden/KNOWN_DIFFERENCES.md`
 /// documents it. `golden_total < rust_total` would still be a genuine failure: that direction has
@@ -167,7 +167,7 @@ fn assert_matches_or_known_d5_divergence(rust_total: u64, golden_total: u64, con
         "{context}: rust={rust_total} golden={golden_total} — golden is LOWER than Rust, which D5 does not explain"
     );
     println!(
-        "{context}: rust={rust_total} golden={golden_total} — tolerated, decision D5 (a message id split across a tool-result interruption; Poirot double-counts it, Heimdall doesn't)"
+        "{context}: rust={rust_total} golden={golden_total} — tolerated, decision D5 (a message id split across a tool-result interruption; the Swift reference app double-counts it, Heimdall doesn't)"
     );
 }
 
@@ -192,7 +192,7 @@ fn token_totals_match() {
     }
 }
 
-/// AC1: "costUSD" and "daily activity" — Poirot's `StatsComputer` always sets `costUSD: 0`
+/// AC1: "costUSD" and "daily activity" — the Swift reference app's `StatsComputer` always sets `costUSD: 0`
 /// (subscription usage has no per-call dollar cost, `StatsComputer.swift`'s own comment); this
 /// proves Rust's port does the exact same thing rather than silently computing a real number.
 #[test]
@@ -247,7 +247,7 @@ fn stats_cost_usd_and_daily_activity_match() {
 ///
 /// `series` has one entry per turn that carried usage, so decision D5's message-splitting
 /// divergence (see `assert_matches_or_known_d5_divergence`) changes its *length*, not just a sum —
-/// Poirot's duplicate-id group keeps its own full entry in the series; Heimdall's does not. A
+/// The Swift reference app's duplicate-id group keeps its own full entry in the series; Heimdall's does not. A
 /// session that hits this is detected via `inputTokens` (the simplest field D5 affects) and, for
 /// that session only, checked for the same tolerated-direction bound instead of exact equality;
 /// sessions D5 does not touch still get the full exact comparison.
@@ -325,13 +325,13 @@ fn context_usage_matches() {
 }
 
 /// AC1: "summaries" — run through Rust's own summary-tier parser (`transcript::summary::parse`),
-/// not the full parser: the golden `summary.json` comes from Poirot's `parseSummary`, which builds
+/// not the full parser: the golden `summary.json` comes from the Swift reference app's `parseSummary`, which builds
 /// `title`/`preview` from a restricted single-text-block scan and leaves them absent (not merely
 /// empty) when no such block exists — different from the full-parse tier's `title()`/`preview()`
 /// computed properties, which fall back to scanning real `messages` (empty at this tier anyway)
 /// and, for `title()`, a hardcoded "Untitled session" string neither side's summary tier ever
 /// produces. Comparing the raw `cached_title`/`cached_preview` fields against golden's raw
-/// `title`/`preview` keys (present only when Poirot's own scan found something) is the correct
+/// `title`/`preview` keys (present only when the Swift reference app's own scan found something) is the correct
 /// like-for-like comparison; deliberately not `projectPath` (see this file's header comment).
 #[test]
 fn summaries_match() {
@@ -423,7 +423,7 @@ fn matches_or_known_truncation_boundary_drift(rust: &str, golden: &str) -> bool 
 ///
 /// Sessions decision D5 affects (see `assert_matches_or_known_d5_divergence`) are skipped for this
 /// comparison entirely, not fuzzy-matched: a D5-affected session has a different message list
-/// (Poirot keeps a duplicate-id group Heimdall's `usage_by_id` map dedupes), which changes not just
+/// (the Swift reference app keeps a duplicate-id group Heimdall's `usage_by_id` map dedupes), which changes not just
 /// `**Tokens:**` but potentially which content lands inside a truncation window — `token_totals_match`
 /// and `context_usage_matches` already assert D5's bound holds for the numbers this rendering is
 /// built from, so re-verifying it here via text comparison would be redundant and fragile.
@@ -459,7 +459,7 @@ fn export_markdown_matches_except_known_nondeterminism() {
             // Found by inspecting a real, unexplained same-length mismatch directly: Rust renders
             // a multi-key tool_use's "**key:** value" lines from a `BTreeMap` (sorted, deterministic
             // — session_markdown.rs's own comment calls this "a deliberate improvement, not a
-            // literal port of Swift's unordered dictionary iteration"). Poirot's `[String: String]`
+            // literal port of Swift's unordered dictionary iteration"). The Swift reference app's `[String: String]`
             // has no defined iteration order at all; the golden capture just froze whatever order
             // Swift's hash table happened to produce that run. There is no stable target to match —
             // even re-running the same Swift binary again could reorder these lines — so sessions
@@ -477,7 +477,7 @@ fn export_markdown_matches_except_known_nondeterminism() {
             }
 
             // to_markdown() defaults to Local, matching the shipped app's real behaviour (and
-            // Poirot's own DateFormatter, which also uses the system's current timezone) — but
+            // The Swift reference app's own DateFormatter, which also uses the system's current timezone) — but
             // the golden run pinned TZ=UTC, so this comparison must too, or every per-message
             // "*HH:MM:SS*" line differs by this machine's own UTC offset for no real reason.
             let rust_md = session_markdown::to_markdown_in(&session, &ExportOptions::default(), &chrono::Utc);

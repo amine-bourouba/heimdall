@@ -2,7 +2,7 @@
 //! ranges in UTF-16 code units, the unit JavaScript strings index by.
 //!
 //! Characters are compared one by one after lower-casing each, so every match maps back to a
-//! character of the original text. Poirot compared grapheme clusters; the two differ only inside
+//! character of the original text. The Swift reference app compared grapheme clusters; the two differ only inside
 //! multi-scalar emoji and combining sequences.
 
 use crate::models::prefs::SearchMode;
