@@ -441,18 +441,20 @@ mod tests {
 
     #[test]
     fn resolve_reveal_target_session_names_the_real_transcript_file() {
+        // app()'s own AppState points at fixtures/synthetic, not fixtures/screenshot -- this
+        // project/session pair is the one that actually exists under that tree.
         let app = app();
         let state = app.state::<AppState>();
         let path = resolve_reveal_target(
             &app.handle().clone(),
             &state,
             &RevealTarget::Session {
-                project_id: "-Users-fixture-Dev-poirot".to_string(),
-                session_id: "conv-001".to_string(),
+                project_id: "-Users-fixture-src-app".to_string(),
+                session_id: "11111111-1111-4111-8111-111111111111".to_string(),
             },
         )
         .unwrap();
-        assert!(path.ends_with("conv-001.jsonl"));
+        assert!(path.ends_with("11111111-1111-4111-8111-111111111111.jsonl"));
     }
 
     #[test]

@@ -203,7 +203,7 @@ mod tests {
 
     #[test]
     fn sanitize_filename_replaces_path_separators_and_truncates() {
-        assert_eq!(sanitize_filename("fix: a/b\\c:d"), "fix: a-b-c-d");
+        assert_eq!(sanitize_filename("fix: a/b\\c:d"), "fix- a-b-c-d");
         assert_eq!(sanitize_filename(&"x".repeat(100)).chars().count(), 80);
     }
 
@@ -239,7 +239,11 @@ mod tests {
     // effect boundary this session's own M3-53 entry already drew around `open_terminal_inner`).
 
     fn state_with_markdown_session() -> AppState {
-        state_with_session("proj", "s1", serde_json::json!({"type":"text","text":"hello"}))
+        state_with_session(
+            "proj",
+            "11111111-1111-1111-1111-111111111111",
+            serde_json::json!({"type":"text","text":"hello"}),
+        )
     }
 
     #[test]
@@ -251,7 +255,7 @@ mod tests {
                 &app_handle(),
                 &state,
                 "proj",
-                "s1",
+                "11111111-1111-1111-1111-111111111111",
                 &options,
                 ExportDestination::File,
                 None
@@ -271,7 +275,7 @@ mod tests {
                 &app_handle(),
                 &state,
                 "proj",
-                "s1",
+                "11111111-1111-1111-1111-111111111111",
                 &options,
                 ExportDestination::File,
                 Some(out.clone())
@@ -299,21 +303,32 @@ mod tests {
 
     #[test]
     fn export_edit_patch_no_path_picked_is_cancelled() {
-        let state = state_with_session("proj", "s1", edit_tool("old", "new"));
-        let block_id = block_id_of(&state, "proj", "s1");
+        let state = state_with_session("proj", "11111111-1111-1111-1111-111111111111", edit_tool("old", "new"));
+        let block_id = block_id_of(&state, "proj", "11111111-1111-1111-1111-111111111111");
         assert_eq!(
-            export_edit_patch_inner(&state, "proj", "s1", &block_id, None).unwrap(),
+            export_edit_patch_inner(&state, "proj", "11111111-1111-1111-1111-111111111111", &block_id, None).unwrap(),
             WriteOutcome::Cancelled
         );
     }
 
     #[test]
     fn export_edit_patch_confirmed_writes_a_real_unified_diff() {
-        let state = state_with_session("proj", "s1", edit_tool("let a = 1;", "let a = 2;"));
-        let block_id = block_id_of(&state, "proj", "s1");
+        let state = state_with_session(
+            "proj",
+            "11111111-1111-1111-1111-111111111111",
+            edit_tool("let a = 1;", "let a = 2;"),
+        );
+        let block_id = block_id_of(&state, "proj", "11111111-1111-1111-1111-111111111111");
         let out = state.claude_home.root().join("edit.patch");
         assert_eq!(
-            export_edit_patch_inner(&state, "proj", "s1", &block_id, Some(out.clone())).unwrap(),
+            export_edit_patch_inner(
+                &state,
+                "proj",
+                "11111111-1111-1111-1111-111111111111",
+                &block_id,
+                Some(out.clone())
+            )
+            .unwrap(),
             WriteOutcome::Written
         );
         let patch = std::fs::read_to_string(&out).unwrap();
@@ -324,13 +339,20 @@ mod tests {
     fn export_edit_patch_rejects_a_non_edit_tool_block() {
         let state = state_with_session(
             "proj",
-            "s1",
+            "11111111-1111-1111-1111-111111111111",
             serde_json::json!({"type":"tool_use","id":"tu1","name":"Read","input":{"file_path":"/abs/target.rs"}}),
         );
-        let block_id = block_id_of(&state, "proj", "s1");
+        let block_id = block_id_of(&state, "proj", "11111111-1111-1111-1111-111111111111");
         let out = state.claude_home.root().join("edit.patch");
         assert!(matches!(
-            export_edit_patch_inner(&state, "proj", "s1", &block_id, Some(out)).unwrap_err(),
+            export_edit_patch_inner(
+                &state,
+                "proj",
+                "11111111-1111-1111-1111-111111111111",
+                &block_id,
+                Some(out)
+            )
+            .unwrap_err(),
             AppError::InvalidInput { .. }
         ));
     }
@@ -358,10 +380,12 @@ mod tests {
 
     #[test]
     fn export_analytics_csv_confirmed_writes_a_real_csv_table() {
-        // `fixtures/screenshot` has real transcripts but no `stats-cache.json`, so this exercises
-        // a real recompute end to end, the same path `analytics.rs`'s own tests already confirmed
+        // `fixtures/windows` has real transcripts, real UUID-named session files (`stats::
+        // session_files` only recognises those -- `fixtures/screenshot`'s readable `conv-001`-style
+        // names don't qualify, confirmed directly) and no `stats-cache.json`, so this exercises a
+        // real recompute end to end, the same path `analytics.rs`'s own tests already confirmed
         // works against this fixture.
-        let state = state_from_fixture("screenshot");
+        let state = state_from_fixture("windows");
         let out = tempfile::tempdir().unwrap().keep().join("daily-activity.csv");
         assert_eq!(
             export_analytics_csv_inner(&state, CsvKind::DailyActivity, Some(out.clone())).unwrap(),

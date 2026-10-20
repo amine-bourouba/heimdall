@@ -68,7 +68,11 @@ mod tests {
 
     #[test]
     fn get_tray_snapshot_covers_recent_sessions_and_todays_messages() {
-        let snapshot = get_tray_snapshot_inner(&state("screenshot"), None).unwrap();
+        // `total_sessions` comes from `stats_cache::load_analytics`, which (unlike project/session
+        // discovery, via `sessions-index.json`) requires real UUID-named session files to compute
+        // anything at all -- `fixtures/screenshot`'s readable `conv-001`-style names don't qualify
+        // (confirmed directly), so `fixtures/windows` is used here instead.
+        let snapshot = get_tray_snapshot_inner(&state("windows"), None).unwrap();
         assert!(!snapshot.recent.is_empty());
         assert!(snapshot.total_sessions > 0);
     }
@@ -81,11 +85,16 @@ mod tests {
     }
 
     fn app_handle() -> AppHandle<tauri::test::MockRuntime> {
-        mock_builder()
+        let app = mock_builder()
             .build(mock_context(noop_assets()))
-            .expect("build mock app")
-            .handle()
-            .clone()
+            .expect("build mock app");
+        // open_in_main_window_inner emits a typed Navigate event; tauri-specta panics on any
+        // emit() ("EventRegistry not found... forget to call Builder::mount_events?") unless this
+        // has run first, the same mount_events(app) call lib.rs's own real setup() makes.
+        tauri_specta::Builder::<tauri::test::MockRuntime>::new()
+            .events(tauri_specta::collect_events![crate::events::Navigate])
+            .mount_events(&app);
+        app.handle().clone()
     }
 
     #[test]

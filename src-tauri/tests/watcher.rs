@@ -23,6 +23,17 @@ use tauri_specta::Event;
 /// well under the 2.5s the "one coalesced event" acceptance criterion allows.
 const WAIT: Duration = Duration::from_millis(2000);
 
+/// cargo's default test runner schedules every `#[test]` in this file concurrently, so without
+/// this, up to 8 real recursive filesystem watchers and debouncers compete for the same CI
+/// runner's inotify/FSEvents delivery at once -- confirmed directly as the cause of a real CI
+/// failure (every watcher test timed out simultaneously, with a different subset passing on each
+/// OS -- the signature of resource contention, not a deterministic bug). A real user only ever
+/// runs one Heimdall with one watcher, so serializing here, not loosening WAIT past the real 2.5s
+/// acceptance criterion it is meant to enforce, matches both reality and the AC's own intent.
+/// `unwrap_or_else` recovers the lock if an earlier test panicked while holding it (a timeout):
+/// no shared mutable state to protect past that point, so a poisoned lock is still safe to reuse.
+static WATCHER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 fn mock_app(claude_home: heimdall_core::paths::ClaudeHome) -> tauri::App<tauri::test::MockRuntime> {
     let app = mock_builder()
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -57,6 +68,7 @@ fn recv_data_changed(
 
 #[test]
 fn creating_a_transcript_produces_one_event_with_transcript_and_sessions() {
+    let _guard = WATCHER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tempfile::tempdir().unwrap();
     let claude_home =
         heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
@@ -80,6 +92,7 @@ fn creating_a_transcript_produces_one_event_with_transcript_and_sessions() {
 
 #[test]
 fn appending_to_a_transcript_also_produces_one_event() {
+    let _guard = WATCHER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tempfile::tempdir().unwrap();
     let claude_home =
         heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
@@ -107,6 +120,7 @@ fn appending_to_a_transcript_also_produces_one_event() {
 
 #[test]
 fn atomic_rename_over_a_transcript_produces_one_event() {
+    let _guard = WATCHER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tempfile::tempdir().unwrap();
     let claude_home =
         heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
@@ -133,6 +147,7 @@ fn atomic_rename_over_a_transcript_produces_one_event() {
 
 #[test]
 fn deleting_a_transcript_produces_one_event() {
+    let _guard = WATCHER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tempfile::tempdir().unwrap();
     let claude_home =
         heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
@@ -157,6 +172,7 @@ fn deleting_a_transcript_produces_one_event() {
 
 #[test]
 fn claude_json_is_watched_through_its_parent_with_a_file_filter() {
+    let _guard = WATCHER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tempfile::tempdir().unwrap();
     let claude_home =
         heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
@@ -183,6 +199,7 @@ fn claude_json_is_watched_through_its_parent_with_a_file_filter() {
 
 #[test]
 fn a_write_through_the_safe_write_primitive_triggers_exactly_one_reload() {
+    let _guard = WATCHER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tempfile::tempdir().unwrap();
     let claude_home =
         heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
@@ -212,6 +229,7 @@ fn a_write_through_the_safe_write_primitive_triggers_exactly_one_reload() {
 
 #[test]
 fn a_custom_memory_folder_added_through_prefs_is_watched_without_restarting() {
+    let _guard = WATCHER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tempfile::tempdir().unwrap();
     let claude_home =
         heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
@@ -244,6 +262,7 @@ const RAPID_WRITE_ROUNDS: usize = 200;
 
 #[test]
 fn rapid_writes_to_one_file_coalesce_into_very_few_events() {
+    let _guard = WATCHER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tempfile::tempdir().unwrap();
     let claude_home =
         heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));

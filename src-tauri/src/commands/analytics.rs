@@ -39,19 +39,51 @@ mod tests {
 
     #[test]
     fn get_stats_reports_the_cache_source_when_the_fixtures_own_cache_is_fresh() {
-        // `fixtures/synthetic`'s own `stats-cache.json` has `lastComputedDate: "2026-09-10"`,
-        // matching its own transcripts' latest session day exactly -- not stale, so this is the
-        // "serve the on-disk cache as-is" path, not a recomputation.
-        let view = get_stats_inner(&state("synthetic")).unwrap();
+        // `latest_session_day` (stats.rs) keys staleness off each transcript file's own mtime, not
+        // anything inside it -- and a fresh git checkout gives every file "now" as its mtime, which
+        // is always later than this fixture's fixed `lastComputedDate: "2026-09-10"`. Reading the
+        // shared fixture tree directly would make this test fail on every fresh checkout (it did,
+        // in CI, confirmed directly). Copying its two needed files into a tempdir and setting an
+        // explicit, fixed mtime makes "fresh" independent of when or where this test runs.
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("../fixtures/synthetic/claude-home");
+        std::fs::copy(src.join("stats-cache.json"), root.join("stats-cache.json")).unwrap();
+        let project_dir = root.join("projects").join("-Users-fixture-src-app");
+        std::fs::create_dir_all(&project_dir).unwrap();
+        let before_last_computed = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(946_684_800); // 2000-01-01T00:00:00Z
+        for name in [
+            "11111111-1111-4111-8111-111111111111.jsonl",
+            "22222222-2222-4222-8222-222222222222.jsonl",
+            "sessions-index.json",
+        ] {
+            let dest = project_dir.join(name);
+            std::fs::copy(src.join("projects/-Users-fixture-src-app").join(name), &dest).unwrap();
+            if name.ends_with(".jsonl") {
+                std::fs::File::options()
+                    .write(true)
+                    .open(&dest)
+                    .unwrap()
+                    .set_modified(before_last_computed)
+                    .unwrap();
+            }
+        }
+        let state = AppState {
+            claude_home: ClaudeHome::new(root, root.join(".claude.json")),
+            cache: crate::state::Cache::default(),
+        };
+        let view = get_stats_inner(&state).unwrap();
         assert_eq!(view.source, StatsSource::Cache);
         assert!(view.stats.total_sessions > 0);
     }
 
     #[test]
     fn get_stats_recomputes_when_no_cache_file_exists() {
-        // `fixtures/screenshot` has real session transcripts but (confirmed directly) no
-        // `stats-cache.json` at all, so this exercises the opposite path from the test above.
-        let view = get_stats_inner(&state("screenshot")).unwrap();
+        // `fixtures/windows` has real session transcripts, real UUID-named files (`stats::
+        // session_files` only recognises those, unlike `fixtures/screenshot`'s readable
+        // `conv-001`-style names) and (confirmed directly) no `stats-cache.json` at all, so this
+        // exercises the opposite path from the test above.
+        let view = get_stats_inner(&state("windows")).unwrap();
         assert_eq!(view.source, StatsSource::Computed);
         assert!(view.stats.total_sessions > 0);
     }
