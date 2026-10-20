@@ -5,7 +5,7 @@
 
 ## Context
 
-Poirot swallows almost every failure: `try?` on reads and writes throughout `SettingsWriter.swift`, silent deletes (`AppState.swift:392, 446`), and `print` on load failure (`ContentView.swift:341`). Unparsable transcript lines are skipped with no count. A user cannot tell a missing file from a corrupt one, and a failed write looks like success.
+The Swift reference app swallows almost every failure: `try?` on reads and writes throughout `SettingsWriter.swift`, silent deletes (`AppState.swift:392, 446`), and `print` on load failure (`ContentView.swift:341`). Unparsable transcript lines are skipped with no count. A user cannot tell a missing file from a corrupt one, and a failed write looks like success.
 
 ## Decision
 
@@ -18,7 +18,7 @@ Poirot swallows almost every failure: `try?` on reads and writes throughout `Set
 
 ## Consequences
 
-- Every silent `try?`/`print` site in Poirot has a named replacement behaviour.
+- Every silent `try?`/`print` site in the Swift reference app has a named replacement behaviour.
 - The UI needs empty, error and partial states for every data view; feature tasks include them in their specs.
 
 ## Related

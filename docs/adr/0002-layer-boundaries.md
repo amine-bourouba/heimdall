@@ -5,7 +5,7 @@
 
 ## Context
 
-Poirot has no single service boundary. Six environment keys inject five loaders and a provider (`Services/Environment+Services.swift`); `ClaudeConfigLoader` is a static enum; `AppState.swift:247-268` builds loaders directly; views such as `SearchOverlayView` and `TodosOverviewView` read the file system themselves. The locked data flow requires all parsing in Rust and a webview that only renders.
+The Swift reference app has no single service boundary. Six environment keys inject five loaders and a provider (`Services/Environment+Services.swift`); `ClaudeConfigLoader` is a static enum; `AppState.swift:247-268` builds loaders directly; views such as `SearchOverlayView` and `TodosOverviewView` read the file system themselves. The locked data flow requires all parsing in Rust and a webview that only renders.
 
 ## Decision
 
@@ -45,7 +45,7 @@ Three layers, each with a hard rule.
 
 - No path joins, no parsing of Claude Code data, no file-system or shell permissions.
 - IPC only through `src/ipc/client.ts` over generated bindings (ESLint enforced, M1-04).
-- One feature folder per Poirot view folder (`src/features/<feature>/`), one Pinia store per feature boundary, all components `<script setup lang="ts">`. Poirot's `@Observable AppState` slices map to: sessions/projects (`features/session/store.ts`), navigation (Vue Router plus `useNavigation`, port-plan P-3), config detail (`features/config/store.ts`), search (`features/search/store.ts`), toasts (`stores/toasts.ts`), theme and font (`stores/theme.ts`), preferences (`stores/prefs.ts`).
+- One feature folder per Swift reference view folder (`src/features/<feature>/`), one Pinia store per feature boundary, all components `<script setup lang="ts">`. The Swift reference's `@Observable AppState` slices map to: sessions/projects (`features/session/store.ts`), navigation (Vue Router plus `useNavigation`, port-plan P-3), config detail (`features/config/store.ts`), search (`features/search/store.ts`), toasts (`stores/toasts.ts`), theme and font (`stores/theme.ts`), preferences (`stores/prefs.ts`).
 - View-model logic over already-parsed data may live in stores (analytics range filtering, history date buckets; port-plan P-1).
 
 ## Consequences

@@ -2,7 +2,7 @@
 
 A desktop companion for [Claude Code](https://claude.com/claude-code) on Windows, Linux and macOS. Heimdall reads Claude Code's own data under `~/.claude/` and shows your sessions, history and configuration in one place. It runs entirely on your machine: no account, no server, no telemetry.
 
-Heimdall is a cross-platform port of [Poirot](https://github.com/a7t-ai/poirot), built with Tauri 2, Rust and Vue 3.
+Heimdall is a cross-platform port of the Swift reference app (provenance: [ADR 0001](docs/adr/0001-repo-layout-and-swift-reference.md)), built with Tauri 2, Rust and Vue 3.
 
 > **Status: under construction.** Nothing is released yet. The port follows the plan in [`docs/port-plan.md`](docs/port-plan.md); progress is recorded in [`docs/progress-log.md`](docs/progress-log.md).
 
@@ -40,4 +40,4 @@ Linting, type-checking, the Rust and Vitest test suites, and production builds a
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). Heimdall is derived from Poirot by Leonardo Cardoso, also MIT-licensed.
+MIT. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). Heimdall is derived from the Swift reference app by Leonardo Cardoso, also MIT-licensed.

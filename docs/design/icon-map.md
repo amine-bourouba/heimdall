@@ -1,6 +1,6 @@
 # Icon map: SF Symbols to Lucide
 
-Every SF Symbol name `$POIROT` actually uses, mapped to a real Lucide icon (verified against
+Every SF Symbol name `$SWIFT_REF` actually uses, mapped to a real Lucide icon (verified against
 `node_modules/@lucide/vue`'s own exported component names — never guessed). The live mapping is
 `src/components/iconMap.ts`; this document is its provenance table plus the real gaps, not a
 second source of truth to keep in sync by hand.
@@ -122,7 +122,7 @@ is the one structural limit every `.fill` row inherits.
 ## 4. `SubAgent.icon` built-in defaults (`Models/Config/SubAgent.swift`)
 
 `SubAgent.icon` is a free-text `String` field with no fixed case set (confirmed: no icon picker
-list exists anywhere in `$POIROT`'s source) — only the four built-in agents' own default values
+list exists anywhere in `$SWIFT_REF`'s source) — only the four built-in agents' own default values
 have a real mapping. **Gap:** a user-authored sub-agent can set `icon` to any string; `AppIcon`'s
 own fallback (a `CircleQuestionMark` marker, not a silent blank) is what actually handles that
 case, not an entry in this table.
@@ -165,7 +165,7 @@ The AC names seven utilities (`bounce`, `pulse`, `breathe`, `variable-color`, `r
 real usage (`grep -rn "symbolEffect" Poirot/Sources/`): `bounce`, `rotate`, `replace`, `pulse` and
 `breathe` are each used for real (`ToastOverlay.swift`, `AnalyticsDashboardView.swift`,
 `MCPServerStatusIndicator.swift`, `MemoryListView.swift`, and the many `.contentTransition(.symbolEffect(.replace))`
-sites). **`variable-color` and `wiggle` have zero real call sites anywhere in `$POIROT`'s
+sites). **`variable-color` and `wiggle` have zero real call sites anywhere in `$SWIFT_REF`'s
 source** — implemented in `motion.css` per the AC regardless, with `variable-color` built as an
 opacity-cycle approximation (a single-path Lucide icon has no internal layered regions to
 sequentially highlight, which is what SF Symbols' real variable-color effect does).

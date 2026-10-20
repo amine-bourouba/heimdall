@@ -1,6 +1,6 @@
 # Analytics, exports and the context ring — behaviour spec
 
-Source of truth: Poirot (`$POIROT` = `C:\Users\pc\Desktop\tech\poirot`, commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Every claim below cites a Swift `file:line`. Heimdall vocabulary (`StatsView`, `CsvKind`, `PngKind`, `ContextUsage`) is from `docs/ipc-contract.md` §5.
+Source of truth: the Swift reference app (`$SWIFT_REF` = `C:\Users\pc\Desktop\tech\poirot`, commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Every claim below cites a Swift `file:line`. Heimdall vocabulary (`StatsView`, `CsvKind`, `PngKind`, `ContextUsage`) is from `docs/ipc-contract.md` §5.
 
 Files read for this spec:
 - `Poirot/Sources/Views/Analytics/AnalyticsViewModel.swift`
@@ -401,7 +401,7 @@ renderer.scale = 2.0                        // 2x / Retina raster scale
 ```
 The returned `NSImage` is sized at logical points (`cgImage.width/2`, `cgImage.height/2`) even though the backing raster is 2x (`:22-23`).
 
-Brand header (`AnalyticsBrandHeader`, `AnalyticsImageExporter.swift:46-75`): horizontal row — `PoirotLogo` image (24pt tall) — `"Poirot"` (heading font) — `"·"` separator — `"poirot.fyi"` (small font, `accent` colour) — spacer — `"Claude Code Companion for macOS"` (micro font, `textTertiary`, trailing). Padding `xxl` horizontal / `lg` vertical, background `bgApp`.
+Brand header (`AnalyticsBrandHeader`, `AnalyticsImageExporter.swift:46-75`): horizontal row — `PoirotLogo` image (24pt tall) — `"the Swift reference app"` (heading font) — `"·"` separator — `"poirot.fyi"` (small font, `accent` colour) — spacer — `"Claude Code Companion for macOS"` (micro font, `textTertiary`, trailing). Padding `xxl` horizontal / `lg` vertical, background `bgApp`.
 
 Save panel (`:26-42`): `NSSavePanel`, `allowedContentTypes = [.png]`, default filename `"poirot-analytics.png"`, `canCreateDirectories = true`; writes via `tiffRepresentation` → `NSBitmapImageRep` → `.png` representation.
 

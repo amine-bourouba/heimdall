@@ -1,6 +1,6 @@
 # Universal search (⌘K) — behaviour spec
 
-Task M0-07. Source of truth: `$POIROT/Poirot/Sources/Views/Search/SearchOverlayView.swift`,
+Task M0-07. Source of truth: `$SWIFT_REF/Poirot/Sources/Views/Search/SearchOverlayView.swift`,
 `Utilities/HighlightedText.swift`, `Models/Provider/NavigationItem.swift` (commit `a29dd6e`). Every
 claim below cites a Swift `file:line`. Cross-references into other Swift files (confirmatory only)
 are marked as such. Vocabulary matches `docs/ipc-contract.md` §5 (`SearchMode`, `SearchHit`,
@@ -89,7 +89,7 @@ match is rejected (`nil`) unless `score ≥ query.count * 5` (`:117-119`) — th
 widely-scattered hits.
 
 ### 2.3 Worked examples (traced against the algorithm above; the first two are asserted by
-`$POIROT/PoirotTests/Utilities/HighlightedTextTests.swift`)
+`$SWIFT_REF/PoirotTests/Utilities/HighlightedTextTests.swift`)
 
 | Query | Text | Fuzzy | Exact ("Match Word") |
 |---|---|---|---|

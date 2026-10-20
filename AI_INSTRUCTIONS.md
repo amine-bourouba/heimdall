@@ -2,7 +2,7 @@
 
 ## Overview
 
-Heimdall is a cross-platform (Windows, Linux, macOS) desktop companion for Claude Code. It reads Claude Code's own data under `~/.claude/` and `~/.claude.json`, renders sessions and configuration, and (later) edits Claude Code configuration files. It is a port of Poirot, a macOS SwiftUI app. It has no backend server and no account system.
+Heimdall is a cross-platform (Windows, Linux, macOS) desktop companion for Claude Code. It reads Claude Code's own data under `~/.claude/` and `~/.claude.json`, renders sessions and configuration, and (later) edits Claude Code configuration files. It is a port of the Swift reference app, a macOS SwiftUI app. It has no backend server and no account system.
 
 Start with `docs/port-plan.md`. Work comes from `docs/tasks/`; each task file is self-contained.
 
@@ -32,13 +32,13 @@ Start with `docs/port-plan.md`. Work comes from `docs/tasks/`; each task file is
 - Use Lucide icons **only through `src/components/AppIcon.vue`**. Never use emoji or custom icon assets for UI elements.
 - Motion effects are named utilities (`bounce`, `pulse`, `breathe`, `variable-color`, `rotate`, `wiggle`, `replace`) from `src/styles/motion.css`, applied through `AppIcon`'s `effect` prop.
 - **Every effect is gated by reduced motion** (`usePrefersReducedMotion`) and by the `showAnimations` preference.
-- The mapping from Poirot's icon names to Lucide lives in `docs/design/icon-map.md`.
+- The mapping from the Swift reference app's icon names to Lucide lives in `docs/design/icon-map.md`.
 
 ## Design tokens
 
 - Colours, typography, spacing, radii and icon sizes are **CSS custom properties only**, defined in `src/styles/tokens.css` and exposed to Tailwind through `@theme` in `src/styles/main.css`.
 - Never hard-code a colour or size in a component. Themes switch through `data-theme` on `<html>`; font scale is `--font-scale`.
-- The token values come from Poirot's `Theme/PoirotTheme.swift` (tabulated in `docs/design/theme-tokens.md`).
+- The token values come from the Swift reference app's `Theme/PoirotTheme.swift` (tabulated in `docs/design/theme-tokens.md`).
 
 ## Security
 
@@ -75,7 +75,7 @@ npm run build         # tauri build
 # Checks
 node scripts/check-bindings.mjs
 node scripts/lint-security-config.mjs
-python docs/tasks/check_backlog.py --poirot <path-to-poirot>
+python docs/tasks/check_backlog.py --swift-ref <path-to-swift-reference-checkout>
 ```
 
 ## Parallel development (worktrees)
@@ -87,15 +87,15 @@ python docs/tasks/check_backlog.py --poirot <path-to-poirot>
 
 ## Swift reference
 
-- `$POIROT` is the read-only Swift reference: `C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. **Never modify it.**
-- Use it to read behaviour, thresholds and tests. Poirot's own rules (SF Symbols, SwiftLint, XcodeGen, Swift Testing, worktree bundle ids) do not apply here.
+- `$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine — see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. **Never modify it.**
+- Use it to read behaviour, thresholds and tests. The Swift reference app's own rules (SF Symbols, SwiftLint, XcodeGen, Swift Testing, worktree bundle ids) do not apply here.
 
 ## Feature development workflow
 
 - Pick a task from `docs/tasks/` whose dependencies have landed. Read only that task and its Inputs.
 - Deliver its Outputs, prove every acceptance criterion, get the named reviewers.
 - Append one entry to `docs/progress-log.md`; never edit another entry.
-- After editing any task file, run `python docs/tasks/check_backlog.py --poirot <path-to-poirot>`.
+- After editing any task file, run `python docs/tasks/check_backlog.py --swift-ref <path-to-swift-reference-checkout>`.
 
 ## New Feature Checklist
 

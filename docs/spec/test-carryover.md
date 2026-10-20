@@ -1,8 +1,8 @@
 # Test carry-over map
 
-Task M0-06. Every Swift test in `$POIROT/PoirotTests` (commit `a29dd6e`) with its Heimdall destination. Rust destinations are the module file that holds the test (`#[cfg(test)] mod tests` in that file). A task that ports a file must port every row whose destination is one of its outputs.
+Task M0-06. Every Swift test in `$SWIFT_REF/PoirotTests` (commit `a29dd6e`) with its Heimdall destination. Rust destinations are the module file that holds the test (`#[cfg(test)] mod tests` in that file). A task that ports a file must port every row whose destination is one of its outputs.
 
-**Count.** `grep -rho "@Test" $POIROT/PoirotTests | wc -l` = 637. This map has 637 rows, one per `@Test`.
+**Count.** `grep -rho "@Test" $SWIFT_REF/PoirotTests | wc -l` = 637. This map has 637 rows, one per `@Test`.
 
 ## Decisions encoded here
 

@@ -5,7 +5,7 @@
 
 ## Context
 
-Poirot keeps 18 preference keys in `UserDefaults`, read across 19 files, some outside the UI layer (`App/MemorySourcesStore.swift:52`, `Utilities/TerminalLauncher.swift:10`). Rust needs several of them (terminal, editor, custom memory folders), so preferences cannot be a UI-only concept. The UserDefaults domain is uncertain (the bundle id `fyi.poirot-54` in `project.yml:41` is a per-worktree leftover), and only three keys hold user input worth keeping: `customMemoryFolders`, `claudeCodePath`, `configProjectPath`.
+The Swift reference app keeps 18 preference keys in `UserDefaults`, read across 19 files, some outside the UI layer (`App/MemorySourcesStore.swift:52`, `Utilities/TerminalLauncher.swift:10`). Rust needs several of them (terminal, editor, custom memory folders), so preferences cannot be a UI-only concept. The UserDefaults domain is uncertain (the bundle id `fyi.<swift-app>-54` in `project.yml:41` is a per-worktree leftover), and only three keys hold user input worth keeping: `customMemoryFolders`, `claudeCodePath`, `configProjectPath`.
 
 ## Decision
 
@@ -28,7 +28,7 @@ Poirot keeps 18 preference keys in `UserDefaults`, read across 19 files, some ou
 | `textEditor` | enum | `vscode` | Xcode offered on macOS only |
 | `preferredTerminal` | enum per OS | macOS `terminal`, Windows `windowsTerminal`, Linux `system` (`x-terminal-emulator`) | ADR 0003 |
 | `openTerminalOnBash` | bool | false | |
-| `claudeCodePath` | string \| null | null | Poirot defaulted to `/usr/local/bin/claude`; null means PATH search |
+| `claudeCodePath` | string \| null | null | The Swift reference defaulted to `/usr/local/bin/claude`; null means PATH search |
 | `showAnimations` | bool | true | |
 | `wrapCodeLines` | bool | true | |
 | `autoExpandBlocks` | bool | true | |
@@ -38,7 +38,7 @@ Poirot keeps 18 preference keys in `UserDefaults`, read across 19 files, some ou
 
 Launch at login is not a preference; it is read live from the autostart plugin.
 
-5. **No import from Poirot's UserDefaults.** The domain is uncertain and the few valuable keys take seconds to re-enter.
+5. **No import from the Swift reference's UserDefaults.** The domain is uncertain and the few valuable keys take seconds to re-enter.
 6. **Never write app state under `~/.claude`.**
 7. **Development builds use their own identifier** (`io.github.amine-bourouba.heimdall.dev`, and `io.github.amine-bourouba.heimdall.dev<N>` per worktree; port-plan §5.8), so they never touch release preferences.
 8. **The identifier is final** (`io.github.amine-bourouba.heimdall`, D1, ADR 0011) and must not change after the first tagged release: changing it would orphan every user's preferences.

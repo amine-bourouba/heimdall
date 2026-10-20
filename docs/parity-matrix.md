@@ -1,6 +1,6 @@
 # Feature-parity matrix
 
-This matrix defines "done" for the port. Each row is one Poirot capability, its Swift reference (paths relative to `$POIROT/Poirot/Sources/` unless noted, verified at commit `a29dd6e`), its Heimdall target, and a status per OS.
+This matrix defines "done" for the port. Each row is one Swift-reference-app capability, its Swift reference (paths relative to `$SWIFT_REF/Poirot/Sources/` unless noted, verified at commit `a29dd6e`), its Heimdall target, and a status per OS.
 
 **How to update.** Only the gate-review tasks edit this file: M1-59, M2-30, M3-20, M4-14 and M3-62. Other tasks record evidence in `docs/progress-log.md`, and the next gate review copies the status here. New upstream capabilities become new rows (see `docs/spec/upstream-sync.md`); they never reopen a finished milestone.
 
@@ -62,7 +62,7 @@ This matrix defines "done" for the port. Each row is one Poirot capability, its 
 | B33 | Output styles list and detail | `Views/Config/OutputStylesListView.swift` | `src/features/config/output-styles/` | MVP | NS | NS | NS | MVP read-only; create/delete Later | FEAT | M1-24, M3-12, M3-50 |
 | B34 | Universal search overlay (⌘K) | `Views/Search/SearchOverlayView.swift` | `src/features/search/SearchOverlay.vue`, `search/` | MVP | NS | NS | NS | Details in section S | FEAT, RUST | M1-29, M1-30, M1-46, M3-01 |
 | B35 | Onboarding: 3 pages, not dismissible until complete | `Views/Onboarding/OnboardingView.swift` | `src/features/onboarding/Onboarding.vue` | MVP | NS | NS | NS | — | FEAT | M1-31, M1-40, M3-15 |
-| B36 | Shortcut help sheet | `Views/Help/ShortcutHelpView.swift` | `src/features/help/ShortcutHelp.vue` | MVP | NS | NS | NS | Full list instead of Poirot's 9 rows (P-7) | FEAT | M3-17 |
+| B36 | Shortcut help sheet | `Views/Help/ShortcutHelpView.swift` | `src/features/help/ShortcutHelp.vue` | MVP | NS | NS | NS | Full list instead of the Swift reference app's 9 rows (P-7) | FEAT | M3-17 |
 | B37 | Toast overlay: single queue, 4 s / 10 s with URL | `Views/Components/ToastOverlay.swift` | `src/components/ToastOverlay.vue`, `src/stores/toasts.ts` | MVP | NS | NS | NS | — | UI | M2-05, M2-07 |
 | B38 | Config project picker | `Views/Config/ConfigProjectPicker.swift` | `ConfigProjectPicker.vue`, `pick_config_project` | MVP | NS | NS | NS | — | FEAT, RUST | M1-39, M3-11 |
 | B39 | Config detail toolbar: copy name/content | `Views/Config/ConfigDetailToolbar.swift` | `ConfigDetailToolbar.vue` | MVP | NS | NS | NS | Reveal and open-in-editor are Later (C17, L3) | FEAT | M3-11, M3-55 |
@@ -258,4 +258,4 @@ On Windows and Linux, ⌘ becomes Ctrl everywhere, including labels.
 | X3 | Homebrew Cask, winget, Scoop, AUR, Flathub | GitHub Releases only at launch | User decision 7 |
 | X4 | Windows Authenticode, Apple Developer ID signing, notarisation | Unsigned builds for now | User decision 7 |
 | X5 | Intel macOS; Windows and Linux ARM64 | Apple Silicon only; x64 only at launch | User decisions 8 and 9 |
-| X6 | i18n framework | Poirot ships English only | Plan (C15) |
+| X6 | i18n framework | The Swift reference app ships English only | Plan (C15) |

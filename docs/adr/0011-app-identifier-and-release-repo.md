@@ -5,7 +5,7 @@
 
 ## Context
 
-Poirot's `project.yml:41` sets `PRODUCT_BUNDLE_IDENTIFIER: fyi.poirot-54`, a leftover per-worktree value, not a real identifier. Its update checker points at `a7t-ai/poirot` (`Services/UpdateChecker.swift:5`), and its About view links to the upstream maintainer's repository, Sponsors page and social profile. The OS keys each app's preferences folder by identifier, so changing it after release orphans user settings (ADR 0007).
+The Swift reference's `project.yml:41` sets `PRODUCT_BUNDLE_IDENTIFIER: fyi.<swift-app>-54`, a leftover per-worktree value, not a real identifier. Its update checker points at the upstream repository (`Services/UpdateChecker.swift:5`; see ADR 0001), and its About view links to the upstream maintainer's repository, Sponsors page and social profile. The OS keys each app's preferences folder by identifier, so changing it after release orphans user settings (ADR 0007).
 
 The user named the product **Heimdall**, chose **https://github.com/amine-bourouba/heimdall** as the release repository, and asked for a Linux package-name collision check.
 

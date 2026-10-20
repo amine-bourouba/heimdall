@@ -1,6 +1,6 @@
-# Inventory: every `~/.claude` and `~/.claude.json` path Poirot touches
+# Inventory: every `~/.claude` and `~/.claude.json` path the Swift reference app touches
 
-Task M0-05. Source: `$POIROT/Poirot/Sources/` at commit `a29dd6e` (all paths below are relative to it). "Owner" is the Heimdall module that takes over the path (ADR 0002).
+Task M0-05. Source: `$SWIFT_REF/Poirot/Sources/` at commit `a29dd6e` (all paths below are relative to it). "Owner" is the Heimdall module that takes over the path (ADR 0002).
 
 `~` is the user's home: `homeDirectoryForCurrentUser` on macOS; on Windows Claude Code uses `%USERPROFILE%` [A-1]. `<enc>` is a project folder under `~/.claude/projects/`, named by replacing path separators and other non-alphanumerics with `-` (for example `-Users-me-src-app`, or `c--Users-pc-src-app` on Windows).
 
@@ -103,7 +103,7 @@ All use `Services/FileWatcher.swift`: one folder or file, non-recursive, `.write
 | F12 | `~/.claude/plans` | `Views/Plans/PlansListView.swift:115-124` | reload plans | `plans` |
 | F13 | `~/.claude/todos` | `Views/Todos/TodosOverviewView.swift:113-123` | reload todos | `todos` |
 
-Not watched by Poirot but covered by Heimdall's recursive watcher: `commands/`, `skills/`, `output-styles/`, `plugins/`, `stats-cache.json` and `file-history/`. Project-level `.claude/` folders and `.mcp.json` files sit outside `~/.claude`; Heimdall re-reads them when a screen opens instead of watching them.
+Not watched by the Swift reference app but covered by Heimdall's recursive watcher: `commands/`, `skills/`, `output-styles/`, `plugins/`, `stats-cache.json` and `file-history/`. Project-level `.claude/` folders and `.mcp.json` files sit outside `~/.claude`; Heimdall re-reads them when a screen opens instead of watching them.
 
 ## 5. Other home-directory uses (not file access)
 
@@ -169,9 +169,9 @@ Every hit of `grep -rn -E "homeDirectoryForCurrentUser|NSHomeDirectory" Poirot/S
 | # | Discrepancy | Evidence | Resolution |
 |---|---|---|---|
 | D-1 | Two readers of `sessions-index.json` use different keys for the project path | `TodosOverviewView.swift:372` reads top-level `originalPath`; `SessionLoader.swift:239-240` reads `entries[0].projectPath` or top-level `projectPath` | Heimdall accepts both (M1-14); the Windows and Linux captures (M0-14, M0-15) record which key Claude Code writes |
-| D-2 | Poirot never reads the transcript `cwd` field | no `cwd` in `Poirot/Sources` | Heimdall resolves project paths from `cwd` first (ADR 0003); fixtures must contain it |
+| D-2 | the Swift reference app never reads the transcript `cwd` field | no `cwd` in `Poirot/Sources` | Heimdall resolves project paths from `cwd` first (ADR 0003); fixtures must contain it |
 | D-3 | Folder-name fallbacks turn every `-` into `/` | `SessionLoader.swift:98`, `TodosOverviewView.swift:375` | Retired; decoding is the last resort only (M1-14, M3-05) |
-| D-4 | Poirot creates `~/.claude/debug` and `~/.claude/agents` only so it can watch them | W19, W20 | Heimdall never creates folders to watch them (ADR 0006) |
+| D-4 | the Swift reference app creates `~/.claude/debug` and `~/.claude/agents` only so it can watch them | W19, W20 | Heimdall never creates folders to watch them (ADR 0006) |
 | D-5 | History delete finds the line by the index embedded in the entry id and rewrites the file; lines Claude Code appends between the read and the write are lost, and an index can point at the wrong line after any change | `HistoryLoader.swift:60-77`, `:82-105` | Heimdall ids hash the line content, and the rewrite refuses if the file changed since it was read (M1-15, M3-43) |
 | D-6 | The brief lists 4 watcher call sites; there are 13 watcher start sites in 8 files | §4 | Parity row G7 added; one recursive watcher replaces them (M1-47) |
 | D-7 | Every write swallows errors and several fall back to an empty document | §2 | ADR 0005, ADR 0009, M1-22 |

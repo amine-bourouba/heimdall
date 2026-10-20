@@ -1,8 +1,8 @@
 # Heimdall port plan
 
-Heimdall ports Poirot, a native macOS SwiftUI companion app for Claude Code, to Windows, Linux and macOS on Tauri 2, Rust, Vue 3, TypeScript and Tailwind CSS v4. This plan is the entry point for every agent working on the port.
+Heimdall ports the Swift reference app, a native macOS SwiftUI companion app for Claude Code, to Windows, Linux and macOS on Tauri 2, Rust, Vue 3, TypeScript and Tailwind CSS v4. This plan is the entry point for every agent working on the port.
 
-- **Source of truth for behaviour:** the Swift app at `$POIROT` = `C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot, pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. It is read-only.
+- **Source of truth for behaviour:** the Swift app at `$SWIFT_REF` = `C:\Users\pc\Desktop\tech\poirot` on this machine (see ADR 0001 for upstream provenance). It is read-only.
 - **Companion documents:** [ADRs](adr/) (0001–0011), [parity matrix](parity-matrix.md), [IPC contract](ipc-contract.md), [task backlog](tasks/README.md) (174 tasks), [progress log](progress-log.md).
 - **Status:** planning complete and every decision answered (§2.2, 2026-09-25). Work can start with M0-01 and M0-03.
 
@@ -11,7 +11,7 @@ Heimdall ports Poirot, a native macOS SwiftUI companion app for Claude Code, to 
 1. Pick a task from [docs/tasks/](tasks/README.md) whose dependencies have all landed.
 2. Read only that task file and the files it lists as Inputs. Task files are self-contained.
 3. Deliver its Outputs, prove each acceptance criterion, get the named reviewers, then append to the [progress log](progress-log.md).
-4. After editing any task file, run `python docs/tasks/check_backlog.py --poirot <path-to-poirot>`. It fails on missing fields, unknown dependencies, dependency cycles, unordered writes to the same file, missing security review, cross-workstream writes, and Swift citations that do not exist.
+4. After editing any task file, run `python docs/tasks/check_backlog.py --swift-ref <path-to-swift-reference-checkout>`. It fails on missing fields, unknown dependencies, dependency cycles, unordered writes to the same file, missing security review, cross-workstream writes, and Swift citations that do not exist.
 
 ## 2. Decisions
 
@@ -21,7 +21,7 @@ These answers override the planning brief wherever they conflict.
 
 | # | Topic | Answer | Consequence in this plan |
 |---|---|---|---|
-| 1 | Repo layout | Separate new project, pushed to GitHub later; Swift source stays at `$POIROT` as a read-only reference | No Swift tree, Swift CI or path filtering in this repo (ADR 0001) |
+| 1 | Repo layout | Separate new project, pushed to GitHub later; Swift source stays at `$SWIFT_REF` as a read-only reference | No Swift tree, Swift CI or path filtering in this repo (ADR 0001) |
 | 2 | Name and release repo | Heimdall; releases from https://github.com/amine-bourouba/heimdall; check Linux package-name collisions | Collision found; see D2 and ADR 0011 |
 | 3 | Other CLI providers | Focus on Claude Code only for now | Provider abstraction removed (ADR 0008) |
 | 4 | Usage Limits | Leave it out | Out of scope (parity row X1) |
@@ -39,9 +39,9 @@ The user accepted the recommendation for D1–D3 and resolved D4 by moving the f
 |---|---|---|---|---|
 | D1 | App identifier (reverse-DNS) | `io.github.amine-bourouba.heimdall` | The OS keys the preferences folder and window state by identifier; changing it after release orphans user settings. It must contain only letters, digits, `.` and `-`, and must not end in `.app`. | M0-02, M1-01, M1-03, M4-01 |
 | D2 | Linux package and binary name | `heimdall-desktop` (display name stays "Heimdall") | `heimdall` is already taken by the Samsung firmware flasher: Arch `extra/heimdall`, Fedora `heimdall`, and Debian/Ubuntu `heimdall-flash`, which installs `/usr/bin/heimdall` (checked 2026-09-25). | M0-02, M1-01, M4-01 |
-| D3 | How to run the Swift reference for golden outputs | GitHub-hosted macOS runners (tasks M1-50 to M1-52); no local Mac needed | Poirot only builds on macOS. Without this, parity rests on PoirotTests-derived tests alone and the golden-parity tasks (M1-50 to M1-53) are dropped. | M1-50 |
+| D3 | How to run the Swift reference for golden outputs | GitHub-hosted macOS runners (tasks M1-50 to M1-52); no local Mac needed | the Swift reference app only builds on macOS. Without this, parity rests on PoirotTests-derived tests alone and the golden-parity tasks (M1-50 to M1-53) are dropped. | M1-50 |
 | D4 | Where the Heimdall folder lives | Moved out of the `hydra` repository to `C:\Users\pc\Desktop\tech\Heimdall`; not yet a git repository | It sat inside another project's repository (note N1). | M0-03 |
-| D5 | Per-message token usage: Poirot's first record, or the last (final) record | Last record (answered 2026-09-26) | Session token totals are about 3× too low on real transcripts under Poirot's rule (C-25). The two carried-over tests `parse_usage_deduplicatedPerGroup` and `parseSummary_sumsTokensPerGroup` now expect last-record totals, and Heimdall's totals differ from Poirot's. | transcript/full.rs, transcript/summary.rs |
+| D5 | Per-message token usage: the Swift reference app's first record, or the last (final) record | Last record (answered 2026-09-26) | Session token totals are about 3× too low on real transcripts under the Swift reference app's rule (C-25). The two carried-over tests `parse_usage_deduplicatedPerGroup` and `parseSummary_sumsTokensPerGroup` now expect last-record totals, and Heimdall's totals differ from the Swift reference app's. | transcript/full.rs, transcript/summary.rs |
 
 ### 2.3 Plan-level decisions
 
@@ -53,16 +53,16 @@ These are my own calls. Each is reversible; override any of them by editing this
 | P-2 | Config screens ship read-only in the MVP; every write is Later | Writes carry the Windows file-locking and code-execution risks; universal search still needs somewhere to navigate | M3-11 to M3-14, M3-40 to M3-50 |
 | P-3 | Navigation uses Vue Router hash history with no wrapper store: `history.state.forward` gives canGoForward, `router.replace` covers "skip re-push on hydration", and native history already trims forward entries on a new push | Fewest moving parts; the Swift semantics fall out of browser history | M2-06 |
 | P-4 | Window chrome: macOS overlay title bar with traffic lights; Windows and Linux keep native decorations; back/forward sit in the in-app toolbar on every OS | Custom decorations on Windows/Linux add drag, snap and accessibility work with no user benefit | M2-09, M2-12 |
-| P-5 | MCP HTTP/SSE status stays "URL is well-formed" exactly as Poirot does it; a real probe is a possible later enhancement, not scheduled | The brief asks for an explicit decision instead of a silent change | M1-28 |
+| P-5 | MCP HTTP/SSE status stays "URL is well-formed" exactly as the Swift reference app does it; a real probe is a possible later enhancement, not scheduled | The brief asks for an explicit decision instead of a silent change | M1-28 |
 | P-6 | Settings, About and Help become in-app views instead of separate OS windows | One window means one main capability file and simpler navigation | M3-16, M3-17 |
-| P-7 | The shortcut sheet lists every shortcut from one registry (Poirot shows 9 of 11) | A generated list cannot drift from the real bindings | M3-17 |
+| P-7 | The shortcut sheet lists every shortcut from one registry (the Swift reference app shows 9 of 11) | A generated list cannot drift from the real bindings | M3-17 |
 | P-8 | E2E: Playwright against the built frontend with fixture-backed IPC mocks on all OSes (WebKit engine stands in for WKWebView and WebKitGTK); real-app smoke on Windows via Playwright over CDP to WebView2 and on Linux via tauri-driver with WebdriverIO | Playwright cannot drive tauri-driver (it is a WebDriver server), and macOS has no WebDriver for WKWebView [A-10]. WebdriverIO is a new dev dependency, added by M2-31 once it passes the audit gate. | M2-23, M2-31 |
 | P-9 | Windows ships an NSIS installer only (per-user, no admin); MSI can be added later | The updater supports NSIS; MSI needs WiX and admin rights | M4-01 |
-| P-10 | Version format `YY.M.BUILD` without zero padding (for example `26.8.5`) | Poirot's `26.08.5` is not valid semver, which Tauri, Cargo and npm require | M1-02, M4-07 |
-| P-11 | macOS minimum version 13.0 | Poirot needed 15 for SwiftUI APIs; the webview port does not; 13 keeps recent WKWebView CSS support | M4-01 |
-| P-12 | Single main window in the MVP; Poirot's multi-window support is hidden | Multi-window multiplies state and capability work; rarely used | parity A2 |
+| P-10 | Version format `YY.M.BUILD` without zero padding (for example `26.8.5`) | the Swift reference app's `26.08.5` is not valid semver, which Tauri, Cargo and npm require | M1-02, M4-07 |
+| P-11 | macOS minimum version 13.0 | the Swift reference app needed 15 for SwiftUI APIs; the webview port does not; 13 keeps recent WKWebView CSS support | M4-01 |
+| P-12 | Single main window in the MVP; the Swift reference app's multi-window support is hidden | Multi-window multiplies state and capability work; rarely used | parity A2 |
 | P-13 | Playwright baselines are committed for Linux only, generated in CI | Linux WebKitGTK is the weakest engine (risk R-2); one committed set avoids OS font noise | M2-24, M3-18, M3-61 |
-| P-14 | The Tauri updater (`latest.json` on GitHub Releases) replaces Poirot's GitHub-API update check; UpdateCheckerTests are dropped | One network path instead of two, with signature verification | M4-03, M4-04 |
+| P-14 | The Tauri updater (`latest.json` on GitHub Releases) replaces the Swift reference app's GitHub-API update check; UpdateCheckerTests are dropped | One network path instead of two, with signature verification | M4-03, M4-04 |
 | P-15 | Tray: a small webview window on Windows and macOS; a native menu with recent sessions on Linux | Tauri does not deliver tray click events on Linux; GNOME needs the AppIndicator extension | M3-56 |
 | P-16 | Shiki output is converted to classes (`transformerStyleToClass`) and its CSS is injected as a constructable stylesheet; the CSP gets no `unsafe-inline` | Keeps the brief's CSP unchanged | M2-10, ADR 0010 |
 | P-17 | No logging framework in the MVP; diagnostics travel as `AppError` to the UI and core denies stdout/stderr prints | Nothing to redact if nothing is logged; add a redacting logger when a real need appears | M1-05, ADR 0005 |
@@ -72,7 +72,7 @@ These are my own calls. Each is reversible; override any of them by editing this
 
 ### 3.1 Corrections from planning-time verification
 
-Every cited path in this plan and the task files was checked against `$POIROT` at `a29dd6e`; the checker (§1) re-verifies Swift paths and line ranges in task files. The code differed from the brief as follows. The code wins.
+Every cited path in this plan and the task files was checked against `$SWIFT_REF` at `a29dd6e`; the checker (§1) re-verifies Swift paths and line ranges in task files. The code differed from the brief as follows. The code wins.
 
 | ID | Brief said | Code shows |
 |---|---|---|
@@ -88,7 +88,7 @@ Every cited path in this plan and the task files was checked against `$POIROT` a
 | C-10 | Shortcut sheet shows 8 shortcuts | It shows 9 rows (`ShortcutHelpView.swift:57-70`). |
 | C-11 | Six loaders injected via environment keys | Six environment keys: five loaders plus the provider (`Services/Environment+Services.swift`). |
 | C-12 | — | `unit-tests.yml` still skips `ScreenshotTests_Usage`, a suite that no longer exists. |
-| C-13 | "macOS share sheet" as a parity example | Poirot has no share sheet (no `NSSharingService` or `ShareLink`). |
+| C-13 | "macOS share sheet" as a parity example | the Swift reference app has no share sheet (no `NSSharingService` or `ShareLink`). |
 | C-14 | Inventory of screens | Missing from the brief: multi-window support with a Dock "New Window" item (`PoirotApp.swift:12-22`), Reveal in Finder (3 call sites), copy diff as image (`EditDiffView.swift:228`). Added as parity rows A2, C17, C18. |
 | C-15 | Keep the `YY.MM.BUILD` scheme (`26.08.5`) | `26.08.5` is not valid semver; see P-10. |
 | C-16 | Atomic-rename handling at `FileWatcher.swift:58-67` | The event mask (`.write, .rename, .delete, .extend`) is at `:29`; `:58-67` is the debounce. |
@@ -96,10 +96,10 @@ Every cited path in this plan and the task files was checked against `$POIROT` a
 | C-18 | Notarised macOS build, Azure Trusted Signing, universal macOS, Homebrew | Superseded by user answers 7–9: unsigned (ad-hoc on macOS), Apple Silicon only, GitHub Releases only. The brief's M4 exit "signed/notarized macOS build" becomes "ad-hoc-signed macOS build with signed updater artifacts". |
 | C-19 | Six symbol-effect categories to replace | In use: bounce, breathe, rotate and content-transition replace, plus two multi-line call sites; pulse, variableColor and wiggle may be unused. M2-04 inventories them. |
 | C-20 | — | The update check runs only from the "Check for Updates…" menu item, never automatically (`PoirotApp.swift:55-79`). |
-| C-21 | — | Poirot is English-only (`Localizable.xcstrings`, 401 strings), so localisation adds no parity work (row C15). |
+| C-21 | — | the Swift reference app is English-only (`Localizable.xcstrings`, 401 strings), so localisation adds no parity work (row C15). |
 | C-22 | Four watcher call sites | 13 watcher start sites in 8 files: the screens for hooks, MCP servers, sub-agents, history, plans and TODOs each watch their own files, and the sub-agents screen creates `~/.claude/agents` just to watch it (found by M0-05; parity row G7). |
 | C-23 | — | History delete finds its line by an index embedded in the entry id and rewrites the whole file, so a line Claude Code appends in between is lost (`Services/HistoryLoader.swift:60-105`; found by M0-05). |
-| C-24 | — | Current Claude Code writes tool results between the records of one assistant message, so the full parse splits that message into several groups and counts its usage once per group, while the summary tier counts it once. The two tiers disagree in Poirot. Heimdall counts usage once per message id in both tiers (`TranscriptParser.swift:98-108`; found by M1-13 on the Windows fixtures). |
+| C-24 | — | Current Claude Code writes tool results between the records of one assistant message, so the full parse splits that message into several groups and counts its usage once per group, while the summary tier counts it once. The two tiers disagree in the Swift reference app. Heimdall counts usage once per message id in both tiers (`TranscriptParser.swift:98-108`; found by M1-13 on the Windows fixtures). |
 | C-25 | — | Both tiers take a message's usage from its first record, but streamed records carry growing `output_tokens` and only the last one is final. On the Windows fixtures this counts 118,515 output tokens where the last records sum to 373,792. Heimdall takes each message's last record (D5). |
 | C-26 | — | StatsComputer adds a message's usage once for every streamed record of it (`StatsComputer.swift:218-245`), so recomputed analytics multiply input and cache-read tokens by the number of records per message. Heimdall's recomputation counts each message id once, from its last record, as D5 decided for sessions (found by M1-20). |
 | C-27 | — | The Models screen always shows the catalog's "Opus 5" as the default and never reads the `model` in `settings.json`, and "Set as default" writes a display name such as `Opus 5` into Claude Code's `model` field, which expects a model id or alias (`ModelsListView.swift:59`, `SettingsWriter.swift:52-56`). Heimdall's view reads the configured model (M1-27); the write must store an id or alias (M3-40, found by M1-27). |
@@ -109,14 +109,14 @@ Every cited path in this plan and the task files was checked against `$POIROT` a
 | ID | Assumption | Verified by |
 |---|---|---|
 | A-1 | Claude Code on Windows writes the same `~/.claude` layout under `%USERPROFILE%` (the brief says this was checked on a real Windows 11 machine) | M0-14 |
-| A-2 | Whether Claude Code honours a config-dir override such as `CLAUDE_CONFIG_DIR`; Poirot never reads one | M1-06 |
+| A-2 | Whether Claude Code honours a config-dir override such as `CLAUDE_CONFIG_DIR`; the Swift reference app never reads one | M1-06 |
 | A-3 | Claude Code's own JSON writer uses 2-space indentation and does not sort keys | M1-22 (formatting is detected, not assumed) |
 | A-4 | MarkdownUI never executes HTML today, so a webview Markdown renderer is a new XSS surface | ADR 0010 treats it as new |
 | A-5 | The CSP and capability model behave the same on WebView2, WebKitGTK and WKWebView | M2-26, M4-12 |
 | A-6 | Search skipping custom memory folders, and model search covering only the curated catalog, are intentional | Kept at parity (rows S10, S15); ask upstream if it matters |
-| A-7 | Poirot's single-folder watcher may miss new transcripts inside project subfolders (needs a Mac to confirm) | Moot: Heimdall watches recursively (M1-47) |
+| A-7 | the Swift reference app's single-folder watcher may miss new transcripts inside project subfolders (needs a Mac to confirm) | Moot: Heimdall watches recursively (M1-47) |
 | A-8 | Preferences land in `%APPDATA%\<id>` (Windows), `~/Library/Application Support/<id>` (macOS), `~/.config/<id>` (Linux) | M1-39 |
-| A-9 | `CFFIXED_USER_HOME` redirects the home folder for Poirot's config loaders in the golden harness | M1-50 |
+| A-9 | `CFFIXED_USER_HOME` redirects the home folder for the Swift reference app's config loaders in the golden harness | M1-50 |
 | A-10 | tauri-driver has no macOS support because WKWebView has no WebDriver | M2-23 |
 | A-11 | `backdrop-filter` is an acceptable stand-in for native glass; WebKitGTK support is weaker | M2-02, M2-30 visual review |
 | A-12 | Minimum Linux support: Ubuntu 22.04+, Debian 12+, current Fedora, current Arch | M4-12 |
@@ -131,8 +131,8 @@ Every cited path in this plan and the task files was checked against `$POIROT` a
 ### 3.3 Notes
 
 - **N1.** Resolved: the Heimdall folder moved out of the `hydra` repository to `C:\Users\pc\Desktop\tech\Heimdall` on 2026-09-25 (D4). M0-03 runs `git init` there.
-- **N2.** Heimdall needs its own icon. Until the user supplies one, M1-03 uses Tauri's placeholder icon set. Poirot's icon is not reused, to avoid confusing the two apps.
-- **N3.** License: MIT. Poirot's notice (`Copyright (c) 2026 Leonardo Cardoso`) is preserved alongside Heimdall's (M0-04).
+- **N2.** Heimdall needs its own icon. Until the user supplies one, M1-03 uses Tauri's placeholder icon set. The Swift reference app's icon is not reused, to avoid confusing the two apps.
+- **N3.** License: MIT. The Swift reference app's notice (`Copyright (c) 2026 Leonardo Cardoso`) is preserved alongside Heimdall's (M0-04).
 
 ## 4. Locked stack
 
@@ -270,7 +270,7 @@ Sizing: M0 S · M1 XL (critical path; M2–M4 depend on it) · M2 M · M3 L (par
 ## 8. Testing strategy
 
 - **Carry-over.** `docs/spec/test-carryover.md` (M0-06) maps every Swift test. Services, parsers, loaders and models (34 files, about 6,000 lines) become Rust unit tests and are the spec for the data layer. App-state tests become Vitest specs against Pinia stores. `MenuBarStateTests` becomes a Rust test (M1-21). Analytics view-model tests become Vitest; analytics CSV tests become Rust (P-18). Pure utilities follow their code (P-1). Dropped: ClaudeCodeProviderTests (ADR 0008), HighlightedTextTests' AttributedString assertions, `*LoadingMock.swift`, UpdateCheckerTests (P-14).
-- **Screenshots.** Poirot's 17 screenshot suites are skipped in its CI and have no committed baselines. Heimdall replaces them with Playwright visual tests and commits Linux baselines (P-13): M2-24, M3-18, M3-61.
+- **Screenshots.** the Swift reference app's 17 screenshot suites are skipped in its CI and have no committed baselines. Heimdall replaces them with Playwright visual tests and commits Linux baselines (P-13): M2-24, M3-18, M3-61.
 - **Fixtures.** Inline Swift fixtures become files (M0-11); `ScreenshotData.swift` becomes a fixture tree (M0-12); scrubbed real Windows and Linux trees (M0-13 to M0-15) cover CRLF, Windows separators and Linux folder naming. DTO fixtures for Vitest are generated from the real Rust loaders (M2-01).
 - **Golden parity.** While the oracle exists, the Swift app computes expected outputs for every fixture tree on a macOS runner (M1-50, M1-51). Rust must match them (M1-53), with every tolerated difference listed and reviewed.
 - **Cross-OS CI.** Rust on windows-latest, ubuntu-22.04 and macos-latest (M1-58); Vitest, lint, audits, Playwright and real-app smoke added in M2-29.
@@ -320,7 +320,7 @@ WebKitGTK fallbacks for lagging CSS features (`backdrop-filter`, custom properti
 | R-3 | Performance on huge transcripts | Medium | High | Summary tier for lists, IPC paging, virtualisation from day one; benchmarks in M1-57 and M2-28 |
 | R-4 | Windows file locking on `~/.claude.json` writes | High | Medium | Temp file plus rename with retry and backoff, `ReplaceFileW` fallback, clear `busy` error (M1-22); writes are Later scope |
 | R-5 | Scope creep toward full parity before shipping | High | Medium | MVP/Later split (§11); gates in §7; parity matrix as the gate |
-| R-6 | Fork drifts from upstream Poirot | Medium | Medium | Pinned reference; monthly sync producing new matrix rows (M0-16, §13) |
+| R-6 | Fork drifts from upstream the Swift reference app | Medium | Medium | Pinned reference; monthly sync producing new matrix rows (M0-16, §13) |
 | R-7 | Analytics PNG export and diff copy-as-image have no settled approach (DOM-to-image is inconsistent across WebView2, WebKitGTK and WKWebView) | Medium | Low | Open risk; spike M3-37 decides before M3-39; Later scope |
 | R-8 | Unsigned builds deter users: SmartScreen warnings, and macOS 15 removed the right-click "Open" bypass | High | Medium | Install guide (M4-09); revisit signing once there are users |
 | R-9 | The updater may fail to replace an ad-hoc-signed macOS app | Medium | High | Verify N-1→N updates on each OS (M4-11); fall back to manual download instructions |
@@ -400,7 +400,7 @@ Every requirement in the planning brief's §6 maps to at least one task, or is o
 
 | Check | Result |
 |---|---|
-| Every cited file path spot-checked; discrepancies noted | Done: §3.1; Swift paths and line ranges in task files re-verified by `check_backlog.py --poirot` |
+| Every cited file path spot-checked; discrepancies noted | Done: §3.1; Swift paths and line ranges in task files re-verified by `check_backlog.py --swift-ref` |
 | Every open decision presented with a recommendation, none silently resolved | Brief items 1–8 answered by the user (§2.1); follow-up identity, oracle and repo-location questions D1–D4 answered by the user on 2026-09-25 (§2.2) |
 | Every domain requirement maps to a task or is out of scope with a reason | §14 |
 | Every task file has all required fields, one workstream's files, real dependency ids | `check_backlog.py`: 174 tasks, 0 errors |
@@ -409,5 +409,5 @@ Every requirement in the planning brief's §6 maps to at least one task, or is o
 | The IPC contract exists and both Rust and Vue tasks point to it | `docs/ipc-contract.md`; M1-37 turns it into generated bindings that Vue tasks consume |
 | Every task touching IPC, capabilities or a `~/.claude` write has security-auditor | Enforced by `check_backlog.py` (§5.6) |
 | Milestone gates match M0–M4 and are stated per OS | §7 |
-| No `.rs`, `.vue`, `.ts` or `.swift` file created or modified during planning | Only Markdown files and `docs/tasks/check_backlog.py` were written; `$POIROT` is untouched (`git status` there shows only the brief) |
+| No `.rs`, `.vue`, `.ts` or `.swift` file created or modified during planning | Only Markdown files and `docs/tasks/check_backlog.py` were written; `$SWIFT_REF` is untouched (`git status` there shows only the brief) |
 | MVP/later split stated explicitly | §11 and the Scope column of every matrix row and task |
