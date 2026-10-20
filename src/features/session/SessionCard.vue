@@ -4,7 +4,7 @@
 // a second list-row file), switching title line-clamp/padding/preview length by `layout` rather
 // than duplicating the whole card. The grid card's 2-line title stays a plain clamp (a marquee
 // can only scroll one line); the list row's single-line title uses the real `MarqueeText` (M2-07)
-// instead of Poirot's own plain `.lineLimit(1)` truncation -- this task's own Goal wording asks
+// instead of the Swift reference app's own plain `.lineLimit(1)` truncation -- this task's own Goal wording asks
 // for "marquee titles" specifically, and `MarqueeText.swift` exists in the real app but,
 // confirmed directly (`grep -rn "MarqueeText(" Poirot/Sources/` → no real call site at all), is
 // never actually instantiated there -- so this is the first real use of it, a deliberate
@@ -31,7 +31,7 @@ const isSelected = computed(() => sessionStore.selectedSession?.id === props.ses
 
 // Heimdall's real `SessionSummary` has no `agentId` field (confirmed against its own contract
 // type) -- `agentDescription`/`agentType` are the closest real equivalents, in that order, with
-// Poirot's own "Agent" fallback kept as the last resort.
+// the Swift reference app's own "Agent" fallback kept as the last resort.
 const agentLabel = computed(() => props.session.agentDescription ?? props.session.agentType ?? 'Agent');
 
 function select() {

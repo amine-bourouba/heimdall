@@ -6,7 +6,7 @@
 // history is the router's native history (M2-06's useNavigation, port-plan P-3) -- none of
 // AppState's own hand-rolled versions of those three concerns are re-ported here.
 //
-// Heimdall's data shape is not Poirot's: `Project.sessions` there is `[Session]` with messages
+// Heimdall's data shape is not the Swift reference app's: `Project.sessions` there is `[Session]` with messages
 // already attached; here a project eagerly loads only `SessionSummary[]` (list-row data, no
 // message content -- confirmed against docs/spec/session-views.md §3/§4's own row descriptions,
 // which only ever need title/preview/token/turn-count fields). A session's full content
@@ -162,7 +162,7 @@ export const useSessionStore = defineStore('session', () => {
 
   // Ported from the race this session's own AppStateSessionLoadingTests guard against: a stale
   // load resolving after a *newer* selection must not stomp on it or reset its loading flag.
-  // Poirot's own guard reads `selectedSession?.id == sessionId` in a `defer`; same check here.
+  // The Swift reference app's own guard reads `selectedSession?.id == sessionId` in a `defer`; same check here.
   async function selectSession(projectId: string, sessionId: string) {
     // AppState.swift:94 -- selecting a (possibly different) session always resets this.
     isShowingFileHistory.value = false;
@@ -205,7 +205,7 @@ export const useSessionStore = defineStore('session', () => {
     cacheSession(updated);
   }
 
-  // Ported from AppState.swift:443-464. Poirot finds the owning project by searching, since the
+  // Ported from AppState.swift:443-464. The Swift reference app finds the owning project by searching, since the
   // view only ever has the `Session` itself on hand -- same shape here, just an id.
   async function deleteSession(sessionId: string) {
     const owner = projects.value.find((p) => p.sessions.some((s) => s.id === sessionId));

@@ -1,6 +1,6 @@
 /*
  * Named motion utilities behind reduced motion (task M2-04), applied through AppIcon.vue's
- * `effect` prop. Each maps to a real SwiftUI symbol effect Poirot uses (or, for `variable-color`
+ * `effect` prop. Each maps to a real SwiftUI symbol effect the Swift reference app uses (or, for `variable-color`
  * and `wiggle`, one the AC names but no real call site currently exercises — grep confirmed:
  * see docs/design/icon-map.md's own motion section).
  *

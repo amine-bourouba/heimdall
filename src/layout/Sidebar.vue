@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Ported from SidebarView.swift: a vertical list of nav items with live counts. Poirot splits
+// Ported from SidebarView.swift: a vertical list of nav items with live counts. The Swift reference app splits
 // `.main`/`.config` sections for visual grouping only (both render in the same VStack, back to
 // back) -- `navigationItems.ts` (M2-06) already carries the one real order that matters, so no
 // section split is reintroduced here.
@@ -20,7 +20,7 @@ import { useKeyboardNav } from '@/composables/useKeyboardNav';
 import AppIcon from '@/components/AppIcon.vue';
 
 // Only the areas with a real, file-driven count in `SidebarCounts` -- "models" has no Area at
-// all (it is `provider.supportedModels.count` in Poirot, a static built-in list, never loaded
+// all (it is `provider.supportedModels.count` in the Swift reference app, a static built-in list, never loaded
 // from disk), confirmed directly against `classify.rs`'s own `Area` enum rather than guessed.
 const COUNTED_AREAS: Area[] = ['todos', 'history', 'commands', 'skills', 'plans', 'outputStyles', 'agents', 'hooks', 'mcp', 'plugins', 'memory'];
 

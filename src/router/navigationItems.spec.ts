@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { navigationItems } from './navigationItems';
 
 // Ported from PoirotTests/Providers/NavigationItemTests.swift. requiredCapability's own tests
-// (skills_requiresSkillsCapability etc.) are not ported: that field exists in Poirot only
+// (skills_requiresSkillsCapability etc.) are not ported: that field exists in the Swift reference app only
 // because of its multi-provider abstraction, which ADR 0008 removes (one implementation only,
 // user decision 3) -- there is nothing left to assert once every item is unconditionally offered.
 describe('navigationItems (NavigationItemTests)', () => {

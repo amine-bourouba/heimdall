@@ -60,7 +60,7 @@ export function fuzzyMatch(text: string, query: string): FuzzyResult | null {
 }
 
 /** The best fuzzy score across a project's own name and every one of its session titles --
- * `Number.MIN_SAFE_INTEGER` (Poirot's `Int.min`) when nothing at all matches, so callers can
+ * `Number.MIN_SAFE_INTEGER` (the Swift reference app's `Int.min`) when nothing at all matches, so callers can
  * always compare two scores without special-casing "no match". */
 export function bestScore(projectName: string, sessionTitles: string[], query: string): number {
   let best = fuzzyMatch(projectName, query)?.score ?? Number.MIN_SAFE_INTEGER;

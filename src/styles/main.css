@@ -4,12 +4,12 @@
 
 /*
  * Typography, spacing, radius and icon-size tokens (task M2-02), transcribed from
- * $POIROT/Poirot/Sources/Theme/PoirotTheme.swift's Typography/Spacing/Radius/IconSize enums.
+ * $SWIFT_REF/Poirot/Sources/Theme/PoirotTheme.swift's Typography/Spacing/Radius/IconSize enums.
  * Spacing and icon sizes are new Tailwind v4 theme namespaces (no built-in equivalent); radii
  * override Tailwind's own default --radius-* values under the same xs/sm/md/lg/xl names, so
- * `rounded-md` etc. produce Poirot's exact value instead of Tailwind's.
+ * `rounded-md` etc. produce the Swift reference app's exact value instead of Tailwind's.
  *
- * Font weight is deliberately not baked into each text style here: Poirot's style *names* imply
+ * Font weight is deliberately not baked into each text style here: the Swift reference app's style *names* imply
  * a weight (`largeSemibold` vs `large`, both 16px), but the weight itself is applied with
  * Tailwind's own font-* utility at the call site, same as any other Tailwind project — this
  * avoids inventing a non-standard combined size+weight utility for no real benefit.

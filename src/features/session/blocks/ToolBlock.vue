@@ -41,7 +41,7 @@ const prefsStore = usePrefsStore();
 const sessionStore = useSessionStore();
 const isExpanded = ref(false);
 const showAllLines = ref(false);
-// Poirot's own default really is raw/plain text, even for non-bash tools -- `isMarkdownContent`
+// the Swift reference app's own default really is raw/plain text, even for non-bash tools -- `isMarkdownContent`
 // alone does not turn markdown rendering on, `!showRawContent` has to be true too.
 const showRawContent = ref(true);
 const copied = ref(false);

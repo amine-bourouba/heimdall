@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Ported from ConfigFilterField.swift, plus Esc-to-clear (this task's own AC; Poirot's version
+// Ported from ConfigFilterField.swift, plus Esc-to-clear (this task's own AC; the Swift reference app's version
 // only clears via the button).
 import { ref } from 'vue';
 import AppIcon from './AppIcon.vue';

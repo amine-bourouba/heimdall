@@ -1,6 +1,6 @@
 /*
  * 20 theme palettes as CSS custom properties, switched by [data-theme] on <html> (task M2-02).
- * Every hex/opacity value is transcribed from $POIROT/Poirot/Sources/Theme/PoirotTheme.swift's
+ * Every hex/opacity value is transcribed from $SWIFT_REF/Poirot/Sources/Theme/PoirotTheme.swift's
  * ThemePalette cases (default/solarized/highContrast) and ColorTheme.palette's 17 `.chat(...)`
  * calls — see docs/design/theme-tokens.md for the full value table and provenance.
  *
@@ -110,8 +110,8 @@
     --bg-elevated: #0A4050;
     --bg-code: #002B36;
     --text-primary: #93A1A1;
-    /* Lightened from Poirot's literal #839496: that value is 4.11:1 on --bg-card, under the
-       4.5:1 WCAG AA bar this task's contrast.spec.ts enforces. Poirot never caught this because
+    /* Lightened from the Swift reference app's literal #839496: that value is 4.11:1 on --bg-card, under the
+       4.5:1 WCAG AA bar this task's contrast.spec.ts enforces. The Swift reference app never caught this because
        it used the OS's native secondaryLabelColor here, not this stored token (PoirotTheme.swift
        :344-349) -- a flat ported hex needs its own adjustment to meet the same accessibility bar. */
     --text-secondary: #8C9C9E;
@@ -340,7 +340,7 @@
   --bg-elevated: #383A4A;
   --bg-code: #282A36;
   --text-primary: #F8F8F2;
-  /* Lightened from Poirot's literal #8B8FA3 (4.01:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+  /* Lightened from the Swift reference app's literal #8B8FA3 (4.01:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
      solarized-dark block above for why a flat ported hex needs its own adjustment here. */
   --text-secondary: #9599AB;
   --text-tertiary: rgba(139, 143, 163, 0.7);
@@ -370,7 +370,7 @@
   --bg-elevated: #3B4252;
   --bg-code: #2E3440;
   --text-primary: #ECEFF4;
-  /* Lightened from Poirot's literal #8893A8 (3.58:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+  /* Lightened from the Swift reference app's literal #8893A8 (3.58:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
      solarized-dark block above for why a flat ported hex needs its own adjustment here. */
   --text-secondary: #9EA7B8;
   --text-tertiary: rgba(136, 147, 168, 0.7);
@@ -428,7 +428,7 @@
   --bg-elevated: #24283B;
   --bg-code: #1A1B26;
   --text-primary: #C0CAF5;
-  /* Lightened from Poirot's literal #787C99 (3.81:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+  /* Lightened from the Swift reference app's literal #787C99 (3.81:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
      solarized-dark block above for why a flat ported hex needs its own adjustment here. */
   --text-secondary: #8689A3;
   --text-tertiary: rgba(120, 124, 153, 0.7);
@@ -542,7 +542,7 @@
   --bg-elevated: #EBDBB2;
   --bg-code: #EBDBB2;
   --text-primary: #3C3836;
-  /* Darkened from Poirot's literal #7C6F64 (3.87:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+  /* Darkened from the Swift reference app's literal #7C6F64 (3.87:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
      solarized-dark block above for why a flat ported hex needs its own adjustment here. */
   --text-secondary: #70645A;
   --text-tertiary: rgba(124, 111, 100, 0.7);
@@ -572,7 +572,7 @@
   --bg-elevated: #0A4250;
   --bg-code: #002B36;
   --text-primary: #93A1A1;
-  /* Lightened from Poirot's literal #657B83 (2.92:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+  /* Lightened from the Swift reference app's literal #657B83 (2.92:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
      solarized-dark block above for why a flat ported hex needs its own adjustment here. */
   --text-secondary: #889CA3;
   --text-tertiary: rgba(101, 123, 131, 0.7);
@@ -601,10 +601,10 @@
   --bg-card-hover: #E4DDC8;
   --bg-elevated: #E4DDC8;
   --bg-code: #E4DDC8;
-  /* Darkened from Poirot's literal #586E75 (4.39:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+  /* Darkened from the Swift reference app's literal #586E75 (4.39:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
      solarized-dark block above for why a flat ported hex needs its own adjustment here. */
   --text-primary: #566C72;
-  /* Darkened from Poirot's literal #93A1A1 (2.18:1 on --bg-card, badly under 4.5:1 WCAG AA). */
+  /* Darkened from the Swift reference app's literal #93A1A1 (2.18:1 on --bg-card, badly under 4.5:1 WCAG AA). */
   --text-secondary: #5D6B6B;
   --text-tertiary: rgba(147, 161, 161, 0.7);
   --border: #D6CFB8;
@@ -633,7 +633,7 @@
   --bg-elevated: #3A3B32;
   --bg-code: #272822;
   --text-primary: #F8F8F2;
-  /* Lightened from Poirot's literal #9A9682 (4.48:1 on --bg-card, just under 4.5:1 WCAG AA) --
+  /* Lightened from the Swift reference app's literal #9A9682 (4.48:1 on --bg-card, just under 4.5:1 WCAG AA) --
      see the solarized-dark block above for why a flat ported hex needs its own adjustment here. */
   --text-secondary: #9B9784;
   --text-tertiary: rgba(154, 150, 130, 0.7);
@@ -663,7 +663,7 @@
   --bg-elevated: #3D484D;
   --bg-code: #2D353B;
   --text-primary: #D3C6AA;
-  /* Lightened from Poirot's literal #859289 (3.33:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
+  /* Lightened from the Swift reference app's literal #859289 (3.33:1 on --bg-card, under 4.5:1 WCAG AA) -- see the
      solarized-dark block above for why a flat ported hex needs its own adjustment here. */
   --text-secondary: #A0ABA4;
   --text-tertiary: rgba(133, 146, 137, 0.7);

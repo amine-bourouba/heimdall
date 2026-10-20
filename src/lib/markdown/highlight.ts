@@ -22,7 +22,7 @@
 // blocked by `default-src 'self'` the same way an inline `<script>` would be.
 //
 // Shiki ships no "xcode" theme (checked directly: `Object.keys((await import('shiki/themes')).bundledThemes)`
-// has no match) -- Poirot's own HighlightSwift "xcode" theme has no real Shiki equivalent, so
+// has no match) -- the Swift reference app's own HighlightSwift "xcode" theme has no real Shiki equivalent, so
 // `github-light`/`github-dark` are used instead as the closest real substitute, same "confirmed
 // gap, picked the closest real alternative" precedent as M2-04's SF Symbol mapping.
 

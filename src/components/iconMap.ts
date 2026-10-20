@@ -1,4 +1,4 @@
-// Maps every SF Symbol name Poirot actually uses to a real Lucide icon component (task M2-04).
+// Maps every SF Symbol name the Swift reference app actually uses to a real Lucide icon component (task M2-04).
 // See docs/design/icon-map.md for the full provenance table and the real gaps this mapping has
 // to live with (Lucide ships outline icons only, so every `.fill` SF Symbol variant maps to the
 // same Lucide icon as its non-fill counterpart -- there is no separate "filled" icon set to map
@@ -102,7 +102,7 @@ import {
   type LucideIcon,
 } from '@lucide/vue';
 
-/** Every SF Symbol literal from `$POIROT`'s source (`Image(systemName:)` call sites, plus
+/** Every SF Symbol literal from `$SWIFT_REF`'s source (`Image(systemName:)` call sites, plus
  * NavigationItem.systemImage, HookEvent.icon, SubAgent.icon's built-in defaults and the MCP
  * catalog's icons/category icons) that has a Lucide equivalent, mapped to it. */
 export const iconMap: Record<string, LucideIcon> = {

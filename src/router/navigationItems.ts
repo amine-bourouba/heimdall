@@ -1,7 +1,7 @@
 // The sidebar's own item catalog (ported from NavigationItem.swift's `allItems`, 14 entries,
 // exact order). `label`/`available` are each feature's own index.ts (never duplicated here);
 // `icon` is an SF Symbol key straight into src/components/iconMap.ts (M2-04), so AppIcon renders
-// it with no translation step. `requiredCapability` has no port: it exists in Poirot only
+// it with no translation step. `requiredCapability` has no port: it exists in the Swift reference app only
 // because of its multi-provider abstraction (ADR 0008 removes that -- one implementation only,
 // user decision 3), so every item here is unconditionally offered; "available" (this task) is
 // the only gate, and it is about whether the *feature itself* has been built yet, not about

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // In-app menu for Windows/Linux, replacing the native menu bar macOS gets from `menu.rs` (M2-13).
-// No Swift source: Poirot never needed one (SwiftUI's own `Settings {}` scene and app menu are
+// No Swift source: the Swift reference app never needed one (SwiftUI's own `Settings {}` scene and app menu are
 // free on every one of its platforms). Each item calls the same `useAppActions().dispatch(...)`
 // the real macOS menu and `useShortcuts` already drive -- there is no second mechanism to keep
 // in sync, and (M2-13's own follow-up) no feature has registered a handler for any of these five

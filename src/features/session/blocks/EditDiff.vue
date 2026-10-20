@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Ported from EditDiffView.swift. Unlike Poirot -- which recomputes `LineDiff.diff` itself on a
+// Ported from EditDiffView.swift. Unlike the Swift reference app -- which recomputes `LineDiff.diff` itself on a
 // background task, capping each side at `maxLines = 5000` first -- the diff, cap included, is
 // already computed in Rust (`diff_lines`, M1-42's `DiffResult`); this component only fetches and
 // renders it. Save-as-patch and copy-as-image are explicitly out of scope (this task's AC3,

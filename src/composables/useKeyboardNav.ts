@@ -4,11 +4,11 @@
 // detail) have no Heimdall store yet; a caller passes only the layers it actually has, and an
 // inactive layer is simply skipped.
 //
-// Poirot's own "blur a focused text field first" is two separate mechanisms (an NSEvent monitor
+// the Swift reference app's own "blur a focused text field first" is two separate mechanisms (an NSEvent monitor
 // for the text-field case, SwiftUI onKeyPress for everything else) because AppKit text editing
 // intercepts Escape before SwiftUI sees it. The web has one event per keystroke, so this checks
 // the focused element first and returns -- a focused input never also triggers an escape layer
-// in the same keystroke, matching Poirot's own two-step behaviour with one check instead of two.
+// in the same keystroke, matching the Swift reference app's own two-step behaviour with one check instead of two.
 
 import { onMounted, onScopeDispose } from 'vue';
 import type { Ref } from 'vue';

@@ -36,7 +36,7 @@ function defaultPrefs(overrides: Partial<Prefs> = {}): Prefs {
 
 let mounted: ReturnType<typeof mount>[] = [];
 
-// `isExpanded` is set inside `onMounted`, matching Poirot's own `.onAppear` read -- that is a
+// `isExpanded` is set inside `onMounted`, matching the Swift reference app's own `.onAppear` read -- that is a
 // real reactive change *after* the component's first render, not reflected in the wrapper until
 // the next tick (confirmed for real: a first draft of this spec asserted immediately after
 // `mount()` and saw the pre-onMounted, still-collapsed render). Every helper here awaits one.

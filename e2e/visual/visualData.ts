@@ -49,7 +49,7 @@ export const TOOLS: Record<string, { tool: ToolUse; result: ToolResult }> = {
     result: result({
       id: 'standalone-bash-result',
       toolUseId: 'standalone-bash',
-      content: 'Ld /Users/leo/Library/Developer/Xcode/DerivedData/Poirot-abc123/Build/Products/Debug/Poirot.app\nGenerateDSYMFile Poirot.app.dSYM\n** BUILD SUCCEEDED **',
+      content: 'Ld /Users/leo/Library/Developer/Xcode/DerivedData/the Swift reference app-abc123/Build/Products/Debug/the Swift reference app.app\nGenerateDSYMFile the Swift reference app.app.dSYM\n** BUILD SUCCEEDED **',
     }),
   },
   bashError: {
