@@ -1,0 +1,51 @@
+name: TEMP - Generate visual baselines
+
+# One-off, manually dispatched: runs the `visual` Playwright project with --update-snapshots on
+# ubuntu-22.04 (matching ci.yml's own e2e-mocked job) so Playwright writes the baselines itself,
+# with its own real naming, instead of guessing them from a failed run's hashed-and-truncated
+# test-results/ filenames. Uploads the result as an artifact to download and commit by hand; never
+# commits anything itself. Deleted once the baselines are committed -- not a permanent workflow.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    name: Generate visual baselines
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Install Playwright browsers and system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          npx playwright install --with-deps webkit
+
+      - name: Generate baselines
+        run: xvfb-run --auto-servernum npx playwright test --project=visual --update-snapshots
+
+      - name: Upload generated baselines
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: visual-baselines
+          path: e2e/visual/session.spec.ts-snapshots/
+          retention-days: 7
+          if-no-files-found: error
