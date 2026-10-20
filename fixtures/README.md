@@ -10,7 +10,7 @@ hand-built bytes.
 | Set | What it is | Owning task(s) |
 |---|---|---|
 | `fixtures/synthetic/` | Hand-built, deterministic fixtures: one folder per `PoirotTests/Services` (and JSON-decoding `PoirotTests/Models`) test case under `cases/`, plus one integrated synthetic `~/.claude` tree (`claude-home/`, `claude.json`, `project-repo/`) covering every format in `docs/spec/claude-home-inventory.md`, plus `corrupt/` for intentionally unparsable files. Home directory: `/Users/fixture`. | M0-11 (create); M0-14, M0-15 depend on it existing first |
-| `fixtures/screenshot/` | Deterministic fixture tree converted from Poirot's `ScreenshotData.swift`, used by Playwright visual tests. Home directory: `/Users/fixture`. | M0-12 |
+| `fixtures/screenshot/` | Deterministic fixture tree converted from the Swift reference app's `ScreenshotData.swift`, used by Playwright visual tests. Home directory: `/Users/fixture`. | M0-12 |
 | `fixtures/windows/` | A scrubbed copy of a real Claude Code home captured on Windows 11, run through the scrub tool. Home directory: `C:\Users\fixture`. See `fixtures/windows/MANIFEST.md` for capture details, format facts and CRLF handling. | M0-13 (scrub tool), M0-14 (capture) |
 | `fixtures/linux/` | A scrubbed copy of a real Claude Code home captured on Linux, run through the same scrub tool. Home directory: `/home/fixture`. | M0-13 (scrub tool), M0-15 (capture) |
 | `fixtures/golden/` | JSON outputs from the Swift reference app (the "golden oracle"), committed with their provenance, used to prove Rust output equals Swift output. Also `fixtures/golden/KNOWN_DIFFERENCES.md` for any accepted, justified difference. | M1-50 to M1-52 (produce), M1-53 (consume), M1-59 (gate) |

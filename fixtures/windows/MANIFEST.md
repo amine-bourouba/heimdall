@@ -36,7 +36,7 @@ These affect the Rust loaders (task M1-14 and ADR 0003):
 
 1. **Drive-letter case varies.** The same project appears with `cwd` `C:\Users\fixture\Desktop\tech\proj-11` in some records and `c:\Users\...` in others, and project folders exist in both `C--Users-...` and `c--Users-...` casings. Path comparison on Windows must be case-insensitive; folder names stay distinct ids.
 2. **`cwd` changes within a session.** Records carry the shell's current folder, which can be a subfolder of the project (`...\proj-11\proj-4\proj-6`). The project path is the `cwd` whose encoding matches the folder name, not simply the first `cwd` seen.
-3. **Orphaned transcripts.** Claude Code leaves files such as `<uuid>.orphaned-<ms>-<hex>.jsonl`. Their stem is not a UUID, so Poirot's fallback scan ignores them.
-4. **Synced skills.** Skills can live under `skills/synced/<id>/<name>/SKILL.md`, which Poirot does not read (it looks only at `skills/<name>/SKILL.md`).
+3. **Orphaned transcripts.** Claude Code leaves files such as `<uuid>.orphaned-<ms>-<hex>.jsonl`. Their stem is not a UUID, so the Swift reference app's fallback scan ignores them.
+4. **Synced skills.** Skills can live under `skills/synced/<id>/<name>/SKILL.md`, which the Swift reference app does not read (it looks only at `skills/<name>/SKILL.md`).
 5. **No `sessions-index.json`** exists in this Claude Code version's project folders, so the fallback scan is the normal path on Windows.
-6. **Persisted tool output.** Large tool results are stored beside the session as `<sessionId>/tool-results/<id>.txt`. Poirot does not read them.
+6. **Persisted tool output.** Large tool results are stored beside the session as `<sessionId>/tool-results/<id>.txt`. The Swift reference app does not read them.

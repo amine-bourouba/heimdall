@@ -8,18 +8,18 @@ numbers), not a hypothetical.
 ## 1. Decision D5 — token accounting for a message split by a tool-result interruption
 
 **Reason:** `docs/port-plan.md` line 44, decision D5, answered by the user on 2026-09-26 (already
-decided before this task ran, not found by it): Poirot's `TranscriptParser.parse` groups
+decided before this task ran, not found by it): the Swift reference app's `TranscriptParser.parse` groups
 consecutive same-`msg_id` assistant records into one `Message`, but a tool-result (`type: "user"`)
 record in between unconditionally flushes the pending group — so a message that streams across
-such an interruption becomes **two** `Message` entries sharing the same id, and Poirot sums both
+such an interruption becomes **two** `Message` entries sharing the same id, and the Swift reference app sums both
 groups' full usage into `Session.totalTokens`, double-counting it. Heimdall's `transcript/full.rs`
 deliberately dedupes via its own `usage_by_id` map ("its usage goes on the first group only," per
 that file's own comment) and takes each message's *last* streamed record rather than its first
-(`port-plan.md` C-25/C-26: Poirot's first-record rule undercounts real transcripts by roughly 3x).
+(`port-plan.md` C-25/C-26: the Swift reference app's first-record rule undercounts real transcripts by roughly 3x).
 
 **Evidence — real sessions in `fixtures/windows/`, found by `golden_parity.rs`'s own comparison:**
 
-| Session | Field | Rust | Golden (Poirot) |
+| Session | Field | Rust | Golden (the Swift reference app) |
 |---|---|---|---|
 | `C--Users-fixture-Desktop-tech/348fef32-...` | totalTokens | 12,988 | 15,156 |
 | `c--Users-fixture-Desktop-tech-proj-10/aa95c61f-...` | totalTokens | 56,698 | 74,871 |
@@ -41,7 +41,7 @@ that it manifests exactly as expected on real fixture data.
 **Reason:** `crates/heimdall-core/src/export/session_markdown.rs`'s own comment on
 `tool_use_lines` (predates this task): Rust renders a `tool_use` block's "**key:** value" lines
 from `ToolUse.input: BTreeMap<String, String>` — always alphabetically sorted, deterministic.
-Poirot's `ToolUse.input` is a plain `[String: String]`, whose iteration order Swift's `Dictionary`
+The Swift reference app's `ToolUse.input` is a plain `[String: String]`, whose iteration order Swift's `Dictionary`
 never guarantees. The committed golden `export.md` files simply froze whatever order that one CI
 run's hash table happened to produce; there is no stable order to port to, and even re-running the
 same Swift binary again could reorder these lines.
@@ -65,7 +65,7 @@ display order is not a property worth porting. Pending qa-expert review; no obje
 
 **Reason:** `session_markdown.rs`'s own comment on `INPUT_TRUNCATE` (predates this task, never
 before empirically triggered): tool-result/tool-input truncation in Rust counts via
-`.chars().count()` (Unicode *scalar values*); Poirot's Swift counts via `String.count` (extended
+`.chars().count()` (Unicode *scalar values*); the Swift reference app counts via `String.count` (extended
 *grapheme clusters*). A `\r\n` sequence is one grapheme cluster in Swift but two scalars in Rust —
 so when one lands exactly at the 2000-character (tool result) or 500-character (tool input)
 truncation cutoff, the two sides truncate a character or two apart.

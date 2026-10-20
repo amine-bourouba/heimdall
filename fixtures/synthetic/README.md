@@ -1,6 +1,6 @@
 # fixtures/synthetic
 
-Task M0-11. Standalone fixtures extracted from `$POIROT/PoirotTests` (commit `a29dd6e`), plus one integrated macOS-shaped `~/.claude` tree covering every format in `docs/spec/claude-home-inventory.md` section 1. Rust unit/integration tests and Vitest both read these files directly; nothing here is generated at test time.
+Task M0-11. Standalone fixtures extracted from `$SWIFT_REF/PoirotTests` (commit `a29dd6e`), plus one integrated macOS-shaped `~/.claude` tree covering every format in `docs/spec/claude-home-inventory.md` section 1. Rust unit/integration tests and Vitest both read these files directly; nothing here is generated at test time.
 
 Home directory used throughout: `/Users/fixture`. No other absolute home path appears under this tree.
 
