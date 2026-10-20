@@ -7,6 +7,9 @@ repository.workspace = true
 rust-version.workspace = true
 publish = false
 description = "Heimdall desktop app shell (Tauri 2)."
+# Without this, `cargo run` (what `tauri dev` shells out to) is ambiguous between this crate's
+# two binaries (this one and src/bin/generate_bindings.rs) and refuses to run either.
+default-run = "heimdall-desktop"
 
 [lib]
 name = "heimdall_desktop_lib"
