@@ -1,11 +1,11 @@
 """Backlog consistency check for docs/tasks/*.md (planning tooling, stdlib only).
 
-Usage: python docs/tasks/check_backlog.py [--poirot PATH_TO_POIROT_CHECKOUT]
+Usage: python docs/tasks/check_backlog.py [--swift-ref PATH_TO_SWIFT_REFERENCE_CHECKOUT]
 
 Fails (exit 1) when a task file is missing a required field, names an unknown dependency or agent,
 has a dependency cycle, writes a file that another unordered task also writes, touches a sensitive
 path without security-auditor review, writes outside its workstream, reads a repo file produced by a
-task it does not depend on, or (with --poirot) cites a Swift path or line range that does not exist.
+task it does not depend on, or (with --swift-ref) cites a Swift path or line range that does not exist.
 """
 import glob, os, re, sys
 
@@ -85,7 +85,7 @@ def parse(path):
 
 
 def main():
-    poirot = sys.argv[sys.argv.index("--poirot") + 1] if "--poirot" in sys.argv else None
+    swift_ref = sys.argv[sys.argv.index("--swift-ref") + 1] if "--swift-ref" in sys.argv else None
     tasks = [parse(f) for f in sorted(glob.glob(os.path.join(HERE, "M*-*.md")))]
     byid = {t["id"]: t for t in tasks}
     errors = []
@@ -139,7 +139,7 @@ def main():
             if owner_of(p) is None:
                 errors.append(f"{t['id']}: {p} has no owning workstream in OWNERSHIP")
         for i in t["inputs"]:
-            if i.startswith("$POIROT"):
+            if i.startswith("$SWIFT_REF"):
                 continue
             p = norm(i.split(" ")[0])
             if p.startswith(PLANNING_DOCS):
@@ -148,16 +148,16 @@ def main():
             if producers and not producers & (anc[t["id"]] | {t["id"]}):
                 errors.append(f"{t['id']}: reads {p} but depends on none of its producers {sorted(producers)}")
 
-    if poirot:
+    if swift_ref:
         for t in tasks:
             for i in t["inputs"]:
-                if not i.startswith("$POIROT/"):
+                if not i.startswith("$SWIFT_REF/"):
                     continue
-                m = re.match(r"^\$POIROT/([^:\s]*)(?::([\d, \-]+))?", i)
+                m = re.match(r"^\$SWIFT_REF/([^:\s]*)(?::([\d, \-]+))?", i)
                 rel, lines = m.group(1).rstrip(","), (m.group(2) or "")
-                found = [f for e in expand(rel) for f in glob.glob(os.path.join(poirot, e))]
+                found = [f for e in expand(rel) for f in glob.glob(os.path.join(swift_ref, e))]
                 if not found:
-                    errors.append(f"{t['id']}: $POIROT path not found: {rel}")
+                    errors.append(f"{t['id']}: $SWIFT_REF path not found: {rel}")
                     continue
                 nums = [int(n) for n in re.findall(r"\d+", lines)]
                 if nums and os.path.isfile(found[0]):

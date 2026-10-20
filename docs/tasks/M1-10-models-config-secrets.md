@@ -8,30 +8,30 @@ Config models, the curated model and MCP catalogs, and a redacting `Secret` newt
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Models/Config/ClaudeConfig.swift`
-- `$POIROT/Poirot/Sources/Models/Config/MCPServer.swift`
-- `$POIROT/Poirot/Sources/Models/Config/MCPServerCatalog.swift`
-- `$POIROT/Poirot/Sources/Models/Config/Hook.swift`
-- `$POIROT/Poirot/Sources/Models/Config/SubAgent.swift`
-- `$POIROT/Poirot/Sources/Models/Config/ClaudeCommand.swift`
-- `$POIROT/Poirot/Sources/Models/Config/ClaudeSkill.swift`
-- `$POIROT/Poirot/Sources/Models/Config/OutputStyle.swift`
-- `$POIROT/Poirot/Sources/Models/Config/Plan.swift`
-- `$POIROT/Poirot/Sources/Models/Config/MemoryFile.swift`
-- `$POIROT/Poirot/Sources/Models/Config/ClaudePlugin.swift`
-- `$POIROT/Poirot/Sources/Models/Config/ClaudeSettings.swift`
-- `$POIROT/Poirot/Sources/Models/Config/ConfigScope.swift`
-- `$POIROT/Poirot/Sources/Models/ClaudeModelCatalog.swift`
-- `$POIROT/PoirotTests/Models/MCPServerCatalogTests.swift`
-- `$POIROT/PoirotTests/Models/MCPServerStatusTests.swift`
-- `$POIROT/PoirotTests/Models/PlanTests.swift`
-- `$POIROT/PoirotTests/Models/MemoryFileTests.swift`
-- `$POIROT/PoirotTests/Models/SubAgentTests.swift`
-- `$POIROT/PoirotTests/Models/ClaudeModelCatalogTests.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/ClaudeConfig.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/MCPServer.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/MCPServerCatalog.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/Hook.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/SubAgent.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/ClaudeCommand.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/ClaudeSkill.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/OutputStyle.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/Plan.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/MemoryFile.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/ClaudePlugin.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/ClaudeSettings.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/ConfigScope.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/ClaudeModelCatalog.swift`
+- `$SWIFT_REF/PoirotTests/Models/MCPServerCatalogTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/MCPServerStatusTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/PlanTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/MemoryFileTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/SubAgentTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/ClaudeModelCatalogTests.swift`
 - `docs/adr/0009-safe-writes-to-claude-code-files.md`
 - `docs/adr/0010-webview-trust-boundary.md` — Secrets
 - `docs/ipc-contract.md`
-- `$POIROT/PoirotTests/Services/SettingsWriterMCPTests.swift` — despite its name, it tests the MCP catalog
+- `$SWIFT_REF/PoirotTests/Services/SettingsWriterMCPTests.swift` — despite its name, it tests the MCP catalog
 - `docs/spec/test-carryover.md`
 
 ## Outputs
@@ -70,4 +70,4 @@ L
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

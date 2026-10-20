@@ -8,9 +8,9 @@ A Rust port of LineDiff produces the same diff lines, with the 5000-line cap fla
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Utilities/LineDiff.swift`
-- `$POIROT/Poirot/Sources/Views/Session/EditDiffView.swift:22`
-- `$POIROT/PoirotTests/Utilities/LineDiffTests.swift`
+- `$SWIFT_REF/Poirot/Sources/Utilities/LineDiff.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/EditDiffView.swift:22`
+- `$SWIFT_REF/PoirotTests/Utilities/LineDiffTests.swift`
 
 ## Outputs
 
@@ -40,4 +40,4 @@ S
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

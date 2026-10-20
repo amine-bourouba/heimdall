@@ -8,10 +8,10 @@ A Pinia store turns the stats DTO into range-filtered series, heatmap data, cost
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Views/Analytics/AnalyticsViewModel.swift`
-- `$POIROT/PoirotTests/Views/AnalyticsViewModelTests.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Analytics/AnalyticsViewModel.swift`
+- `$SWIFT_REF/PoirotTests/Views/AnalyticsViewModelTests.swift`
 - `docs/spec/analytics.md`
-- `$POIROT/PoirotTests/Models/StatsCacheTests.swift` — longestSessionFormatted case
+- `$SWIFT_REF/PoirotTests/Models/StatsCacheTests.swift` — longestSessionFormatted case
 - `docs/spec/test-carryover.md`
 
 ## Outputs
@@ -47,4 +47,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

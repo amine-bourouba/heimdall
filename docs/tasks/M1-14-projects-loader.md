@@ -8,9 +8,9 @@ Project discovery reproduces SessionLoader (sessions-index fast path, JSONL fall
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Services/SessionLoader.swift`
-- `$POIROT/Poirot/Sources/Models/Project.swift`
-- `$POIROT/PoirotTests/Services/SessionLoaderTests.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/SessionLoader.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Project.swift`
+- `$SWIFT_REF/PoirotTests/Services/SessionLoaderTests.swift`
 - `docs/adr/0003-platform-abstraction.md` — Project path resolution
 - `docs/spec/claude-home-inventory.md`
 - `fixtures/windows/MANIFEST.md` — format facts
@@ -28,13 +28,13 @@ Project discovery reproduces SessionLoader (sessions-index fast path, JSONL fall
 - [ ] The sessions-index fast path is used when present, and entries whose files are missing are skipped (SessionLoader.swift:104-121).
 - [ ] Sub-agents are read from `<sessionId>/subagents/agent-*.jsonl`, excluding `agent-acompact-*`, with `.meta.json` agentType/description.
 - [ ] Project path order: the `cwd` whose hyphen-encoding equals the folder name (case-insensitive, since Claude Code writes both `C:` and `c:`), else the most frequent `cwd`, then sessions-index `projectPath` or `originalPath` (both keys accepted), then `decode_project_dir_name`; `ProjectSummary.pathSource` reports which one won. A session that `cd`s into a subfolder must not change its project path (fixtures/windows MANIFEST facts 1-2).
-- [ ] Orphaned transcripts (`<uuid>.orphaned-<ms>-<hex>.jsonl`) are skipped like any non-UUID stem, matching Poirot; project folders that differ only by drive-letter case (`C--…` and `c--…`) stay separate projects.
+- [ ] Orphaned transcripts (`<uuid>.orphaned-<ms>-<hex>.jsonl`) are skipped like any non-UUID stem, matching the Swift reference app; project folders that differ only by drive-letter case (`C--…` and `c--…`) stay separate projects.
 - [ ] On fixtures/windows every project reports `pathSource = transcriptCwd` with a drive-letter path.
 - [ ] `grep -rn "replace('-', \"/\")\|replace(\"-\", \"/\")" crates/heimdall-core/src` finds nothing.
 
 ## Dependencies
 
-- M0-05 — Exhaustive inventory of every ~/.claude path Poirot reads or writes
+- M0-05 — Exhaustive inventory of every ~/.claude path the Swift reference app reads or writes
 - M1-06 — Claude home resolution, path normalisation and comparison keys
 - M1-13 — Transcript parser: header and summary tiers
 
@@ -54,4 +54,4 @@ L
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

@@ -9,9 +9,9 @@ The inline fixtures in PoirotTests exist as standalone files, one folder per tes
 ## Inputs
 
 - `docs/spec/test-carryover.md`
-- `$POIROT/PoirotTests/Services/*.swift`
-- `$POIROT/PoirotTests/Models/*.swift`
-- `$POIROT/PoirotTests/App/*.swift`
+- `$SWIFT_REF/PoirotTests/Services/*.swift`
+- `$SWIFT_REF/PoirotTests/Models/*.swift`
+- `$SWIFT_REF/PoirotTests/App/*.swift`
 - `docs/spec/claude-home-inventory.md`
 
 ## Outputs
@@ -35,7 +35,7 @@ The inline fixtures in PoirotTests exist as standalone files, one folder per tes
 ## Dependencies
 
 - M0-03 — Initialise the Heimdall repository and its ignore/attribute rules
-- M0-05 — Exhaustive inventory of every ~/.claude path Poirot reads or writes
+- M0-05 — Exhaustive inventory of every ~/.claude path the Swift reference app reads or writes
 - M0-06 — Map every PoirotTests case to its Heimdall destination
 
 ## Owning agent
@@ -54,4 +54,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

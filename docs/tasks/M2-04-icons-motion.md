@@ -4,12 +4,12 @@
 
 ## Goal
 
-One icon component renders Lucide icons with named motion effects that switch off under reduced motion or `showAnimations = false`, and a map covers every SF Symbol Poirot uses.
+One icon component renders Lucide icons with named motion effects that switch off under reduced motion or `showAnimations = false`, and a map covers every SF Symbol the Swift reference app uses.
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/` — all `systemName:` literals and model `icon` properties
-- `$POIROT/Poirot/Sources/Views/Components/ShimmerModifier.swift`
+- `$SWIFT_REF/Poirot/Sources/` — all `systemName:` literals and model `icon` properties
+- `$SWIFT_REF/Poirot/Sources/Views/Components/ShimmerModifier.swift`
 - `AI_INSTRUCTIONS.md` — Icons
 
 ## Outputs
@@ -49,4 +49,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

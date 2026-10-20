@@ -8,24 +8,24 @@ A spec captures list, detail, form and wizard behaviour for all eight configurat
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Views/Config/CommandsListView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/SkillsListView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/OutputStylesListView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/HooksListView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/HookFormView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/MCPServersListView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/MCPSetupWizardView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/MCPServerStatusIndicator.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ModelsListView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/PluginsListView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/SubAgentsListView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/SubAgentFormView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigDetailToolbar.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigProjectPicker.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigItemDetailView.swift`
-- `$POIROT/Poirot/Sources/Models/Config/MCPServerCatalog.swift`
-- `$POIROT/Poirot/Sources/Models/Config/Hook.swift`
-- `$POIROT/Poirot/Sources/Models/Config/SubAgent.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/CommandsListView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/SkillsListView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/OutputStylesListView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/HooksListView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/HookFormView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/MCPServersListView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/MCPSetupWizardView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/MCPServerStatusIndicator.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ModelsListView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/PluginsListView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/SubAgentsListView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/SubAgentFormView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigDetailToolbar.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigProjectPicker.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigItemDetailView.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/MCPServerCatalog.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/Hook.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Config/SubAgent.swift`
 - `docs/adr/0009-safe-writes-to-claude-code-files.md`
 - `docs/adr/0010-webview-trust-boundary.md`
 
@@ -41,7 +41,7 @@ A spec captures list, detail, form and wizard behaviour for all eight configurat
 
 ## Dependencies
 
-- M0-05 — Exhaustive inventory of every ~/.claude path Poirot reads or writes
+- M0-05 — Exhaustive inventory of every ~/.claude path the Swift reference app reads or writes
 
 ## Owning agent
 
@@ -59,4 +59,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

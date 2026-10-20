@@ -8,8 +8,8 @@ Plugin toggle/remove, MCP permission stripping, default and project model, and h
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Services/Config/SettingsWriter.swift:14-82, 198-340`
-- `$POIROT/PoirotTests/Services/SettingsWriterMCPTests.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/Config/SettingsWriter.swift:14-82, 198-340`
+- `$SWIFT_REF/PoirotTests/Services/SettingsWriterMCPTests.swift`
 - `docs/adr/0009-safe-writes-to-claude-code-files.md`
 
 ## Outputs
@@ -20,7 +20,7 @@ Plugin toggle/remove, MCP permission stripping, default and project model, and h
 
 - [ ] Carried-over SettingsWriterMCPTests pass.
 - [ ] For every operation, a corrupt target yields `parse` and no bytes change.
-- [ ] A project-scope write with no resolvable project returns `invalidInput` (Poirot silently wrote the global file, SettingsWriter.swift:318-326).
+- [ ] A project-scope write with no resolvable project returns `invalidInput` (the Swift reference app silently wrote the global file, SettingsWriter.swift:318-326).
 - [ ] Hook handlers keep unknown fields across save.
 - [ ] Setting the default or project model writes a model id or alias (for example `claude-opus-4-8` or `opus`), never a display name such as `Opus 4.8` (port-plan C-27).
 
@@ -45,4 +45,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

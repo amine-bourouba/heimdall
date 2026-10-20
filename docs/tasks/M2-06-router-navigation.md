@@ -4,14 +4,14 @@
 
 ## Goal
 
-Every screen is a Vue Router route with native back/forward history reproducing Poirot's navigation semantics, and every feature has a placeholder page and an availability flag.
+Every screen is a Vue Router route with native back/forward history reproducing the Swift reference app's navigation semantics, and every feature has a placeholder page and an availability flag.
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/App/AppState.swift:82-190`
-- `$POIROT/Poirot/Sources/Models/Provider/NavigationItem.swift`
-- `$POIROT/PoirotTests/Providers/NavigationItemTests.swift`
-- `$POIROT/PoirotTests/App/AppStateTests.swift (navigation cases)`
+- `$SWIFT_REF/Poirot/Sources/App/AppState.swift:82-190`
+- `$SWIFT_REF/Poirot/Sources/Models/Provider/NavigationItem.swift`
+- `$SWIFT_REF/PoirotTests/Providers/NavigationItemTests.swift`
+- `$SWIFT_REF/PoirotTests/App/AppStateTests.swift (navigation cases)`
 - `docs/port-plan.md` — decision P-3
 
 ## Outputs
@@ -89,4 +89,4 @@ Stub rule (port-plan §5.4): this task creates placeholder files that later task
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

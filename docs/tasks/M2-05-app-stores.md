@@ -8,10 +8,10 @@ Pinia stores own preferences, theme and font scale, toasts and platform facts, a
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/App/AppState.swift:1-31, 72-80, 398-440`
-- `$POIROT/Poirot/Sources/Views/Components/ToastOverlay.swift`
-- `$POIROT/PoirotTests/App/ColorThemeTests.swift`
-- `$POIROT/PoirotTests/App/AppStateTests.swift`
+- `$SWIFT_REF/Poirot/Sources/App/AppState.swift:1-31, 72-80, 398-440`
+- `$SWIFT_REF/Poirot/Sources/Views/Components/ToastOverlay.swift`
+- `$SWIFT_REF/PoirotTests/App/ColorThemeTests.swift`
+- `$SWIFT_REF/PoirotTests/App/AppStateTests.swift`
 - `docs/spec/test-carryover.md`
 - `docs/adr/0007-preferences-storage-and-migration.md`
 
@@ -55,4 +55,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

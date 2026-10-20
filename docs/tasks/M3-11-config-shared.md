@@ -8,17 +8,17 @@ Shared config building blocks give every config screen the same list/grid layout
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Views/Config/ConfigBadge.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigDetailToolbar.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigEmptyState.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigFilterField.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigItemDetailView.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigLayoutToolbar.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigProjectPicker.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigScreenHeader.swift`
-- `$POIROT/Poirot/Sources/Views/Config/ConfigSkeletonView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigBadge.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigDetailToolbar.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigEmptyState.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigFilterField.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigItemDetailView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigLayoutToolbar.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigProjectPicker.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigScreenHeader.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Config/ConfigSkeletonView.swift`
 - `docs/spec/config-screens.md`
-- `$POIROT/PoirotTests/App/AppStateTests.swift` — effectiveConfigProjectPath and configProjectName cases
+- `$SWIFT_REF/PoirotTests/App/AppStateTests.swift` — effectiveConfigProjectPath and configProjectName cases
 - `docs/spec/test-carryover.md`
 
 ## Outputs
@@ -59,4 +59,4 @@ L
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

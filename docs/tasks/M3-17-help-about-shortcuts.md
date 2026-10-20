@@ -8,9 +8,9 @@ Help, About and a platform-aware shortcut sheet listing every shortcut from the 
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Views/Help/HelpView.swift`
-- `$POIROT/Poirot/Sources/Views/Help/ShortcutHelpView.swift`
-- `$POIROT/Poirot/Sources/App/AboutView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Help/HelpView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Help/ShortcutHelpView.swift`
+- `$SWIFT_REF/Poirot/Sources/App/AboutView.swift`
 - `docs/adr/0011-app-identifier-and-release-repo.md`
 - `docs/port-plan.md` — decision P-7
 
@@ -26,7 +26,7 @@ Help, About and a platform-aware shortcut sheet listing every shortcut from the 
 ## Acceptance criteria
 
 - [ ] The shortcut sheet lists every entry of the `useShortcuts` registry with platform-aware labels (full list, decision P-7).
-- [ ] About shows version and identifier, links to https://github.com/amine-bourouba/heimdall through `open_external_url`, and credits Poirot under its MIT notice; upstream maintainer's Sponsors and social links are not carried over.
+- [ ] About shows version and identifier, links to https://github.com/amine-bourouba/heimdall through `open_external_url`, and credits the Swift reference app under its MIT notice; upstream maintainer's Sponsors and social links are not carried over.
 
 ## Dependencies
 
@@ -52,4 +52,4 @@ S
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

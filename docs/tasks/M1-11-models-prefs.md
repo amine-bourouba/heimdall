@@ -8,13 +8,13 @@ A `Prefs` struct holds all 18 preference keys with per-OS defaults and a `schema
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/App/AppState.swift:72-80, 270-297`
-- `$POIROT/Poirot/Sources/App/SettingsView.swift`
-- `$POIROT/Poirot/Sources/App/MemorySourcesStore.swift`
-- `$POIROT/Poirot/Sources/Models/PreferredEditor.swift`
-- `$POIROT/Poirot/Sources/Models/PreferredTerminal.swift`
-- `$POIROT/PoirotTests/Models/PreferredEditorTests.swift`
-- `$POIROT/PoirotTests/Models/PreferredTerminalTests.swift`
+- `$SWIFT_REF/Poirot/Sources/App/AppState.swift:72-80, 270-297`
+- `$SWIFT_REF/Poirot/Sources/App/SettingsView.swift`
+- `$SWIFT_REF/Poirot/Sources/App/MemorySourcesStore.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/PreferredEditor.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/PreferredTerminal.swift`
+- `$SWIFT_REF/PoirotTests/Models/PreferredEditorTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/PreferredTerminalTests.swift`
 - `docs/adr/0007-preferences-storage-and-migration.md`
 - `docs/parity-matrix.md` — section I
 
@@ -49,4 +49,4 @@ S
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

@@ -8,22 +8,22 @@ A spec captures every numeric threshold, state and action of the session views s
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Views/Session/SessionsNavigationView.swift`
-- `$POIROT/Poirot/Sources/Views/Project/ProjectSessionsView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/SessionDetailView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/SessionToolbarContent.swift`
-- `$POIROT/Poirot/Sources/Views/Session/ToolBlockView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/ThinkingBlockView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/SystemContentView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/EditDiffView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/ConversationContextCard.swift`
-- `$POIROT/Poirot/Sources/Views/Session/SessionTimelineView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/SessionFacetsCard.swift`
-- `$POIROT/Poirot/Sources/Views/Session/SessionTodosView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/FileHistoryView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/DebugLogView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/ExportOptionsView.swift`
-- `$POIROT/Poirot/Sources/Views/Session/SessionSkeletonView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/SessionsNavigationView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Project/ProjectSessionsView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/SessionDetailView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/SessionToolbarContent.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/ToolBlockView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/ThinkingBlockView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/SystemContentView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/EditDiffView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/ConversationContextCard.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/SessionTimelineView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/SessionFacetsCard.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/SessionTodosView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/FileHistoryView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/DebugLogView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/ExportOptionsView.swift`
+- `$SWIFT_REF/Poirot/Sources/Views/Session/SessionSkeletonView.swift`
 
 ## Outputs
 
@@ -37,7 +37,7 @@ A spec captures every numeric threshold, state and action of the session views s
 
 ## Dependencies
 
-- M0-05 — Exhaustive inventory of every ~/.claude path Poirot reads or writes
+- M0-05 — Exhaustive inventory of every ~/.claude path the Swift reference app reads or writes
 
 ## Owning agent
 
@@ -55,4 +55,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

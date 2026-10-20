@@ -8,19 +8,19 @@ Transcript models mirror Message.swift, Session.swift, Project.swift, ContextUsa
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Models/Message.swift`
-- `$POIROT/Poirot/Sources/Models/Session.swift`
-- `$POIROT/Poirot/Sources/Models/Project.swift`
-- `$POIROT/Poirot/Sources/Models/ContextUsage.swift`
-- `$POIROT/Poirot/Sources/Models/SessionGroup.swift`
-- `$POIROT/PoirotTests/Models/MessageTests.swift`
-- `$POIROT/PoirotTests/Models/SessionTests.swift`
-- `$POIROT/PoirotTests/Models/SessionXMLStrippingTests.swift`
-- `$POIROT/PoirotTests/Models/TokenUsageTests.swift`
-- `$POIROT/PoirotTests/Models/ContextUsageTests.swift`
-- `$POIROT/PoirotTests/Models/ProjectTests.swift`
-- `$POIROT/PoirotTests/Models/ProjectSortingTests.swift`
-- `$POIROT/PoirotTests/Models/SessionGroupTests.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Message.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Session.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Project.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/ContextUsage.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/SessionGroup.swift`
+- `$SWIFT_REF/PoirotTests/Models/MessageTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/SessionTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/SessionXMLStrippingTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/TokenUsageTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/ContextUsageTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/ProjectTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/ProjectSortingTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/SessionGroupTests.swift`
 - `docs/spec/test-carryover.md`
 - `docs/ipc-contract.md` — §5 Types
 
@@ -61,4 +61,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

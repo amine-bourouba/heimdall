@@ -8,9 +8,9 @@ One composable reproduces KeyboardNavigationModifier (arrow navigation, Enter, l
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Views/Components/KeyboardNavigationModifier.swift`
-- `$POIROT/Poirot/Sources/App/ContentView.swift:36-50, 440-460`
-- `$POIROT/Poirot/Sources/App/PoirotApp.swift:47-104`
+- `$SWIFT_REF/Poirot/Sources/Views/Components/KeyboardNavigationModifier.swift`
+- `$SWIFT_REF/Poirot/Sources/App/ContentView.swift:36-50, 440-460`
+- `$SWIFT_REF/Poirot/Sources/App/PoirotApp.swift:47-104`
 - `docs/parity-matrix.md` — section J
 
 ## Outputs
@@ -49,4 +49,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

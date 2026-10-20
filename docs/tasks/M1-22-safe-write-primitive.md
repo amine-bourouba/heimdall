@@ -8,7 +8,7 @@ One write primitive refuses to write when the target fails to parse, keeps a one
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Services/Config/SettingsWriter.swift (all; sites that fall back to an empty document: :65-68, :123-128, :336-338, :359-364, reached from :17, :27, :37, :51 and the hook functions; :155-158 and :182-185 return early instead)`
+- `$SWIFT_REF/Poirot/Sources/Services/Config/SettingsWriter.swift (all; sites that fall back to an empty document: :65-68, :123-128, :336-338, :359-364, reached from :17, :27, :37, :51 and the hook functions; :155-158 and :182-185 return early instead)`
 - `docs/adr/0009-safe-writes-to-claude-code-files.md`
 - `docs/adr/0005-error-model.md`
 - `fixtures/windows/claude.json`
@@ -52,4 +52,4 @@ L
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

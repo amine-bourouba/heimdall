@@ -4,12 +4,12 @@
 
 ## Goal
 
-The app shell reproduces Poirot's split view with a sidebar of live counts, back/forward and contextual toolbars, an in-app menu for Windows and Linux, and mount points for toasts, search, onboarding and shortcut help.
+The app shell reproduces the Swift reference app's split view with a sidebar of live counts, back/forward and contextual toolbars, an in-app menu for Windows and Linux, and mount points for toasts, search, onboarding and shortcut help.
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/App/ContentView.swift:82-157`
-- `$POIROT/Poirot/Sources/Views/Components/SidebarView.swift`
+- `$SWIFT_REF/Poirot/Sources/App/ContentView.swift:82-157`
+- `$SWIFT_REF/Poirot/Sources/Views/Components/SidebarView.swift`
 - `docs/port-plan.md` — decision P-4 (window chrome)
 
 ## Outputs
@@ -59,4 +59,4 @@ Stub rule (port-plan §5.4): this task creates placeholder files that later task
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

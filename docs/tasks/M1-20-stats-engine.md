@@ -8,11 +8,11 @@ Analytics come from `stats-cache.json` only when it is not stale; otherwise a fu
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Services/StatsCacheLoader.swift`
-- `$POIROT/Poirot/Sources/Services/StatsComputer.swift`
-- `$POIROT/Poirot/Sources/Models/StatsCache.swift`
-- `$POIROT/PoirotTests/Services/StatsComputerTests.swift`
-- `$POIROT/PoirotTests/Models/StatsCacheTests.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/StatsCacheLoader.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/StatsComputer.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/StatsCache.swift`
+- `$SWIFT_REF/PoirotTests/Services/StatsComputerTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/StatsCacheTests.swift`
 - `docs/spec/analytics.md`
 
 ## Outputs
@@ -48,4 +48,4 @@ L
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

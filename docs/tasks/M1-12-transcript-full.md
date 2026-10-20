@@ -8,13 +8,13 @@ The full-parse tier turns a transcript into messages and content blocks exactly 
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Services/TranscriptParser.swift:1-139, 355-554`
-- `$POIROT/Poirot/Sources/Utilities/SystemContentParser.swift`
-- `$POIROT/Poirot/Sources/Utilities/JSONBeautifier.swift`
-- `$POIROT/Poirot/Sources/Models/Message.swift`
-- `$POIROT/PoirotTests/Services/TranscriptParserTests.swift`
-- `$POIROT/PoirotTests/Utilities/SystemContentParserTests.swift`
-- `$POIROT/PoirotTests/Utilities/JSONBeautifierTests.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/TranscriptParser.swift:1-139, 355-554`
+- `$SWIFT_REF/Poirot/Sources/Utilities/SystemContentParser.swift`
+- `$SWIFT_REF/Poirot/Sources/Utilities/JSONBeautifier.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/Message.swift`
+- `$SWIFT_REF/PoirotTests/Services/TranscriptParserTests.swift`
+- `$SWIFT_REF/PoirotTests/Utilities/SystemContentParserTests.swift`
+- `$SWIFT_REF/PoirotTests/Utilities/JSONBeautifierTests.swift`
 - `docs/spec/session-views.md`
 - `fixtures/synthetic/`
 - `fixtures/windows/`
@@ -60,4 +60,4 @@ L
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

@@ -8,17 +8,17 @@ Data-source models mirror their Swift counterparts, read the on-disk key spellin
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Models/StatsCache.swift`
-- `$POIROT/Poirot/Sources/Models/HistoryEntry.swift`
-- `$POIROT/Poirot/Sources/Models/SessionTodo.swift`
-- `$POIROT/Poirot/Sources/Models/SessionFacets.swift`
-- `$POIROT/Poirot/Sources/Models/DebugLogEntry.swift`
-- `$POIROT/Poirot/Sources/Models/FileVersion.swift`
-- `$POIROT/PoirotTests/Models/StatsCacheTests.swift`
-- `$POIROT/PoirotTests/Models/HistoryEntryTests.swift`
-- `$POIROT/PoirotTests/Models/SessionTodoTests.swift`
-- `$POIROT/PoirotTests/Models/SessionFacetsTests.swift`
-- `$POIROT/PoirotTests/Models/DebugLogEntryTests.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/StatsCache.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/HistoryEntry.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/SessionTodo.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/SessionFacets.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/DebugLogEntry.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/FileVersion.swift`
+- `$SWIFT_REF/PoirotTests/Models/StatsCacheTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/HistoryEntryTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/SessionTodoTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/SessionFacetsTests.swift`
+- `$SWIFT_REF/PoirotTests/Models/DebugLogEntryTests.swift`
 - `docs/spec/test-carryover.md`
 - `docs/ipc-contract.md`
 
@@ -58,4 +58,4 @@ M
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

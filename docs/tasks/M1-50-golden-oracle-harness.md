@@ -4,22 +4,22 @@
 
 ## Goal
 
-A Swift test file, run inside a throwaway checkout of upstream Poirot, writes the Swift app's computed outputs for each fixture tree as JSON shaped like Heimdall's DTOs.
+A Swift test file, run inside a throwaway checkout of upstream the Swift reference app, writes the Swift app's computed outputs for each fixture tree as JSON shaped like Heimdall's DTOs.
 
 ## Inputs
 
-- `$POIROT/Poirot/Sources/Services/SessionLoader.swift`
-- `$POIROT/Poirot/Sources/Services/TranscriptParser.swift`
-- `$POIROT/Poirot/Sources/Services/StatsComputer.swift`
-- `$POIROT/Poirot/Sources/Services/StatsCacheLoader.swift`
-- `$POIROT/Poirot/Sources/Services/HistoryLoader.swift`
-- `$POIROT/Poirot/Sources/Services/TodoLoader.swift`
-- `$POIROT/Poirot/Sources/Services/DebugLogLoader.swift`
-- `$POIROT/Poirot/Sources/Services/FacetsLoader.swift`
-- `$POIROT/Poirot/Sources/Services/FileHistoryLoader.swift`
-- `$POIROT/Poirot/Sources/Services/Export/SessionExporter.swift`
-- `$POIROT/Poirot/Sources/Utilities/LineDiff.swift`
-- `$POIROT/Poirot/Sources/Models/ContextUsage.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/SessionLoader.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/TranscriptParser.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/StatsComputer.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/StatsCacheLoader.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/HistoryLoader.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/TodoLoader.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/DebugLogLoader.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/FacetsLoader.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/FileHistoryLoader.swift`
+- `$SWIFT_REF/Poirot/Sources/Services/Export/SessionExporter.swift`
+- `$SWIFT_REF/Poirot/Sources/Utilities/LineDiff.swift`
+- `$SWIFT_REF/Poirot/Sources/Models/ContextUsage.swift`
 - `fixtures/README.md`
 - `docs/ipc-contract.md` — §5 Types
 - `docs/adr/0001-repo-layout-and-swift-reference.md`
@@ -33,11 +33,11 @@ A Swift test file, run inside a throwaway checkout of upstream Poirot, writes th
 
 - [ ] Given `GOLDEN_FIXTURES` and `GOLDEN_OUT`, the suite writes canonical JSON (sorted keys, UTC ISO dates, camelCase) for: projects and summaries, full parses, header and summary tiers, stats (computed and cache-staleness verdict), history, todos, debug-log pages, facets, file history, context usage, export Markdown, line diffs.
 - [ ] Loaders that only read the real home directory (ClaudeConfigLoader, SettingsWriter) are skipped unless a `CFFIXED_USER_HOME` override is proven to work (assumption A-9); the README records which.
-- [ ] The file is never added to $POIROT; README documents the copy-in procedure the workflow uses.
+- [ ] The file is never added to $SWIFT_REF; README documents the copy-in procedure the workflow uses.
 
 ## Dependencies
 
-- M0-05 — Exhaustive inventory of every ~/.claude path Poirot reads or writes
+- M0-05 — Exhaustive inventory of every ~/.claude path the Swift reference app reads or writes
 - M0-06 — Map every PoirotTests case to its Heimdall destination
 - M0-07 — Behaviour spec for universal search
 - M0-08 — Behaviour spec for the session browser and conversation view
@@ -70,4 +70,4 @@ Write task for swift-expert, allowed because the repo-layout decision is settled
 
 Append one entry to `docs/progress-log.md` (task ID, date, files touched, evidence for each acceptance criterion, follow-ups). Never edit another entry.
 
-`$POIROT` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot`, upstream https://github.com/a7t-ai/poirot at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`). Never modify it. Every other path is relative to the Heimdall repository root.
+`$SWIFT_REF` is the read-only Swift reference checkout (`C:\Users\pc\Desktop\tech\poirot` on this machine -- see ADR 0001 for provenance), pinned at commit `a29dd6ee0e0133ef26bd067c164c66b160e13d86`. Never modify it. Every other path is relative to the Heimdall repository root.

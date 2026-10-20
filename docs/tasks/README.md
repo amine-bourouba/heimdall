@@ -5,7 +5,7 @@ One file per task. Each file is self-contained: an agent needs only its task fil
 - **Scope** says whether the feature ships in the MVP (`MVP`), after it (`Later`), or is project infrastructure (`Infra`). Milestone gates list their required tasks explicitly in `docs/port-plan.md` §7.
 - **Placeholders.** A skeleton task may create empty placeholder files that a later task owns (port-plan §5.4). The owner always depends on the skeleton.
 - **Parallel safety.** Two tasks that write the same file are always ordered by dependencies. `docs/progress-log.md` is append-only and exempt.
-- **Check.** Run `python docs/tasks/check_backlog.py --poirot <path-to-poirot-checkout>` after editing any task.
+- **Check.** Run `python docs/tasks/check_backlog.py --swift-ref <path-to-swift-reference-checkout>` after editing any task.
 
 ## M0 — Inventory (16 tasks)
 
@@ -15,7 +15,7 @@ One file per task. Each file is self-contained: an agent needs only its task fil
 | [M0-02](M0-02-record-identity-decisions.md) | Record the final app identifier and Linux package name | Docs | Infra | S | — |
 | [M0-03](M0-03-repo-bootstrap.md) | Initialise the Heimdall repository and its ignore/attribute rules | Release and packaging | Infra | S | — |
 | [M0-04](M0-04-license-readme.md) | Add LICENSE, NOTICE and a scoped README | Docs | Infra | S | — |
-| [M0-05](M0-05-claude-home-inventory.md) | Exhaustive inventory of every ~/.claude path Poirot reads or writes | Legacy parity extraction | Infra | S | — |
+| [M0-05](M0-05-claude-home-inventory.md) | Exhaustive inventory of every ~/.claude path the Swift reference app reads or writes | Legacy parity extraction | Infra | S | — |
 | [M0-06](M0-06-test-carryover-map.md) | Map every PoirotTests case to its Heimdall destination | Legacy parity extraction | Infra | M | — |
 | [M0-07](M0-07-spec-search-overlay.md) | Behaviour spec for universal search | Legacy parity extraction | Infra | S | M0-05 |
 | [M0-08](M0-08-spec-session-views.md) | Behaviour spec for the session browser and conversation view | Legacy parity extraction | Infra | M | M0-05 |
@@ -26,7 +26,7 @@ One file per task. Each file is self-contained: an agent needs only its task fil
 | [M0-13](M0-13-scrub-tool.md) | Write the ~/.claude scrubbing tool | Testing | Infra | S | M0-03, M0-05 |
 | [M0-14](M0-14-fixtures-windows-capture.md) | Capture a scrubbed real Windows ~/.claude tree | Testing | Infra | S | M0-11, M0-13 |
 | [M0-15](M0-15-fixtures-linux-capture.md) | Capture a scrubbed real Linux ~/.claude tree | Testing | Infra | S | M0-11, M0-13 |
-| [M0-16](M0-16-upstream-sync-procedure.md) | Define and run the upstream Poirot sync check | Legacy parity extraction | Infra | S | — |
+| [M0-16](M0-16-upstream-sync-procedure.md) | Define and run the upstream the Swift reference app sync check | Legacy parity extraction | Infra | S | — |
 
 ## M1 — Rust data layer (59 tasks)
 
