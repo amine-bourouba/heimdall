@@ -295,19 +295,32 @@ jobs:
           cargo install tauri-driver
           xvfb-run --auto-servernum npm run test:e2e:linux-smoke
 
+      # Diagnostic only (M2-26 follow-up): the real test below already confirmed the CDP endpoint
+      # never comes up, with zero app stdout/stderr, and (checked directly in a prior CI run) no
+      # Application-log crash record either -- ruling out both a fast crash and Windows Error
+      # Reporting. This runs the exact same binary standalone, bypassing Node/Playwright entirely,
+      # to answer the next question directly instead of guessing further: is the process actually
+      # alive and responding, and is it listening on *any* port at all (not just 9223)?
+      - name: Windows app diagnostics (standalone)
+        if: runner.os == 'Windows'
+        run: |
+          $env:HEIMDALL_CLAUDE_HOME = (Resolve-Path "fixtures/screenshot/claude-home").Path
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9223"
+          $proc = Start-Process -FilePath "target/debug/heimdall-desktop.exe" -PassThru `
+            -RedirectStandardOutput "app-stdout.log" -RedirectStandardError "app-stderr.log"
+          Start-Sleep -Seconds 20
+          Write-Host "--- Process state ---"
+          Get-Process -Id $proc.Id -ErrorAction SilentlyContinue |
+            Format-List Id, ProcessName, Responding, MainWindowTitle, MainWindowHandle
+          Write-Host "--- Listening ports owned by this process ---"
+          Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+            Where-Object { $_.OwningProcess -eq $proc.Id } | Format-Table LocalAddress, LocalPort
+          Write-Host "--- stdout ---"
+          Get-Content "app-stdout.log" -ErrorAction SilentlyContinue
+          Write-Host "--- stderr ---"
+          Get-Content "app-stderr.log" -ErrorAction SilentlyContinue
+          Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+
       - name: Windows real-app smoke (CDP)
         if: runner.os == 'Windows'
         run: npm run test:e2e:windows-smoke
-
-      # Diagnostic only (M2-26 follow-up): the CDP endpoint never comes up and the app produces
-      # zero stdout/stderr even with the WebView2 Runtime now confirmed installed (previous CI fix)
-      # -- confirmed directly, not guessed, that it's neither a fast crash nor a missing-runtime
-      # case. A native crash with Windows Error Reporting enabled produces exactly this signature
-      # (process stays alive, blocked on a dialog nobody can click, zero app-level output) and
-      # always() lets this run even though the step above failed.
-      - name: Windows crash diagnostics
-        if: runner.os == 'Windows' && always()
-        run: |
-          Get-WinEvent -FilterHashtable @{LogName='Application'; Level=1,2,3} -MaxEvents 30 -ErrorAction SilentlyContinue |
-            Where-Object { $_.TimeCreated -gt (Get-Date).AddMinutes(-15) } |
-            Format-List TimeCreated, Id, ProviderName, LevelDisplayName, Message
