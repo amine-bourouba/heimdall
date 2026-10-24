@@ -69,7 +69,21 @@ export async function launchTauriAppOverCdp(claudeHome: string): Promise<Launche
     child.once('exit', (code) => reject(new Error(`${BINARY_PATH} exited early with code ${code}`)));
   });
 
-  await Promise.race([waitForCdp(15_000), earlyExit]);
+  // Confirmed directly in CI (not just reasoned about): when `waitForCdp` times out, `child` is
+  // still running (CDP never opening doesn't mean the app failed to launch) and nothing else ever
+  // kills it -- `main()`'s own `app.close()` cleanup never runs, since `app` doesn't exist yet on
+  // this throw path. An unkilled GUI child process keeps Node's own child-process handle alive, so
+  // the script never actually exits despite logging the error and setting `process.exitCode` --
+  // the step then just sits until the job's own `timeout-minutes` ceiling force-cancels it, 15+
+  // minutes later than the real 15-second failure.
+  // 15_000 wasn't enough on a fresh CI runner (confirmed directly: the real run that found the
+  // orphaned-child bug above never got a single successful `fetch` in that window) -- a cold
+  // CoreWebView2Environment's first-ever creation has to set up its on-disk profile/cache from
+  // nothing, unlike a dev machine that already has one from a previous run.
+  await Promise.race([waitForCdp(60_000), earlyExit]).catch((error: unknown) => {
+    child.kill();
+    throw error;
+  });
 
   const browser = await chromium.connectOverCDP(CDP_URL);
   const context = browser.contexts()[0];
