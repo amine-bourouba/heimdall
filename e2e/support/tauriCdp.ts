@@ -57,7 +57,11 @@ export async function launchTauriAppOverCdp(claudeHome: string): Promise<Launche
       HEIMDALL_CLAUDE_HOME: path.resolve(claudeHome),
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${CDP_PORT}`,
     },
-    stdio: 'pipe',
+    // 'inherit', not 'pipe': confirmed directly that CDP never comes up with nothing reading the
+    // app's own stdout/stderr, which gives zero visibility into whether it's crashing, panicking,
+    // or stuck on a WebView2-runtime dialog -- inheriting sends it straight to this step's own CI
+    // log instead.
+    stdio: ['ignore', 'inherit', 'inherit'],
   });
 
   // A missing/unspawnable binary emits a Node 'error' event, not an 'exit' -- without a listener
