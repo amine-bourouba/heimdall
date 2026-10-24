@@ -26,6 +26,37 @@ const HEIGHT: f64 = 820.0;
 const MIN_WIDTH: f64 = 900.0;
 const MIN_HEIGHT: f64 = 600.0;
 
+/// `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` lets a debug build open WebView2's CDP debugging port
+/// for `e2e/support/tauriCdp.ts` (M2-26/M2-29). Reading it in a release build would let an
+/// attacker-controlled environment variable open a remote-debugging port on a shipped app -- full
+/// control of the webview, cookies included (ADR 0010) -- so the release build never even
+/// contains the code path that reads it, same convention as `state.rs`'s `HEIMDALL_CLAUDE_HOME`.
+///
+/// This cannot be left to WebView2Loader's own env-var fallback: confirmed directly (a real CI
+/// run, with the env var correctly set before the process spawns, produced a fully working app --
+/// real window, `Responding: True` -- with zero listening ports) and in wry 0.55.1's own source
+/// (`webview2/mod.rs`'s `set_additional_browser_arguments` call runs unconditionally, substituting
+/// wry's own default string whenever this builder method is never called) that the env var's
+/// documented fallback behavior belongs to a different WebView2Loader entry point than the one wry
+/// actually uses. wry's own default disables are preserved here since Tauri's own doc comment on
+/// this method says they are lost otherwise: "By default wry passes
+/// `--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection`".
+#[cfg(debug_assertions)]
+fn webview2_additional_browser_args() -> Option<String> {
+    let cdp_flag = std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").ok()?;
+    if cdp_flag.is_empty() {
+        return None;
+    }
+    Some(format!(
+        "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection {cdp_flag}"
+    ))
+}
+
+#[cfg(not(debug_assertions))]
+fn webview2_additional_browser_args() -> Option<String> {
+    None
+}
+
 pub fn init(app: &mut tauri::App) -> tauri::Result<()> {
     // `on_navigation` fires for the webview's very first load too (confirmed: the Tauri docs'
     // own example checks url.scheme() unconditionally, with no special-casing for an initial
@@ -61,6 +92,10 @@ pub fn init(app: &mut tauri::App) -> tauri::Result<()> {
 
     builder = apply_title_bar_chrome(builder);
 
+    if let Some(args) = webview2_additional_browser_args() {
+        builder = builder.additional_browser_args(&args);
+    }
+
     builder.build()?;
     Ok(())
 }
@@ -86,4 +121,42 @@ fn apply_title_bar_chrome<R: tauri::Runtime, M: tauri::Manager<R>>(
     builder: WebviewWindowBuilder<'_, R, M>,
 ) -> WebviewWindowBuilder<'_, R, M> {
     builder.decorations(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_cdp_override_only_takes_effect_in_a_debug_build() {
+        // Same reasoning as state.rs's equivalent test: `cfg!(debug_assertions)` reflects
+        // whichever profile actually compiled this test binary, so `cargo test --release` is
+        // what proves the release arm.
+        unsafe { std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--remote-debugging-port=9223") };
+        let found = webview2_additional_browser_args();
+        unsafe { std::env::remove_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS") };
+        if cfg!(debug_assertions) {
+            assert_eq!(
+                found,
+                Some(
+                    "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port=9223"
+                        .to_string()
+                )
+            );
+        } else {
+            assert_eq!(
+                found, None,
+                "a release build must never read WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"
+            );
+        }
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn an_empty_cdp_override_is_treated_as_unset() {
+        unsafe { std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "") };
+        let found = webview2_additional_browser_args();
+        unsafe { std::env::remove_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS") };
+        assert_eq!(found, None);
+    }
 }
