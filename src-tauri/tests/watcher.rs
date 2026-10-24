@@ -195,17 +195,26 @@ mod poll_watcher {
                 let folders = folders_now();
                 let current = snapshot(&watched_roots(&claude_home, &folders));
 
+                // `changed_this_tick`, not `!pending.is_empty()`: `pending` is cumulative and
+                // only clears on flush, so checking it instead of this tick's own findings would
+                // re-arm the debounce timer forever after the first ever change, on every single
+                // tick, since it is still non-empty -- confirmed directly as the real bug behind
+                // every one of these tests timing out with zero events, identically before and
+                // after the unrelated prefs::load fix above (that fix was real, just not this).
+                let mut changed_this_tick = false;
                 for (path, modified) in &current {
                     if previous.get(path) != Some(modified) {
                         pending.push(path.clone());
+                        changed_this_tick = true;
                     }
                 }
                 for path in previous.keys() {
                     if !current.contains_key(path) {
                         pending.push(path.clone());
+                        changed_this_tick = true;
                     }
                 }
-                if !pending.is_empty() {
+                if changed_this_tick {
                     last_change_at = Some(Instant::now());
                 }
                 previous = current;
