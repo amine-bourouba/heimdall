@@ -77,6 +77,7 @@ fn creating_a_transcript_produces_one_event_with_transcript_and_sessions() {
 
     let mut app = mock_app(claude_home);
     watcher::init(&mut app).unwrap();
+    std::thread::sleep(Duration::from_millis(200)); // let the initial create/watch settle
 
     std::fs::write(
         project.join("11111111-1111-4111-8111-111111111111.jsonl"),
