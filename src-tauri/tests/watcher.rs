@@ -83,6 +83,7 @@ mod poll_watcher {
     use super::*;
     use std::collections::HashMap;
     use std::path::{Path, PathBuf};
+    use std::sync::Arc;
     use std::time::{Instant, SystemTime};
 
     const POLL_INTERVAL: Duration = Duration::from_millis(15);
@@ -103,17 +104,12 @@ mod poll_watcher {
         }
     }
 
-    fn watched_roots<R: tauri::Runtime>(
-        app: &tauri::AppHandle<R>,
-        claude_home: &heimdall_core::paths::ClaudeHome,
-    ) -> Vec<PathBuf> {
+    fn watched_roots(claude_home: &heimdall_core::paths::ClaudeHome, custom_folders: &[String]) -> Vec<PathBuf> {
         let mut roots = vec![claude_home.root().to_path_buf()];
         if let Some(parent) = claude_home.config_file().parent() {
             roots.push(parent.to_path_buf());
         }
-        if let Ok(prefs) = heimdall_desktop_lib::prefs::load(app) {
-            roots.extend(prefs.custom_memory_folders.into_iter().map(PathBuf::from));
-        }
+        roots.extend(custom_folders.iter().map(PathBuf::from));
         roots
     }
 
@@ -139,14 +135,12 @@ mod poll_watcher {
         app: &tauri::AppHandle<R>,
         claude_home: &heimdall_core::paths::ClaudeHome,
         os: heimdall_core::paths::TargetOs,
+        custom_folders: &[String],
         pending: &mut Vec<PathBuf>,
     ) {
-        let folders = heimdall_desktop_lib::prefs::load(app)
-            .map(|p| p.custom_memory_folders)
-            .unwrap_or_default();
         let mut changes: Vec<heimdall_core::classify::DataChange> = Vec::new();
         for path in pending.drain(..) {
-            for change in watcher::classify_path(&path, claude_home, &folders, os) {
+            for change in watcher::classify_path(&path, claude_home, custom_folders, os) {
                 if !changes.contains(&change) {
                     changes.push(change);
                 }
@@ -157,29 +151,49 @@ mod poll_watcher {
         }
     }
 
-    /// Spawns the poll loop in the background. Re-reads custom memory folders from
-    /// `prefs::load` fresh on every tick instead of caching them like the real watcher's
-    /// `WatcherHandle` does: the real watcher needs a change pushed to it
-    /// (`set_custom_folders`); a poll loop can just look at current state each time, so there is
-    /// nothing to push.
+    /// A running poll watcher. `set_custom_folders` is this test harness's equivalent of the real
+    /// watcher's `WatcherHandle::set_custom_folders` — pushed explicitly by whichever test needs
+    /// it, right after the same `prefs::add_memory_folder` call the real app's UI would trigger.
+    ///
+    /// Deliberately *not* wired to call `prefs::load` itself on every tick to discover folder
+    /// changes on its own: confirmed directly that going through `tauri_plugin_store` from a
+    /// background thread (rather than the main thread, which is all `watcher::init`'s own,
+    /// already-working one-shot call at startup ever does) hangs forever under `MockRuntime` —
+    /// every one of these tests timed out with zero events once this poll loop's hot path called
+    /// it on a timer. A plain, local `Mutex` sidesteps that dependency entirely.
+    pub struct PollWatcher {
+        custom_folders: Arc<std::sync::Mutex<Vec<String>>>,
+    }
+
+    impl PollWatcher {
+        pub fn set_custom_folders(&self, folders: Vec<String>) {
+            *self.custom_folders.lock().expect("poll watcher lock") = folders;
+        }
+    }
+
+    /// Spawns the poll loop in the background.
     ///
     /// Never stopped: the spawned thread outlives the test function and keeps polling a
     /// since-deleted temp directory (harmlessly, `is_dir()`/`is_file()` just go false) until the
     /// whole test binary exits. Deliberate — `WATCHER_TEST_LOCK` already limits this to at most
     /// 8 idle threads for the process's lifetime, not worth threading a stop signal through every
     /// call site for.
-    pub fn init<R: tauri::Runtime>(app: &tauri::App<R>) {
+    pub fn init<R: tauri::Runtime>(app: &tauri::App<R>) -> PollWatcher {
         let claude_home = app.state::<AppState>().claude_home.clone();
         let handle = app.handle().clone();
+        let custom_folders: Arc<std::sync::Mutex<Vec<String>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let thread_folders = custom_folders.clone();
         std::thread::spawn(move || {
             let os = heimdall_core::paths::TargetOs::current();
-            let mut previous = snapshot(&watched_roots(&handle, &claude_home));
+            let folders_now = || thread_folders.lock().expect("poll watcher lock").clone();
+            let mut previous = snapshot(&watched_roots(&claude_home, &folders_now()));
             let mut pending: Vec<PathBuf> = Vec::new();
             let mut last_change_at: Option<Instant> = None;
 
             loop {
                 std::thread::sleep(POLL_INTERVAL);
-                let current = snapshot(&watched_roots(&handle, &claude_home));
+                let folders = folders_now();
+                let current = snapshot(&watched_roots(&claude_home, &folders));
 
                 for (path, modified) in &current {
                     if previous.get(path) != Some(modified) {
@@ -199,11 +213,12 @@ mod poll_watcher {
                 if let Some(at) = last_change_at
                     && at.elapsed() >= POLL_DEBOUNCE
                 {
-                    flush(&handle, &claude_home, os, &mut pending);
+                    flush(&handle, &claude_home, os, &folders, &mut pending);
                     last_change_at = None;
                 }
             }
         });
+        PollWatcher { custom_folders }
     }
 }
 
@@ -383,11 +398,12 @@ fn a_custom_memory_folder_added_through_prefs_is_watched_without_restarting() {
     std::fs::create_dir_all(&folder).unwrap();
 
     let app = mock_app(claude_home);
-    poll_watcher::init(&app);
+    let poll = poll_watcher::init(&app);
     std::thread::sleep(Duration::from_millis(200));
 
     let handle = app.handle().clone();
     heimdall_desktop_lib::prefs::add_memory_folder(&handle, Some(folder.display().to_string())).unwrap();
+    poll.set_custom_folders(vec![folder.display().to_string()]);
 
     std::fs::write(folder.join("MEMORY.md"), "# Notes").unwrap();
     let changes = recv_data_changed(&app).expect("no data-changed event for the newly watched folder");
