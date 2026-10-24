@@ -298,3 +298,16 @@ jobs:
       - name: Windows real-app smoke (CDP)
         if: runner.os == 'Windows'
         run: npm run test:e2e:windows-smoke
+
+      # Diagnostic only (M2-26 follow-up): the CDP endpoint never comes up and the app produces
+      # zero stdout/stderr even with the WebView2 Runtime now confirmed installed (previous CI fix)
+      # -- confirmed directly, not guessed, that it's neither a fast crash nor a missing-runtime
+      # case. A native crash with Windows Error Reporting enabled produces exactly this signature
+      # (process stays alive, blocked on a dialog nobody can click, zero app-level output) and
+      # always() lets this run even though the step above failed.
+      - name: Windows crash diagnostics
+        if: runner.os == 'Windows' && always()
+        run: |
+          Get-WinEvent -FilterHashtable @{LogName='Application'; Level=1,2,3} -MaxEvents 30 -ErrorAction SilentlyContinue |
+            Where-Object { $_.TimeCreated -gt (Get-Date).AddMinutes(-15) } |
+            Format-List TimeCreated, Id, ProviderName, LevelDisplayName, Message
