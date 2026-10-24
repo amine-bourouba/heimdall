@@ -54,7 +54,17 @@ impl WatcherHandle {
 /// `claude_home_root`, so `classify` (M1-34) cannot see them — checked first, against the folder
 /// list as it stood on the last registration, before falling through to `classify` for everything
 /// under `~/.claude` and `~/.claude.json` itself.
-fn classify_path(path: &Path, claude_home: &ClaudeHome, custom_folders: &[String], os: TargetOs) -> Vec<DataChange> {
+///
+/// `pub`, not private, so `tests/watcher.rs`'s poll-based watcher (M2-30 follow-up, CI's own
+/// native file-event delivery is unreliable under virtualization) can share this one real
+/// classification path instead of re-implementing it — it only needs a different way to notice
+/// that a path changed, not a different answer for what the change means.
+pub fn classify_path(
+    path: &Path,
+    claude_home: &ClaudeHome,
+    custom_folders: &[String],
+    os: TargetOs,
+) -> Vec<DataChange> {
     let path_str = path.display().to_string();
     let path_key = compare_key(&path_str, os);
     if let Some(index) = custom_folders.iter().position(|f| {

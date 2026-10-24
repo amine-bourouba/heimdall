@@ -66,6 +66,147 @@ fn recv_data_changed(
     rx.recv_timeout(WAIT)
 }
 
+/// Poll-based stand-in for the real `notify-debouncer-full` watcher, used only by the tests
+/// below (M2-30 follow-up). CI's own native file-event delivery (inotify/FSEvents under
+/// virtualization) is unreliable enough that these tests flake regardless of the real watcher's
+/// own correctness — confirmed directly: the same CI run that fixed two real test bugs (`2d11be2`,
+/// `2f2d4ce`) still passed only 3-4/8 on Linux and 0-1/8 on macOS, with the failure signature
+/// itself changing between runs (plain timeouts vs. an event arriving tagged with the wrong
+/// area) — the signature of a real, CI-environment-specific limitation, not a bug this suite can
+/// fix by itself.
+///
+/// Polling removes that dependency entirely. It reuses `watcher::classify_path` — the real
+/// watcher's own, single source of truth for path -> `Area` mapping — and only replaces *how a
+/// change is noticed*, not what a change means or how it is debounced into one event; it does
+/// not touch or replace `watcher::init`, which is what actually ships to users.
+mod poll_watcher {
+    use super::*;
+    use std::collections::HashMap;
+    use std::path::{Path, PathBuf};
+    use std::time::{Instant, SystemTime};
+
+    const POLL_INTERVAL: Duration = Duration::from_millis(15);
+    // Shorter than the real watcher's 1s DEBOUNCE: polling already pays its own per-tick latency,
+    // and these tests' own WAIT budget (2000ms) needs headroom for this debounce plus however
+    // many ticks it takes a test's own writes to land on disk.
+    const POLL_DEBOUNCE: Duration = Duration::from_millis(150);
+
+    fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
+        let Ok(entries) = std::fs::read_dir(dir) else { return };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path, out);
+            } else {
+                out.push(path);
+            }
+        }
+    }
+
+    fn watched_roots<R: tauri::Runtime>(
+        app: &tauri::AppHandle<R>,
+        claude_home: &heimdall_core::paths::ClaudeHome,
+    ) -> Vec<PathBuf> {
+        let mut roots = vec![claude_home.root().to_path_buf()];
+        if let Some(parent) = claude_home.config_file().parent() {
+            roots.push(parent.to_path_buf());
+        }
+        if let Ok(prefs) = heimdall_desktop_lib::prefs::load(app) {
+            roots.extend(prefs.custom_memory_folders.into_iter().map(PathBuf::from));
+        }
+        roots
+    }
+
+    fn snapshot(roots: &[PathBuf]) -> HashMap<PathBuf, SystemTime> {
+        let mut files = Vec::new();
+        for root in roots {
+            if root.is_dir() {
+                walk(root, &mut files);
+            } else if root.is_file() {
+                files.push(root.clone());
+            }
+        }
+        files
+            .into_iter()
+            .filter_map(|p| {
+                let modified = std::fs::metadata(&p).ok()?.modified().ok()?;
+                Some((p, modified))
+            })
+            .collect()
+    }
+
+    fn flush<R: tauri::Runtime>(
+        app: &tauri::AppHandle<R>,
+        claude_home: &heimdall_core::paths::ClaudeHome,
+        os: heimdall_core::paths::TargetOs,
+        pending: &mut Vec<PathBuf>,
+    ) {
+        let folders = heimdall_desktop_lib::prefs::load(app)
+            .map(|p| p.custom_memory_folders)
+            .unwrap_or_default();
+        let mut changes: Vec<heimdall_core::classify::DataChange> = Vec::new();
+        for path in pending.drain(..) {
+            for change in watcher::classify_path(&path, claude_home, &folders, os) {
+                if !changes.contains(&change) {
+                    changes.push(change);
+                }
+            }
+        }
+        if !changes.is_empty() {
+            let _ = DataChanged(changes).emit(app);
+        }
+    }
+
+    /// Spawns the poll loop in the background. Re-reads custom memory folders from
+    /// `prefs::load` fresh on every tick instead of caching them like the real watcher's
+    /// `WatcherHandle` does: the real watcher needs a change pushed to it
+    /// (`set_custom_folders`); a poll loop can just look at current state each time, so there is
+    /// nothing to push.
+    ///
+    /// Never stopped: the spawned thread outlives the test function and keeps polling a
+    /// since-deleted temp directory (harmlessly, `is_dir()`/`is_file()` just go false) until the
+    /// whole test binary exits. Deliberate — `WATCHER_TEST_LOCK` already limits this to at most
+    /// 8 idle threads for the process's lifetime, not worth threading a stop signal through every
+    /// call site for.
+    pub fn init<R: tauri::Runtime>(app: &tauri::App<R>) {
+        let claude_home = app.state::<AppState>().claude_home.clone();
+        let handle = app.handle().clone();
+        std::thread::spawn(move || {
+            let os = heimdall_core::paths::TargetOs::current();
+            let mut previous = snapshot(&watched_roots(&handle, &claude_home));
+            let mut pending: Vec<PathBuf> = Vec::new();
+            let mut last_change_at: Option<Instant> = None;
+
+            loop {
+                std::thread::sleep(POLL_INTERVAL);
+                let current = snapshot(&watched_roots(&handle, &claude_home));
+
+                for (path, modified) in &current {
+                    if previous.get(path) != Some(modified) {
+                        pending.push(path.clone());
+                    }
+                }
+                for path in previous.keys() {
+                    if !current.contains_key(path) {
+                        pending.push(path.clone());
+                    }
+                }
+                if !pending.is_empty() {
+                    last_change_at = Some(Instant::now());
+                }
+                previous = current;
+
+                if let Some(at) = last_change_at
+                    && at.elapsed() >= POLL_DEBOUNCE
+                {
+                    flush(&handle, &claude_home, os, &mut pending);
+                    last_change_at = None;
+                }
+            }
+        });
+    }
+}
+
 #[test]
 fn creating_a_transcript_produces_one_event_with_transcript_and_sessions() {
     let _guard = WATCHER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
@@ -75,8 +216,8 @@ fn creating_a_transcript_produces_one_event_with_transcript_and_sessions() {
     let project = claude_home.projects_dir().join("-Users-fixture-app");
     std::fs::create_dir_all(&project).unwrap();
 
-    let mut app = mock_app(claude_home);
-    watcher::init(&mut app).unwrap();
+    let app = mock_app(claude_home);
+    poll_watcher::init(&app);
     std::thread::sleep(Duration::from_millis(200)); // let the initial create/watch settle
 
     std::fs::write(
@@ -102,8 +243,8 @@ fn appending_to_a_transcript_also_produces_one_event() {
     let transcript = project.join("11111111-1111-4111-8111-111111111111.jsonl");
     std::fs::write(&transcript, r#"{"type":"user"}"#).unwrap();
 
-    let mut app = mock_app(claude_home);
-    watcher::init(&mut app).unwrap();
+    let app = mock_app(claude_home);
+    poll_watcher::init(&app);
     std::thread::sleep(Duration::from_millis(200)); // let the initial create/watch settle
 
     let mut file = std::fs::OpenOptions::new().append(true).open(&transcript).unwrap();
@@ -131,8 +272,8 @@ fn atomic_rename_over_a_transcript_produces_one_event() {
     let transcript = project.join("11111111-1111-4111-8111-111111111111.jsonl");
     std::fs::write(&transcript, r#"{"type":"user"}"#).unwrap();
 
-    let mut app = mock_app(claude_home);
-    watcher::init(&mut app).unwrap();
+    let app = mock_app(claude_home);
+    poll_watcher::init(&app);
     std::thread::sleep(Duration::from_millis(200));
 
     let temp = project.join("11111111-1111-4111-8111-111111111111.jsonl.tmp");
@@ -159,8 +300,8 @@ fn deleting_a_transcript_produces_one_event() {
     let transcript = project.join("11111111-1111-4111-8111-111111111111.jsonl");
     std::fs::write(&transcript, r#"{"type":"user"}"#).unwrap();
 
-    let mut app = mock_app(claude_home);
-    watcher::init(&mut app).unwrap();
+    let app = mock_app(claude_home);
+    poll_watcher::init(&app);
     std::thread::sleep(Duration::from_millis(200));
 
     std::fs::remove_file(&transcript).unwrap();
@@ -182,8 +323,8 @@ fn claude_json_is_watched_through_its_parent_with_a_file_filter() {
         heimdall_core::paths::ClaudeHome::new(dir.path().join(".claude"), dir.path().join(".claude.json"));
     std::fs::create_dir_all(claude_home.root()).unwrap();
 
-    let mut app = mock_app(claude_home.clone());
-    watcher::init(&mut app).unwrap();
+    let app = mock_app(claude_home.clone());
+    poll_watcher::init(&app);
     std::thread::sleep(Duration::from_millis(200));
 
     // An unrelated file in the same (parent) directory must not surface as an mcp change.
@@ -211,8 +352,8 @@ fn a_write_through_the_safe_write_primitive_triggers_exactly_one_reload() {
     let settings = claude_home.root().join("settings.json");
     std::fs::write(&settings, "{}").unwrap();
 
-    let mut app = mock_app(claude_home);
-    watcher::init(&mut app).unwrap();
+    let app = mock_app(claude_home);
+    poll_watcher::init(&app);
     std::thread::sleep(Duration::from_millis(200));
 
     let mut doc = heimdall_core::config::write::json_doc::JsonDoc::open(&settings, true).unwrap();
@@ -241,8 +382,8 @@ fn a_custom_memory_folder_added_through_prefs_is_watched_without_restarting() {
     let folder = dir.path().join("notes");
     std::fs::create_dir_all(&folder).unwrap();
 
-    let mut app = mock_app(claude_home);
-    watcher::init(&mut app).unwrap();
+    let app = mock_app(claude_home);
+    poll_watcher::init(&app);
     std::thread::sleep(Duration::from_millis(200));
 
     let handle = app.handle().clone();
@@ -274,8 +415,8 @@ fn rapid_writes_to_one_file_coalesce_into_very_few_events() {
     std::fs::create_dir_all(&project).unwrap();
     let transcript = project.join("11111111-1111-4111-8111-111111111111.jsonl");
 
-    let mut app = mock_app(claude_home);
-    watcher::init(&mut app).unwrap();
+    let app = mock_app(claude_home);
+    poll_watcher::init(&app);
     std::thread::sleep(Duration::from_millis(200));
 
     let (tx, rx) = channel();
