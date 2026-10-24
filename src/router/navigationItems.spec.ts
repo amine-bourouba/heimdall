@@ -68,12 +68,12 @@ describe('navigationItems (NavigationItemTests)', () => {
     });
   });
 
-  // M2-15, M3-02, M3-03 and M3-04 are, so far, the only feature tasks to flip their own item's
-  // flag (`session/index.ts`'s, `history/index.ts`'s, `plans/index.ts`'s and `memory/index.ts`'s
-  // own `available = true`) -- every item whose owning feature hasn't landed yet still starts
-  // false.
+  // M2-15, M3-02, M3-03, M3-04 and M3-05 are, so far, the only feature tasks to flip their own
+  // item's flag (`session/index.ts`'s, `history/index.ts`'s, `plans/index.ts`'s,
+  // `memory/index.ts`'s and `todos/index.ts`'s own `available = true`) -- every item whose owning
+  // feature hasn't landed yet still starts false.
   it('every item without a landed feature yet starts unavailable', () => {
-    const landed = new Set(['sessions', 'history', 'plans', 'memory']);
+    const landed = new Set(['sessions', 'history', 'plans', 'memory', 'todos']);
     const stillUnbuilt = navigationItems.filter((item) => !landed.has(item.id));
     expect(stillUnbuilt.every((item) => item.available === false)).toBe(true);
   });
@@ -88,6 +88,10 @@ describe('navigationItems (NavigationItemTests)', () => {
 
   it('memory is available now that M3-04 has built it', () => {
     expect(navigationItems.find((item) => item.id === 'memory')?.available).toBe(true);
+  });
+
+  it('todos is available now that M3-05 has built it', () => {
+    expect(navigationItems.find((item) => item.id === 'todos')?.available).toBe(true);
   });
 
   it('history is available now that M3-02 has built it', () => {
