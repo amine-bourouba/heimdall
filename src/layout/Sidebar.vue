@@ -16,6 +16,7 @@ import { ipc, onDataChanged } from '@/ipc/client';
 import type { Area, ProjectContext, SidebarCounts } from '@/ipc/bindings';
 import { navigationItems } from '@/router/navigationItems';
 import { usePrefsStore } from '@/stores/prefs';
+import { useSearchStore } from '@/features/search/store';
 import { useKeyboardNav } from '@/composables/useKeyboardNav';
 import AppIcon from '@/components/AppIcon.vue';
 
@@ -42,6 +43,7 @@ const COUNT_KEY_BY_ID: Partial<Record<string, keyof SidebarCounts>> = {
 
 const router = useRouter();
 const prefsStore = usePrefsStore();
+const searchStore = useSearchStore();
 const counts = ref<SidebarCounts | null>(null);
 const keyboardIndex = ref(0);
 
@@ -69,6 +71,10 @@ useKeyboardNav({
   escapeLayers: [],
   sidebarItemCount: () => navigationItems.length,
   sidebarIndex: keyboardIndex,
+  // KeyboardNavigationModifier.swift:17-19's own guard (the composable's own doc comment on this
+  // option): while the search overlay is open, its arrow keys drive its own list, not the
+  // sidebar's hidden-behind-it one (M3-01).
+  isSuppressed: () => searchStore.isOpen,
   onSidebarActivate: () => router.push(navigationItems[keyboardIndex.value].to),
 });
 </script>
