@@ -68,14 +68,19 @@ describe('navigationItems (NavigationItemTests)', () => {
     });
   });
 
-  // M2-15 is the first feature task to flip its own item's flag (`session/index.ts`'s own
-  // `available = true`) -- every item whose owning feature hasn't landed yet still starts false.
+  // M2-15 and M3-02 are, so far, the only feature tasks to flip their own item's flag
+  // (`session/index.ts`'s and `history/index.ts`'s own `available = true`) -- every item whose
+  // owning feature hasn't landed yet still starts false.
   it('every item without a landed feature yet starts unavailable', () => {
-    const stillUnbuilt = navigationItems.filter((item) => item.id !== 'sessions');
+    const stillUnbuilt = navigationItems.filter((item) => item.id !== 'sessions' && item.id !== 'history');
     expect(stillUnbuilt.every((item) => item.available === false)).toBe(true);
   });
 
   it('sessions is available now that M2-15 has built it', () => {
     expect(navigationItems.find((item) => item.id === 'sessions')?.available).toBe(true);
+  });
+
+  it('history is available now that M3-02 has built it', () => {
+    expect(navigationItems.find((item) => item.id === 'history')?.available).toBe(true);
   });
 });
