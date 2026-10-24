@@ -242,6 +242,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev webkit2gtk-driver libayatana-appindicator3-dev librsvg2-dev xvfb
 
+      # The Linux job above gets its WebView-equivalent (webkit2gtk) from apt; Windows needs its
+      # own equivalent check. windows-latest is Windows Server, not Windows 11 client -- the
+      # "WebView2 Runtime ships as part of the OS" guarantee Microsoft documents is for Windows 11
+      # client only, and confirmed directly: a real run here spawned heimdall-desktop.exe
+      # successfully (no Node spawn/exit error) but it then produced zero output and never opened
+      # the CDP debugging port within 60s, the signature of CoreWebView2Environment creation never
+      # resolving rather than a fast crash. choco is already on this exact runner image (GitHub's
+      # own documented software list), so this reuses it instead of hand-rolling a bootstrapper
+      # download.
+      - name: Install WebView2 Runtime (Windows)
+        if: runner.os == 'Windows'
+        run: choco install webview2-runtime -y --no-progress
+
       - name: Rust cache
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
