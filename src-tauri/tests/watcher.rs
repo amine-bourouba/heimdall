@@ -115,7 +115,8 @@ fn appending_to_a_transcript_also_produces_one_event() {
     assert!(
         changes
             .iter()
-            .any(|c| c.area == heimdall_core::classify::Area::Transcript)
+            .any(|c| c.area == heimdall_core::classify::Area::Transcript),
+        "expected an Area::Transcript change, got: {changes:?}"
     );
 }
 
@@ -142,7 +143,8 @@ fn atomic_rename_over_a_transcript_produces_one_event() {
     assert!(
         changes
             .iter()
-            .any(|c| c.area == heimdall_core::classify::Area::Transcript)
+            .any(|c| c.area == heimdall_core::classify::Area::Transcript),
+        "expected an Area::Transcript change, got: {changes:?}"
     );
 }
 
@@ -167,7 +169,8 @@ fn deleting_a_transcript_produces_one_event() {
     assert!(
         changes
             .iter()
-            .any(|c| c.area == heimdall_core::classify::Area::Transcript)
+            .any(|c| c.area == heimdall_core::classify::Area::Transcript),
+        "expected an Area::Transcript change, got: {changes:?}"
     );
 }
 
