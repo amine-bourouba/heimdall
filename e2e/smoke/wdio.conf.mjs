@@ -30,6 +30,13 @@ const CLAUDE_HOME = process.env.HEIMDALL_E2E_CLAUDE_HOME
 let tauriDriver;
 
 export const config = {
+  // WebDriver/tauri-driver address (Tauri's own documented WebdriverIO example): without these,
+  // webdriverio has no address to open the session against and fails immediately with 'No
+  // "browserName" defined in capabilities nor hostname or port found!' before tauri-driver (which
+  // does start, via beforeSession below) is ever actually talked to -- confirmed directly, this
+  // config never had them and the suite had never run for real until M2-30's CI fixes reached it.
+  host: '127.0.0.1',
+  port: 4444,
   specs: ['./app.smoke.mjs'],
   maxInstances: 1,
   capabilities: [
