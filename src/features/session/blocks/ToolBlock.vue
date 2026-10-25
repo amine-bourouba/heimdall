@@ -23,7 +23,7 @@ import type { ToolResult, ToolUse } from '@/ipc/bindings';
 import { usePrefsStore } from '@/stores/prefs';
 import { useSessionStore } from '../store';
 
-const props = defineProps<{ tool: ToolUse; result?: ToolResult | null }>();
+const props = defineProps<{ tool: ToolUse; result?: ToolResult | null; projectId: string; sessionId: string }>();
 
 const TRUNCATED_LINE_COUNT = 80;
 
@@ -169,6 +169,9 @@ async function copyAsMarkdown() {
         v-if="tool.edit"
         :old-string="tool.edit.oldString"
         :new-string="tool.edit.newString"
+        :project-id="projectId"
+        :session-id="sessionId"
+        :block-id="tool.id"
       />
       <div
         v-else-if="content()"

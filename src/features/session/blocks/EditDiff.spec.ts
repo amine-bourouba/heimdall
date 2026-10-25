@@ -19,7 +19,12 @@ function result(overrides: Partial<DiffResult> = {}): DiffResult {
 let mounted: ReturnType<typeof mount>[] = [];
 let lastRequest: { oldText: string; newText: string } | null = null;
 
-async function mountDiff(diffResult: DiffResult, oldString = 'a', newString = 'b') {
+async function mountDiff(
+  diffResult: DiffResult,
+  oldString = 'a',
+  newString = 'b',
+  ipcHandler?: (cmd: string, args: unknown) => unknown,
+) {
   lastRequest = null;
   setActivePinia(createPinia());
   mockIPC((cmd, args) => {
@@ -27,9 +32,16 @@ async function mountDiff(diffResult: DiffResult, oldString = 'a', newString = 'b
       lastRequest = args as { oldText: string; newText: string };
       return diffResult;
     }
+    if (ipcHandler) {
+      const result = ipcHandler(cmd, args);
+      if (result !== undefined) return result;
+    }
     throw new Error(`unexpected command: ${cmd}`);
   });
-  const wrapper = mount(EditDiff, { props: { oldString, newString }, attachTo: document.body });
+  const wrapper = mount(EditDiff, {
+    props: { oldString, newString, projectId: 'p1', sessionId: 's1', blockId: 'm1:0' },
+    attachTo: document.body,
+  });
   mounted.push(wrapper);
   return wrapper;
 }
@@ -113,5 +125,40 @@ describe('EditDiff: copy', () => {
 
     await vi.advanceTimersByTimeAsync(1500);
     expect(wrapper.html()).toContain('lucide-files');
+  });
+});
+
+describe('EditDiff: save as patch (M3-10)', () => {
+  it('calls export_edit_patch with projectId/sessionId/blockId and shows a checkmark on success', async () => {
+    vi.useFakeTimers();
+    let args: unknown = null;
+    const wrapper = await mountDiff(result(), 'a', 'b', (cmd, a) => {
+      if (cmd === 'export_edit_patch') {
+        args = a;
+        return 'written';
+      }
+    });
+    await flushPromises();
+
+    await wrapper.find('button[title="Save as patch"]').trigger('click');
+    await flushPromises();
+
+    expect(args).toEqual({ projectId: 'p1', sessionId: 's1', blockId: 'm1:0' });
+    expect(wrapper.html()).toContain('lucide-check');
+
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(wrapper.html()).toContain('lucide-file-down');
+  });
+
+  it('shows no checkmark when the save dialog is cancelled', async () => {
+    const wrapper = await mountDiff(result(), 'a', 'b', (cmd) => {
+      if (cmd === 'export_edit_patch') return 'cancelled';
+    });
+    await flushPromises();
+
+    await wrapper.find('button[title="Save as patch"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.html()).not.toContain('lucide-check');
   });
 });

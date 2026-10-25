@@ -67,7 +67,7 @@ async function mountBlock(tool: ToolUse, result: ToolResult | null, prefsOverrid
     if (cmd === 'diff_lines') return { lines: [], truncated: false, maxLineNumber: 0 };
     throw new Error(`unexpected command: ${cmd}`);
   });
-  const wrapper = mount(ToolBlock, { props: { tool, result }, attachTo: document.body });
+  const wrapper = mount(ToolBlock, { props: { tool, result, projectId: 'p1', sessionId: 's1' }, attachTo: document.body });
   mounted.push(wrapper);
   await flushPromises();
   return wrapper;

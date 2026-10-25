@@ -222,7 +222,11 @@ onUnmounted(() => {
     </div>
 
     <DebugLogSheet v-if="sessionStore.showDebugLogSessionId" />
-    <ExportOptionsDialog v-if="sessionStore.isShowingExportOptions" />
+    <ExportOptionsDialog
+      v-if="sessionStore.isShowingExportOptions"
+      :project-id="session.detail.summary.projectId"
+      :session-id="session.id"
+    />
 
     <div
       v-if="sessionStore.isToolFilterActive"
@@ -350,6 +354,8 @@ onUnmounted(() => {
                       v-else-if="block.kind === 'toolUse'"
                       :tool="block"
                       :result="toolResultsByUseId.get(block.toolUseId)"
+                      :project-id="session.detail.summary.projectId"
+                      :session-id="session.id"
                     />
                   </template>
                 </div>
