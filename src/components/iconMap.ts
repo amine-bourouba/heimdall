@@ -28,6 +28,7 @@ import {
   CircleMinus,
   CirclePlay,
   CircleQuestionMark,
+  CircleSlash,
   CircleStop,
   CircleX,
   ClipboardList,
@@ -241,4 +242,13 @@ export const iconMap: Record<string, LucideIcon> = {
   // SessionToolbarContent.swift's own literals (task M2-22) -- exact real matches, no gap.
   'arrow.uturn.forward': CornerUpRight,
   'arrow.up.left.and.arrow.down.right': Maximize2,
+
+  // MCPServerStatusIndicator.swift's own literals (task M3-14). 'circle.fill' reuses the same
+  // outline Circle every other status dot that isn't literally a distinct shape does (the
+  // established `.fill`-variant-has-no-separate-icon convention, see this file's own header).
+  // 'bolt.horizontal.circle.fill' ("unreachable") has no literal Lucide equivalent -- CircleSlash
+  // (a universally-understood "blocked" glyph) stands in instead of forcing a lightning-bolt
+  // shape Lucide doesn't ship.
+  'circle.fill': Circle,
+  'bolt.horizontal.circle.fill': CircleSlash,
 };
