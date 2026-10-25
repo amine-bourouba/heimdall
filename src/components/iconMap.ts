@@ -77,6 +77,7 @@ import {
   RotateCwClock,
   Search,
   Settings,
+  Settings2,
   Sparkles,
   Square,
   SquareArrowDown,
@@ -251,4 +252,15 @@ export const iconMap: Record<string, LucideIcon> = {
   // shape Lucide doesn't ship.
   'circle.fill': Circle,
   'bolt.horizontal.circle.fill': CircleSlash,
+
+  // OnboardingView.swift's own literals (task M3-15). 'circle.dashed' is a different SF Symbol
+  // from the already-mapped 'circle.dotted' (todos' own pending-status icon) but Lucide ships
+  // only one dashed-circle glyph, so both reuse it. 'list.bullet.rectangle.fill'/'gearshape.2.fill'
+  // follow the usual `.fill`-variant-has-no-separate-icon convention (the latter onto `Settings2`,
+  // a genuine two-gear icon, not a second reuse of the single-gear `Settings`).
+  // 'arrow.trianglehead.2.clockwise' reuses the same `RotateCw` already mapped to 'arrow.clockwise'.
+  'circle.dashed': CircleDashed,
+  'list.bullet.rectangle.fill': List,
+  'gearshape.2.fill': Settings2,
+  'arrow.trianglehead.2.clockwise': RotateCw,
 };
