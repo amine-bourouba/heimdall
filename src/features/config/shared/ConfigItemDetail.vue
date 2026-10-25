@@ -11,6 +11,7 @@ import ConfigBadge from './ConfigBadge.vue';
 import type { ConfigItemScope } from '@/ipc/bindings';
 
 defineProps<{ icon: string; title: string; scope: ConfigItemScope; body: string }>();
+defineEmits<{ close: [] }>();
 
 const isFormatted = ref(true);
 </script>
@@ -40,6 +41,7 @@ const isFormatted = ref(true);
         v-model:formatted="isFormatted"
         :name="title"
         :content="body"
+        @close="$emit('close')"
       />
     </div>
 

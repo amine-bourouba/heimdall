@@ -4,12 +4,17 @@
 // field anywhere, confirmed directly, the same gap M3-03/M3-04 already documented for their own
 // raw/formatted toggles, so this is local state the caller owns). Open-in-editor and
 // Show-in-Finder are explicitly out of scope ("come later, M3-55"); Delete is M3-44.
+//
+// Close (`ConfigToolbarClose`, ConfigDetailToolbar.swift:136-148) is added here as a necessary
+// ripple from M3-12: every consumer of ConfigItemDetail.vue (Commands/Skills/OutputStyles) needs
+// a way back to the list, and this is the one component Swift's own spec already names as owning
+// it (§1.7) -- not something to duplicate three times in each page instead.
 import { ref } from 'vue';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import AppIcon from '@/components/AppIcon.vue';
 
 const props = defineProps<{ name: string; content: string; formatted: boolean }>();
-defineEmits<{ 'update:formatted': [value: boolean] }>();
+defineEmits<{ 'update:formatted': [value: boolean]; close: [] }>();
 
 const nameCopied = ref(false);
 const contentCopied = ref(false);
@@ -63,6 +68,18 @@ async function copyContent() {
         :name="contentCopied ? 'checkmark' : 'doc.text'"
         size="sm"
         :class="contentCopied ? 'text-(--color-green)' : 'text-(--text-tertiary)'"
+      />
+    </button>
+    <button
+      type="button"
+      title="Close"
+      class="flex h-7 w-7 items-center justify-center rounded-sm bg-(--bg-elevated)"
+      @click="$emit('close')"
+    >
+      <AppIcon
+        name="xmark"
+        size="sm"
+        class="text-(--text-tertiary)"
       />
     </button>
   </div>

@@ -73,7 +73,7 @@ describe('navigationItems (NavigationItemTests)', () => {
   // `memory/index.ts`'s and `todos/index.ts`'s own `available = true`) -- every item whose owning
   // feature hasn't landed yet still starts false.
   it('every item without a landed feature yet starts unavailable', () => {
-    const landed = new Set(['sessions', 'history', 'plans', 'memory', 'todos']);
+    const landed = new Set(['sessions', 'history', 'plans', 'memory', 'todos', 'commands', 'skills', 'outputStyles']);
     const stillUnbuilt = navigationItems.filter((item) => !landed.has(item.id));
     expect(stillUnbuilt.every((item) => item.available === false)).toBe(true);
   });
@@ -96,5 +96,17 @@ describe('navigationItems (NavigationItemTests)', () => {
 
   it('history is available now that M3-02 has built it', () => {
     expect(navigationItems.find((item) => item.id === 'history')?.available).toBe(true);
+  });
+
+  it('commands is available now that M3-12 has built it', () => {
+    expect(navigationItems.find((item) => item.id === 'commands')?.available).toBe(true);
+  });
+
+  it('skills is available now that M3-12 has built it', () => {
+    expect(navigationItems.find((item) => item.id === 'skills')?.available).toBe(true);
+  });
+
+  it('outputStyles is available now that M3-12 has built it', () => {
+    expect(navigationItems.find((item) => item.id === 'outputStyles')?.available).toBe(true);
   });
 });

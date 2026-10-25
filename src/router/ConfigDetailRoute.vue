@@ -1,20 +1,17 @@
 <script setup lang="ts">
 // Dispatches /config/:kind/:scope/:slug the same way ConfigListRoute.vue dispatches the list
 // route -- see that file's own header comment for why this exists beyond the task's literal
-// Outputs list. The placeholder pages don't yet read :scope/:slug; the later tasks that replace
-// them (docs/design/icon-map.md-style ownership noted in each feature's own index.ts) will.
-import { computed } from 'vue';
+// Outputs list, and for why these are lazy `defineAsyncComponent`s rather than static imports
+// (M3-12 necessary ripple: the Shiki-pulling MarkdownView chain these pages now reach makes a
+// static import here a real bundle-size regression, confirmed directly).
+import { computed, defineAsyncComponent } from 'vue';
 import { useRoute } from 'vue-router';
-import CommandsPage from '@/features/config/commands/CommandsPage.vue';
-import SkillsPage from '@/features/config/skills/SkillsPage.vue';
-import OutputStylesPage from '@/features/config/output-styles/OutputStylesPage.vue';
-import SubAgentsPage from '@/features/config/subagents/SubAgentsPage.vue';
 
 const pageByKind = {
-  command: CommandsPage,
-  skill: SkillsPage,
-  outputStyle: OutputStylesPage,
-  agent: SubAgentsPage,
+  command: defineAsyncComponent(() => import('@/features/config/commands/CommandsPage.vue')),
+  skill: defineAsyncComponent(() => import('@/features/config/skills/SkillsPage.vue')),
+  outputStyle: defineAsyncComponent(() => import('@/features/config/output-styles/OutputStylesPage.vue')),
+  agent: defineAsyncComponent(() => import('@/features/config/subagents/SubAgentsPage.vue')),
 } as const;
 
 const route = useRoute();

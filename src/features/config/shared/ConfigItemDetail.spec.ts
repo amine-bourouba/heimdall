@@ -47,4 +47,13 @@ describe('ConfigItemDetail: header', () => {
     });
     expect(wrapper.find('.model-badge').text()).toBe('Sonnet');
   });
+
+  it('forwards the toolbar\'s close event (M3-12 necessary ripple)', async () => {
+    const onClose = vi.fn();
+    const wrapper = mount(ConfigItemDetail, { props: { icon: 'apple.terminal.fill', title: '/deploy', scope: 'global', body: 'x', onClose } });
+
+    await wrapper.find('button[title="Close"]').trigger('click');
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

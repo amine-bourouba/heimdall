@@ -1,5 +1,6 @@
 // AC3: "The detail toolbar copies name and content; editor and reveal buttons come later
-// (M3-55)."
+// (M3-55)." Close (M3-12's own necessary ripple, ConfigDetailToolbar.swift:136-148) is covered
+// below too.
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { vi, beforeEach, describe, expect, it, afterEach } from 'vitest';
@@ -48,5 +49,16 @@ describe('ConfigDetailToolbar: format toggle (read-only, no IPC)', () => {
     await wrapper.find('button[title="Show raw content"]').trigger('click');
 
     expect(onUpdateFormatted).toHaveBeenCalledWith(false);
+  });
+});
+
+describe('ConfigDetailToolbar: close', () => {
+  it('calls onClose when clicked', async () => {
+    const onClose = vi.fn();
+    const wrapper = mount(ConfigDetailToolbar, { props: { name: 'n', content: 'c', formatted: true, onClose } });
+
+    await wrapper.find('button[title="Close"]').trigger('click');
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
