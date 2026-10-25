@@ -36,6 +36,8 @@ import TextBlock from './blocks/TextBlock.vue';
 import ThinkingBlock from './blocks/ThinkingBlock.vue';
 import ToolBlock from './blocks/ToolBlock.vue';
 import ConversationContextCard from './ConversationContextCard.vue';
+import SessionFacetsCard from './SessionFacetsCard.vue';
+import SessionTodos from './SessionTodos.vue';
 import SessionToolbar from './SessionToolbar.vue';
 import DebugLogSheet from './DebugLogSheet.vue';
 import ExportOptionsDialog from './ExportOptionsDialog.vue';
@@ -208,6 +210,14 @@ onUnmounted(() => {
         :context="session.detail.context"
         class="mt-(--spacing-md)"
       />
+    </div>
+
+    <!-- session-views.md §13/§14: both "shown above the transcript" -- facets card first,
+         matching the Swift reference app's own section order, then todos. Each hides itself (facets:
+         renders nothing when null; todos: renders nothing when every list is empty). -->
+    <div class="shrink-0 flex flex-col gap-(--spacing-sm) px-(--spacing-xxxl) py-(--spacing-sm) empty:py-0">
+      <SessionFacetsCard :session-id="session.id" />
+      <SessionTodos :session-id="session.id" />
     </div>
 
     <DebugLogSheet v-if="sessionStore.showDebugLogSessionId" />

@@ -3,7 +3,7 @@
 // cases, which are inherently non-deterministic) and HistoryDateGroupTests.swift.
 import { mockIPC } from '@tauri-apps/api/mocks';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HistoryEntry, HistoryPage } from '@/ipc/bindings';
 import { groupForDate, historySnippet, projectName, useHistoryStore } from './store';
 
@@ -131,6 +131,17 @@ describe('history store: paging (AC2: "Paging uses list_history")', () => {
 describe('history store: search and grouping (HistoryListView.swift:51-84)', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    // Unlike the standalone groupForDate (tested above with an explicit `now`), the store's own
+    // groupedEntries always calls the real `new Date()` -- confirmed the hard way: this test
+    // fixture's "today" entry silently became "yesterday" the first time a real calendar day
+    // passed since it was written. Faking the system clock, not just the fixture data, is what
+    // actually fixes that instead of only deferring the same drift to the next day boundary.
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('filters by a fuzzy match on the prompt text or the project name', async () => {

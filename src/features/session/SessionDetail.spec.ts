@@ -83,6 +83,11 @@ async function mountDetail(session: LoadedSession, ipcHandler?: (cmd: string, ar
       usePrefsStore().prefs = { ...current, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== null)) };
       return usePrefsStore().prefs;
     }
+    // M3-06: SessionDetail now always mounts SessionFacetsCard/SessionTodos, each fetching its
+    // own data for whichever session is open -- a default of "neither exists" here keeps every
+    // test in this file (none of which are about facets/todos) from needing its own override.
+    if (cmd === 'get_session_facets') return null;
+    if (cmd === 'get_session_todos') return [];
     if (ipcHandler) return ipcHandler(cmd, args);
     throw new Error(`unexpected command: ${cmd}`);
   });
