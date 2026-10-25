@@ -50,15 +50,17 @@ let unregisterFns: (() => void)[] = [];
 async function mountWith(os: 'macos' | 'windows' | 'linux') {
   setActivePinia(createPinia());
   usePlatformStore().os = os;
-  // 'settings' is a real route name (matching routes.ts) because useShortcuts now registers its
-  // own real handler for it (`router.push({name: 'settings'})`, M3-16) alongside this test's own
-  // fake tracking handler -- both fire on every dispatch (useAppActions' registry is a Set, not a
-  // single slot), so the router needs somewhere real to navigate to.
+  // 'settings'/'help'/'about' are real route names (matching routes.ts) because useShortcuts now
+  // registers its own real handler for each (`router.push({name: ...})`, M3-16/M3-17) alongside
+  // this test's own fake tracking handler -- both fire on every dispatch (useAppActions' registry
+  // is a Set, not a single slot), so the router needs somewhere real to navigate to.
   const router = createRouter({
     history: createWebHashHistory(),
     routes: [
       { path: '/', component: { render: () => null } },
       { path: '/settings', name: 'settings', component: { render: () => null } },
+      { path: '/help', name: 'help', component: { render: () => null } },
+      { path: '/about', name: 'about', component: { render: () => null } },
     ],
   });
   await router.push('/');
@@ -199,5 +201,25 @@ describe('useShortcuts: real handlers for the stores that already exist', () => 
     await flushPromises();
 
     expect(router.currentRoute.value.name).toBe('settings');
+  });
+
+  it('Mod+? navigates to the real help route', async () => {
+    const { router } = await mountWith('windows');
+
+    fireKeydown({ key: '?', ctrlKey: true });
+    await flushPromises();
+
+    expect(router.currentRoute.value.name).toBe('help');
+  });
+
+  // 'about' has no keybinding in BINDINGS (it is menu-only, AppMenu.vue) -- dispatched directly,
+  // the same way a real menu click would.
+  it('dispatching "about" navigates to the real about route', async () => {
+    const { router } = await mountWith('windows');
+
+    useAppActions().dispatch('about');
+    await flushPromises();
+
+    expect(router.currentRoute.value.name).toBe('about');
   });
 });

@@ -2,11 +2,14 @@
 // PoirotApp.swift:81-96). Every binding dispatches a named AppAction through useAppActions, the
 // AC's own "single dispatcher" -- this file also registers the real handlers for the actions
 // whose store/route already exists (theme's font scale, M2-05; back/forward, M2-06's
-// useNavigation; settings, M3-16 -- `router.push`, since `/settings` is a plain route with no
-// sidebar entry of its own to click instead). The rest (search, toolFilter, help) still dispatch
-// into a registry with no handler yet -- a silent no-op until the feature that owns each one
-// exists, not an error.
-
+// useNavigation; settings/help/about, M3-16/M3-17 -- plain `router.push`, since none of
+// `/settings`, `/help`, `/about` have a sidebar entry of their own to click instead). `search` and
+// `toolFilter` are still a no-op here -- each is registered by the feature component that owns it
+// instead (`SearchOverlay.vue`, `SessionDetail.vue`), the same reasoning `shortcuts` (M3-17,
+// `ShortcutHelp.vue`'s own always-mounted overlay) now follows too.
+//
+// `BINDINGS` is exported (M3-17, port-plan.md decision P-7): `ShortcutHelp.vue` renders its list
+// straight from this one array so the sheet can never drift from what Mod-key actually does.
 import { onMounted, onScopeDispose } from 'vue';
 import { useRouter } from 'vue-router';
 import type { AppAction } from '@/ipc/bindings';
@@ -21,7 +24,7 @@ function isMod<R extends KeyboardEvent>(event: R, isMac: boolean): boolean {
   return isMac ? event.metaKey : event.ctrlKey;
 }
 
-const BINDINGS: { key: string; action: AppAction }[] = [
+export const BINDINGS: { key: string; action: AppAction }[] = [
   { key: 'k', action: 'search' },
   { key: '[', action: 'back' },
   { key: ']', action: 'forward' },
@@ -47,6 +50,8 @@ export function useShortcuts() {
     on('back', goBack),
     on('forward', goForward),
     on('settings', () => void router.push({ name: 'settings' })),
+    on('help', () => void router.push({ name: 'help' })),
+    on('about', () => void router.push({ name: 'about' })),
   ];
 
   function onKeydown(event: KeyboardEvent) {
