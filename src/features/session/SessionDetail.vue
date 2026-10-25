@@ -38,6 +38,7 @@ import ToolBlock from './blocks/ToolBlock.vue';
 import ConversationContextCard from './ConversationContextCard.vue';
 import SessionFacetsCard from './SessionFacetsCard.vue';
 import SessionTodos from './SessionTodos.vue';
+import FileHistory from './FileHistory.vue';
 import SessionToolbar from './SessionToolbar.vue';
 import DebugLogSheet from './DebugLogSheet.vue';
 import ExportOptionsDialog from './ExportOptionsDialog.vue';
@@ -249,7 +250,20 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- session-views.md §15: replaces the whole transcript pane while isShowingFileHistory is
+         true (the session toolbar's own file-history button toggles it; FileHistory.vue fetches
+         its own data from the session/project id, same as the facets/todos cards above). -->
     <div
+      v-if="sessionStore.isShowingFileHistory"
+      class="flex-1 overflow-hidden"
+    >
+      <FileHistory
+        :project-id="session.detail.summary.projectId"
+        :session-id="session.id"
+      />
+    </div>
+    <div
+      v-else
       ref="scrollContainer"
       data-testid="session-scroll-container"
       class="flex-1 overflow-y-auto px-(--spacing-xxxl) py-(--spacing-lg)"
