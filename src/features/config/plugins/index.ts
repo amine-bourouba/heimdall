@@ -1,5 +1,4 @@
-// Feature manifest (task M2-06): the sidebar reads `available` to decide whether to show
-// this item at all -- stays false until M3-13 replaces the placeholder page with the real one.
-export const available = false;
+// Feature manifest (task M2-06). M3-13 replaces the placeholder page with the real one.
+export const available = true;
 
 export const label = 'Plugins';
