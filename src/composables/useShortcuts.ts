@@ -1,11 +1,14 @@
 // Global shortcuts (parity-matrix.md section J1-J5, J11; ContentView.swift:38-54,
 // PoirotApp.swift:81-96). Every binding dispatches a named AppAction through useAppActions, the
-// AC's own "single dispatcher" -- this file also registers the real handlers for the three
-// actions whose store already exists (theme's font scale, M2-05; back/forward, M2-06's
-// useNavigation). The rest (search, toolFilter, help, settings) dispatch into a registry with no
-// handler yet -- a silent no-op until the feature that owns each one exists, not an error.
+// AC's own "single dispatcher" -- this file also registers the real handlers for the actions
+// whose store/route already exists (theme's font scale, M2-05; back/forward, M2-06's
+// useNavigation; settings, M3-16 -- `router.push`, since `/settings` is a plain route with no
+// sidebar entry of its own to click instead). The rest (search, toolFilter, help) still dispatch
+// into a registry with no handler yet -- a silent no-op until the feature that owns each one
+// exists, not an error.
 
 import { onMounted, onScopeDispose } from 'vue';
+import { useRouter } from 'vue-router';
 import type { AppAction } from '@/ipc/bindings';
 import { useAppActions } from './useAppActions';
 import { useNavigation } from './useNavigation';
@@ -34,6 +37,7 @@ export function useShortcuts() {
   const { dispatch, on } = useAppActions();
   const platformStore = usePlatformStore();
   const themeStore = useThemeStore();
+  const router = useRouter();
   const { goBack, goForward } = useNavigation();
 
   const unregister = [
@@ -42,6 +46,7 @@ export function useShortcuts() {
     on('fontReset', () => themeStore.resetFontScale()),
     on('back', goBack),
     on('forward', goForward),
+    on('settings', () => void router.push({ name: 'settings' })),
   ];
 
   function onKeydown(event: KeyboardEvent) {

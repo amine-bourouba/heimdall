@@ -50,7 +50,17 @@ let unregisterFns: (() => void)[] = [];
 async function mountWith(os: 'macos' | 'windows' | 'linux') {
   setActivePinia(createPinia());
   usePlatformStore().os = os;
-  const router = createRouter({ history: createWebHashHistory(), routes: [{ path: '/', component: { render: () => null } }] });
+  // 'settings' is a real route name (matching routes.ts) because useShortcuts now registers its
+  // own real handler for it (`router.push({name: 'settings'})`, M3-16) alongside this test's own
+  // fake tracking handler -- both fire on every dispatch (useAppActions' registry is a Set, not a
+  // single slot), so the router needs somewhere real to navigate to.
+  const router = createRouter({
+    history: createWebHashHistory(),
+    routes: [
+      { path: '/', component: { render: () => null } },
+      { path: '/settings', name: 'settings', component: { render: () => null } },
+    ],
+  });
   await router.push('/');
 
   const dispatched: AppAction[] = [];
@@ -180,5 +190,14 @@ describe('useShortcuts: real handlers for the stores that already exist', () => 
     fireKeydown({ key: ']', ctrlKey: true });
     await flushPromises();
     expect(router.currentRoute.value.path).toBe('/elsewhere');
+  });
+
+  it('Mod+, navigates to the real settings route', async () => {
+    const { router } = await mountWith('windows');
+
+    fireKeydown({ key: ',', ctrlKey: true });
+    await flushPromises();
+
+    expect(router.currentRoute.value.name).toBe('settings');
   });
 });
