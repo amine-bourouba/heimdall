@@ -14,6 +14,14 @@ on:
   # M1-59 (the M1 gate review) needs a real, per-OS CI run as evidence before feature/m1-data-core
   # has ever been merged into main or opened as a PR — manual dispatch gets that without either.
   workflow_dispatch:
+    inputs:
+      # One-off escape hatch for regenerating the committed Linux visual baselines (P-13: never
+      # generated locally, never committed unreviewed) after a UI change shifts pixels on purpose.
+      # Default false means every normal dispatch behaves exactly as before.
+      update_visual_snapshots:
+        description: 'Regenerate the visual projects baselines (uploads them as an artifact for review, does not commit)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -203,9 +211,16 @@ jobs:
       # P-13), security (M2-26 AC2), perf (M2-28 AC1). `visual` fails until this job's own first
       # real run produces baselines for a human to review and commit -- documented in
       # e2e/visual/session.spec.ts's own progress-log entry, not something this workflow commits
-      # on its own.
+      # on its own. `update_visual_snapshots` runs only the visual project, with
+      # `--update-snapshots`, instead -- the normal command's own five-project run would otherwise
+      # overwrite baselines as a side effect of chromium/webkit/security/perf passing too.
       - name: Playwright (all mocked projects)
+        if: ${{ !inputs.update_visual_snapshots }}
         run: xvfb-run --auto-servernum npx playwright test --project=chromium --project=webkit --project=visual --project=security --project=perf
+
+      - name: Playwright (regenerate visual baselines)
+        if: ${{ inputs.update_visual_snapshots }}
+        run: xvfb-run --auto-servernum npx playwright test --project=visual --update-snapshots
 
       - name: Upload Playwright report and test results
         if: always()
@@ -217,6 +232,17 @@ jobs:
             test-results/
           retention-days: 14
           if-no-files-found: ignore
+
+      # `--update-snapshots` overwrites the baseline PNGs in place under e2e/visual/ -- nothing in
+      # CI commits them (P-13: a human reviews a real Linux render first), so they only reach
+      # anyone at all via this artifact.
+      - name: Upload regenerated visual baselines
+        if: ${{ inputs.update_visual_snapshots }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: visual-baselines-updated
+          path: e2e/visual/session.spec.ts-snapshots/
+          retention-days: 14
 
   e2e-real-app-smoke:
     name: E2E real-app smoke (${{ matrix.os }})
