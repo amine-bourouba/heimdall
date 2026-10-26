@@ -49,7 +49,7 @@ function select(action: AppAction) {
     <ul
       v-if="isOpen"
       role="menu"
-      class="glass absolute left-0 top-full z-10 mt-(--spacing-xs) min-w-[200px] rounded-md p-(--spacing-xs)"
+      class="glass absolute right-0 top-full z-10 mt-(--spacing-xs) min-w-[200px] rounded-md p-(--spacing-xs)"
     >
       <li
         v-for="item in ITEMS"
