@@ -88,9 +88,19 @@ function installMockIpcInPage(fixtures: MockFixtures) {
         return fixtures.appInfo;
       case 'get_prefs':
         return fixtures.prefs;
-      case 'update_prefs':
-        Object.assign(fixtures.prefs, Object.fromEntries(Object.entries((args as { patch: Record<string, unknown> }).patch).filter(([, v]) => v !== null)));
+      case 'update_prefs': {
+        // A NEW object, not an in-place `Object.assign` mutation of the old one: `get_prefs`
+        // above returns `fixtures.prefs` by direct reference (no real IPC boundary here to force
+        // a copy), so `prefsStore.prefs.value` already points at this exact object -- mutating it
+        // and returning the same reference makes Vue's `ref` setter see `result === prefs.value`
+        // and skip every reactive trigger, even though the fields changed (a real bug this caused,
+        // confirmed directly: `useThemeStore().fontScale` never updated after a real `Mod+=`
+        // round-trip in `e2e/keyboard/navigation.spec.ts`, M3-19). The real Tauri IPC bridge always
+        // serialises a fresh object on every call; this mirrors that instead of optimising it away.
+        const patch = (args as { patch: Record<string, unknown> }).patch;
+        fixtures.prefs = { ...fixtures.prefs, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== null)) };
         return fixtures.prefs;
+      }
       case 'get_sidebar_counts':
         return fixtures.sidebarCounts;
       case 'list_projects':
@@ -112,6 +122,14 @@ function installMockIpcInPage(fixtures: MockFixtures) {
         const { oldText, newText } = args as { oldText: string; newText: string };
         return computeLineDiff(oldText, newText);
       }
+      // SearchOverlay.vue's own store calls this inside `open()`, every time Mod+K fires --
+      // falling through to the generic `null` default below crashed any test that opened the
+      // overlay and then actually interacted with its results (`recentSessions.value.length`
+      // reading a property of `null`, a real bug found via `e2e/keyboard/navigation.spec.ts`,
+      // M3-19). No fixture here needs custom recent-session content yet, so an empty array (a
+      // real, valid `RecentSession[]`, unlike `null`) is enough.
+      case 'list_recent_sessions':
+        return [];
       default:
          
         console.warn(`[e2e mockIpc] unhandled command, resolving null: ${cmd}`);

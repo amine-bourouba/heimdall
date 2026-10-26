@@ -119,6 +119,8 @@ function onKeydown(event: KeyboardEvent) {
     case 'Enter':
       activateSelected();
       event.preventDefault();
+      // Stopped below, with Escape, not here individually -- see this switch's own closing
+      // comment for why every case needs it, not just these two.
       break;
     case 'Escape':
       store.close();
@@ -128,6 +130,19 @@ function onKeydown(event: KeyboardEvent) {
       event.preventDefault();
       break;
   }
+  // A real, previously-undiscovered bug (M3-19): none of the cases above stopped propagation, so
+  // every one of these keys also reached `useKeyboardNav.ts`'s own document-level listener
+  // (`Sidebar.vue`'s `isSuppressed: () => searchStore.isOpen` exists specifically to prevent
+  // that) -- harmless for Arrow/Tab, which never touch `isOpen`, but Enter and Escape both call
+  // `store.close()` *synchronously* before this event finishes bubbling, so by the time
+  // `useKeyboardNav.ts` checked `isSuppressed()` the overlay already looked closed and its own
+  // Enter/Escape handling ran too: pressing Enter on a search result double-navigated (the real
+  // target, then immediately overwritten by the sidebar's own Enter-activates-highlighted-item
+  // handling). Confirmed directly with a real `router.push` trace showing both navigations firing
+  // on the one keystroke. A modal overlay owning its own keyboard input should not leak any of it
+  // to the app's global handler regardless of `isOpen` timing, so every handled key stops
+  // propagation here, not just the two that happened to expose the race.
+  event.stopPropagation();
 }
 
 // Refocuses the input on any blur while open -- the simplest trap that matches this overlay's

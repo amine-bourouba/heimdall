@@ -48,7 +48,12 @@ test.describe('J1/J7/J8: Mod+K opens search with visible focus; arrows and Retur
           },
         ],
       },
-      get_config_item: { ref: { kind: 'command', project: null, slug: 'review' }, name: 'review', description: 'Review the current diff', scope: 'global', meta: {}, body: '# review\n\nReview the current diff.', displayPath: '~/.claude/commands/review.md' },
+      // No leading `# review` in the body: a markdown H1 matching the title renders its own
+      // `<h1>review</h1>` (markdown-it, no Tailwind classes) alongside ConfigItemDetail.vue's own
+      // real, styled one -- a real strict-mode violation caught while building this test, not an
+      // app bug (confirmed directly: the bare second heading is this fixture's own markdown body,
+      // not a duplicate real title).
+      get_config_item: { ref: { kind: 'command', project: null, slug: 'review' }, name: 'review', description: 'Review the current diff', scope: 'global', meta: {}, body: 'Review the current diff.', displayPath: '~/.claude/commands/review.md' },
     });
     await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible();
 
@@ -129,22 +134,35 @@ test.describe('J6: layered Escape, real priority order (session search, tool fil
     await gotoWithExtra(page, `/#/sessions/${VISUAL_PROJECT_ID}/${VISUAL_SESSION_ID}`);
     await expect(page.getByRole('heading', { name: 'Visual regression: all tools' })).toBeVisible();
 
-    await page.getByPlaceholder('Find in session…').fill('build');
+    const searchInput = page.getByPlaceholder('Find in session…');
+    await searchInput.fill('build');
     await modKeydown(page, 't');
     const readChip = page.getByRole('button', { name: 'Read', exact: true });
     await expect(readChip).toBeVisible();
 
+    // `useKeyboardNav.ts`'s own documented behaviour: a focused text input eats the first Escape
+    // just to blur itself (matching the Swift reference app's own two-step AppKit text-field
+    // dismissal), *before* any escape layer gets a turn -- `searchInput` is still focused from the
+    // `.fill()` above, so this first Escape only blurs it, value and tool filter both untouched.
     await escKeydown(page);
-    await expect(page.getByPlaceholder('Find in session…')).toHaveValue('');
-    await expect(readChip).toBeVisible(); // tool filter untouched by the first Escape
+    await expect(searchInput).not.toBeFocused();
+    await expect(searchInput).toHaveValue('build');
+    await expect(readChip).toBeVisible();
 
+    // Second Escape: no text input focused now, so this is the first one an escape layer actually
+    // sees -- session search (first in priority order) is dismissed.
+    await escKeydown(page);
+    await expect(searchInput).toHaveValue('');
+    await expect(readChip).toBeVisible(); // tool filter untouched by that dismissal
+
+    // Third Escape: session search is no longer active, so this one reaches the tool filter layer.
     await escKeydown(page);
     await expect(readChip).not.toBeVisible();
   });
 
   test('from a config-detail route, Escape goes back to the matching config-list route', async ({ page }) => {
     await gotoWithExtra(page, '/#/config/command/global/review', {
-      get_config_item: { ref: { kind: 'command', project: null, slug: 'review' }, name: 'review', description: '', scope: 'global', meta: {}, body: '# review', displayPath: '~/.claude/commands/review.md' },
+      get_config_item: { ref: { kind: 'command', project: null, slug: 'review' }, name: 'review', description: '', scope: 'global', meta: {}, body: 'Review the current diff.', displayPath: '~/.claude/commands/review.md' },
       list_config_items: { value: [], skipped: 0 },
     });
     await expect(page.getByRole('heading', { name: 'review' })).toBeVisible();
