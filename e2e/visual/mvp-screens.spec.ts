@@ -456,7 +456,9 @@ test.describe('Search, Onboarding and Settings (Heimdall-only: no Swift screensh
     await page.goto('/');
     await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true })));
     await page.getByPlaceholder('Search everything…').fill('review');
-    await expect(page.getByRole('dialog', { name: 'Search' }).getByText('review')).toBeVisible();
+    // `{ exact: true }`: a plain substring match also matches the hit's own subtitle ("Review the
+    // current diff"), a real strict-mode violation caught on a real Linux CI run.
+    await expect(page.getByRole('dialog', { name: 'Search' }).getByText('review', { exact: true })).toBeVisible();
     await expect(page.getByRole('dialog', { name: 'Search' })).toHaveScreenshot(SCREENSHOT_OPTS);
   });
 

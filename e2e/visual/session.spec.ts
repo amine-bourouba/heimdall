@@ -79,6 +79,12 @@ test.describe('SessionDetail (ScreenshotTests_SessionDetail: 6 of 8 -- sessionEr
 
   test('testSessionToolFilter', async ({ visualPage }) => {
     await visualPage.goto(`/#/sessions/${VISUAL_PROJECT_ID}/${VISUAL_SESSION_ID}`);
+    // A real, previously-undocumented CI flake (M3-19): `goto()` resolves on navigation, not on
+    // `SessionDetail.vue`'s own `onMounted` having registered its `on('toolFilter', ...)` handler
+    // yet -- that registration races the keydown below under CI's heavier load, intermittently
+    // dropping it. `testSessionConversation` above already waits for this same heading before
+    // doing anything else; this test never did. Fixed by adding the identical wait.
+    await expect(visualPage.getByRole('heading', { name: 'Visual regression: all tools' })).toBeVisible();
     // `useShortcuts.ts` listens on `document`, not `window` -- a `window.dispatchEvent` of the
     // same event never reaches it (they are different EventTarget objects; no bubbling between
     // them), confirmed the hard way when this line read `window.dispatchEvent` and the chip bar
