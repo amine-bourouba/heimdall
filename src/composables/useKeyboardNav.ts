@@ -1,8 +1,7 @@
 // Ported from KeyboardNavigationModifier.swift: arrow-key sidebar navigation, Enter to activate,
 // and the layered Escape dismiss. Escape layers are injected in priority order rather than
-// hardcoded to specific stores -- several of the real ones (session search, tool filter, config
-// detail) have no Heimdall store yet; a caller passes only the layers it actually has, and an
-// inactive layer is simply skipped.
+// hardcoded to specific stores -- `Sidebar.vue` (the one real caller) wires the real four
+// (session search, tool filter, config detail, session detail; M3-19), each skipped when inactive.
 //
 // the Swift reference app's own "blur a focused text field first" is two separate mechanisms (an NSEvent monitor
 // for the text-field case, SwiftUI onKeyPress for everything else) because AppKit text editing

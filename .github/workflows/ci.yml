@@ -216,7 +216,7 @@ jobs:
       # overwrite baselines as a side effect of chromium/webkit/security/perf passing too.
       - name: Playwright (all mocked projects)
         if: ${{ !inputs.update_visual_snapshots }}
-        run: xvfb-run --auto-servernum npx playwright test --project=chromium --project=webkit --project=visual --project=security --project=perf
+        run: xvfb-run --auto-servernum npx playwright test --project=chromium --project=webkit --project=visual --project=security --project=perf --project=keyboard
 
       - name: Playwright (regenerate visual baselines)
         if: ${{ inputs.update_visual_snapshots }}

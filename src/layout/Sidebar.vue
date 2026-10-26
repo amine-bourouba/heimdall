@@ -11,13 +11,15 @@
 // when visited, so showing every item (clickable, not disabled) is the more useful behaviour
 // until individual features actually start flipping `available` to true.
 import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ipc, onDataChanged } from '@/ipc/client';
 import type { Area, ProjectContext, SidebarCounts } from '@/ipc/bindings';
 import { navigationItems } from '@/router/navigationItems';
 import { usePrefsStore } from '@/stores/prefs';
 import { useSearchStore } from '@/features/search/store';
+import { useSessionStore } from '@/features/session/store';
 import { useKeyboardNav } from '@/composables/useKeyboardNav';
+import type { EscapeLayer } from '@/composables/useKeyboardNav';
 import AppIcon from '@/components/AppIcon.vue';
 
 // Only the areas with a real, file-driven count in `SidebarCounts` -- "models" has no Area at
@@ -42,10 +44,44 @@ const COUNT_KEY_BY_ID: Partial<Record<string, keyof SidebarCounts>> = {
 };
 
 const router = useRouter();
+const route = useRoute();
 const prefsStore = usePrefsStore();
 const searchStore = useSearchStore();
+const sessionStore = useSessionStore();
 const counts = ref<SidebarCounts | null>(null);
 const keyboardIndex = ref(0);
+
+// KeyboardNavigationModifier.swift's own handleEscape() order (M3-19, the real wiring
+// `useKeyboardNav.ts`'s own header comment used to say was still missing): session search, then
+// tool filter, then config detail, then the selected session. The latter two are route-driven --
+// Heimdall has no `activeConfigDetail`/`selectedSession` store flags, routing IS that state.
+const escapeLayers: EscapeLayer[] = [
+  {
+    isActive: () => sessionStore.isSessionSearchActive,
+    dismiss: () => {
+      sessionStore.sessionSearchQuery = '';
+      sessionStore.isSessionSearchActive = false;
+    },
+  },
+  {
+    isActive: () => sessionStore.isToolFilterActive,
+    dismiss: () => {
+      sessionStore.isToolFilterActive = false;
+      sessionStore.activeToolFilters.clear();
+    },
+  },
+  {
+    isActive: () => route.name === 'config-detail',
+    dismiss: () => void router.push({ name: 'config-list', params: { kind: route.params.kind } }),
+  },
+  {
+    // Swift's own `selectedSession = nil` deselects the session but keeps the project context --
+    // dropping only `sessionId` (optional on this same route) is the faithful equivalent, not a
+    // full jump to the bare `/sessions` list, which would also lose `projectId`.
+    isActive: () => route.name === 'session-detail' && !!route.params.sessionId,
+    dismiss: () => void router.push({ name: 'session-detail', params: { projectId: route.params.projectId } }),
+  },
+];
 
 function projectContext(): ProjectContext | null {
   // `currentProject` (the selected session's own project) has no Heimdall equivalent yet -- no
@@ -68,7 +104,7 @@ onMounted(() => {
 });
 
 useKeyboardNav({
-  escapeLayers: [],
+  escapeLayers,
   sidebarItemCount: () => navigationItems.length,
   sidebarIndex: keyboardIndex,
   // KeyboardNavigationModifier.swift:17-19's own guard (the composable's own doc comment on this

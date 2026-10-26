@@ -8,6 +8,7 @@ import { events } from '@/ipc/bindings';
 import type { Prefs, SidebarCounts } from '@/ipc/bindings';
 import { navigationItems } from '@/router/navigationItems';
 import { usePrefsStore } from '@/stores/prefs';
+import { useSessionStore } from '@/features/session/store';
 import Sidebar from './Sidebar.vue';
 
 const Blank = defineComponent({ render: () => h('div') });
@@ -30,10 +31,12 @@ function makeRouter() {
       { path: '/plans', name: 'plans', component: Blank },
       { path: '/memory', name: 'memory', component: Blank },
       { path: '/config/:kind', name: 'config-list', component: Blank },
+      { path: '/config/:kind/:scope/:slug', name: 'config-detail', component: Blank },
       { path: '/config/hooks', name: 'hooks', component: Blank },
       { path: '/config/mcp', name: 'mcp', component: Blank },
       { path: '/config/plugins', name: 'plugins', component: Blank },
       { path: '/config/models', name: 'models', component: Blank },
+      { path: '/sessions/:projectId/:sessionId?', name: 'session-detail', component: Blank },
     ],
   });
 }
@@ -193,5 +196,63 @@ describe('Sidebar: keyboard navigation', () => {
 
     // Every real navigationItems entry targets a named route object (never a bare path string).
     expect(router.currentRoute.value.name).toBe((navigationItems[1].to as { name: string }).name);
+  });
+});
+
+// KeyboardNavigationModifier.swift's own handleEscape() order, wired into the real stores/router
+// for the first time here (M3-19; this component's `escapeLayers` was `[]` until now).
+describe('Sidebar: Escape layers (M3-19)', () => {
+  function fireEscape() {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+  }
+
+  it('clears session search first when both it and the tool filter are active', async () => {
+    await mountSidebar(() => zeroCounts());
+    const sessionStore = useSessionStore();
+    sessionStore.sessionSearchQuery = 'build';
+    sessionStore.isSessionSearchActive = true;
+    sessionStore.isToolFilterActive = true;
+    sessionStore.activeToolFilters.add('Read');
+
+    fireEscape();
+    expect(sessionStore.isSessionSearchActive).toBe(false);
+    expect(sessionStore.sessionSearchQuery).toBe('');
+    expect(sessionStore.isToolFilterActive).toBe(true);
+
+    fireEscape();
+    expect(sessionStore.isToolFilterActive).toBe(false);
+    expect(sessionStore.activeToolFilters.size).toBe(0);
+  });
+
+  it('navigates from a config-detail route back to its config-list route', async () => {
+    const { router } = await mountSidebar(() => zeroCounts());
+    await router.push({ name: 'config-detail', params: { kind: 'command', scope: 'global', slug: 'review' } });
+
+    fireEscape();
+    await flushPromises();
+
+    expect(router.currentRoute.value.name).toBe('config-list');
+    expect(router.currentRoute.value.params.kind).toBe('command');
+  });
+
+  it('deselects the session (drops sessionId, keeps projectId) from a session-detail route', async () => {
+    const { router } = await mountSidebar(() => zeroCounts());
+    await router.push({ name: 'session-detail', params: { projectId: 'proj-1', sessionId: 'sess-1' } });
+
+    fireEscape();
+    await flushPromises();
+
+    expect(router.currentRoute.value.name).toBe('session-detail');
+    expect(router.currentRoute.value.params.projectId).toBe('proj-1');
+    expect(router.currentRoute.value.params.sessionId).toBeFalsy();
+  });
+
+  it('does nothing when no layer is active', async () => {
+    const { router } = await mountSidebar(() => zeroCounts());
+    const before = router.currentRoute.value.fullPath;
+
+    expect(() => fireEscape()).not.toThrow();
+    await flushPromises();
+    expect(router.currentRoute.value.fullPath).toBe(before);
   });
 });

@@ -29,6 +29,10 @@ export default defineConfig({
     // `requestAnimationFrame`/`performance.now()` timing is the most consistent of the three, and
     // this is also the one engine that stands in for this dev machine's own OS (Windows/WebView2).
     { name: 'perf', testDir: './e2e/perf', use: { ...devices['Desktop Chrome'] } },
+    // Keyboard-shortcut/focus assertions (M3-19) -- Chromium for the same timing-consistency
+    // reason `perf` already gives, not WebKit's own baseline-fidelity reasoning (nothing here is
+    // a screenshot).
+    { name: 'keyboard', testDir: './e2e/keyboard', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
     // The build itself can take longer than Playwright's default web-server timeout on a loaded
