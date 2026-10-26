@@ -235,13 +235,16 @@ jobs:
 
       # `--update-snapshots` overwrites the baseline PNGs in place under e2e/visual/ -- nothing in
       # CI commits them (P-13: a human reviews a real Linux render first), so they only reach
-      # anyone at all via this artifact.
+      # anyone at all via this artifact. A glob, not one hardcoded spec's own `-snapshots/`
+      # directory (M3-18, a necessary ripple: `mvp-screens.spec.ts` is a second visual spec file
+      # since M3-10 first wrote this step for `session.spec.ts` alone -- the old hardcoded path
+      # would have silently dropped its baselines from the artifact).
       - name: Upload regenerated visual baselines
         if: ${{ inputs.update_visual_snapshots }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: visual-baselines-updated
-          path: e2e/visual/session.spec.ts-snapshots/
+          path: e2e/visual/*.spec.ts-snapshots/
           retention-days: 14
 
   e2e-real-app-smoke:
