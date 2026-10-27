@@ -13,20 +13,18 @@ import type { StatsCache } from '@/ipc/bindings';
 import AnalyticsDashboard from './AnalyticsDashboard.vue';
 
 // AnalyticsCharts.vue is only ever reached through `defineAsyncComponent` (M3-32's bundle-size
-// fix) and is covered by its own direct-mount spec (AnalyticsCharts.spec.ts) -- stubbed here so
-// this file's tests (stat cards/CSV menu/loading/no-data states) don't depend on Vitest's
-// happy-dom + Vite SSR module runner ever settling a dynamic `import()` fired from inside Vue's
-// render scheduler, which a real reproduction (not assumed) showed never resolves: the same
-// `import('./components/AnalyticsCharts.vue')` call succeeds immediately when awaited directly or
-// used to mount the component synchronously, but hangs forever -- no error, no rejection -- the
-// moment it's wrapped as a `defineAsyncComponent` loader and mounted via `mount()`, even through a
-// bare synthetic host with no AnalyticsDashboard.vue involved. A tooling quirk, not an app bug.
-// `defineAsyncComponent`'s own internal resolution path (`createInnerComp`) probes the resolved
-// component for `__v_isVNode` before rendering it -- a normal, synchronously-resolved child never
-// takes this path, so this property is only needed here, not on the `vue-echarts` stub below.
-// Vitest's mock proxy throws "did you forget to return it" on any property access it didn't see
-// returned from the factory, so it has to be declared explicitly rather than left undefined.
-vi.mock('./components/AnalyticsCharts.vue', () => ({ default: { name: 'AnalyticsCharts', __v_isVNode: false, template: '<div class="analytics-charts-stub" />' } }));
+// fix) and is covered by its own direct-mount spec (AnalyticsCharts.spec.ts) -- stubbed here, by
+// name via VTU's own `global.stubs` (see `mountDashboard` below), so this file's tests (stat
+// cards/CSV menu/loading/no-data states) never need the async boundary to settle at all: a real
+// reproduction showed the dynamic `import()` that loader fires never resolves under Vitest's
+// happy-dom + Vite SSR module runner when driven through `mount()` (no error, no rejection, even
+// though the same import resolves immediately when awaited directly or mounted synchronously) --
+// a tooling quirk, not an app bug. `vi.mock`-ing the module directly (tried first) replaces it
+// with a plain object that VTU's own internal vnode-type introspection (which runs for every
+// child, checking several Vue-internal markers like `__v_isVNode`/`__isTeleport` to decide how to
+// handle it) then probes -- CI's Linux/coverage run hit a marker the Windows/no-coverage run
+// never did, confirming this is whack-a-mole, not a real fix. Stubbing by name intercepts the
+// component before `defineAsyncComponent` ever resolves it, so none of this applies.
 vi.mock('vue-echarts', () => ({ default: { name: 'VChart', template: '<div class="mock-chart" />' } }));
 
 function makeStats(overrides: Partial<StatsCache> = {}): StatsCache {
@@ -68,7 +66,7 @@ async function mountDashboard(stats: StatsCache | null, extraHandler?: (cmd: str
     }
     throw new Error(`unexpected command: ${cmd}`);
   });
-  const wrapper = mount(AnalyticsDashboard, { attachTo: document.body });
+  const wrapper = mount(AnalyticsDashboard, { attachTo: document.body, global: { stubs: { AnalyticsCharts: true } } });
   mounted.push(wrapper);
   await flushPromises();
   return wrapper;
