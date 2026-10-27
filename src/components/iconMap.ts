@@ -14,6 +14,7 @@ import {
   Braces,
   Brain,
   Bug,
+  Calendar,
   ChartLine,
   Check,
   ChevronDown,
@@ -24,6 +25,7 @@ import {
   CircleArrowRight,
   CircleCheck,
   CircleDashed,
+  CircleDollarSign,
   CircleEllipsis,
   CircleMinus,
   CirclePlay,
@@ -90,6 +92,7 @@ import {
   Target,
   Terminal,
   TextWrap,
+  Timer,
   TriangleAlert,
   Trash,
   Users,
@@ -263,4 +266,15 @@ export const iconMap: Record<string, LucideIcon> = {
   'list.bullet.rectangle.fill': List,
   'gearshape.2.fill': Settings2,
   'arrow.trianglehead.2.clockwise': RotateCw,
+
+  // AnalyticsDashboardView.swift's own stat-card icons (task M3-32). 'wrench.and.screwdriver.fill'
+  // reuses the already-mapped 'wrench' (no distinct two-tool Lucide glyph); 'number.circle.fill'
+  // reuses 'Hash' (already mapped to 'number') for the same "a count, not a specific shape" reason
+  // the `.fill`-variant convention already covers elsewhere in this file.
+  'message.fill': MessageSquare,
+  timer: Timer,
+  calendar: Calendar,
+  'dollarsign.circle.fill': CircleDollarSign,
+  'number.circle.fill': Hash,
+  'wrench.and.screwdriver.fill': Wrench,
 };

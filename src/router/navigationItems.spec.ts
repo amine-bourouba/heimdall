@@ -68,12 +68,12 @@ describe('navigationItems (NavigationItemTests)', () => {
     });
   });
 
-  // M2-15, M3-02, M3-03, M3-04 and M3-05 are, so far, the only feature tasks to flip their own
-  // item's flag (`session/index.ts`'s, `history/index.ts`'s, `plans/index.ts`'s,
-  // `memory/index.ts`'s and `todos/index.ts`'s own `available = true`) -- every item whose owning
-  // feature hasn't landed yet still starts false.
+  // M2-15, M3-02, M3-03, M3-04, M3-05 and M3-32 are, so far, the only feature tasks to flip their
+  // own item's flag (`session/index.ts`'s, `history/index.ts`'s, `plans/index.ts`'s,
+  // `memory/index.ts`'s, `todos/index.ts`'s and `analytics/index.ts`'s own `available = true`) --
+  // every item whose owning feature hasn't landed yet still starts false.
   it('every item without a landed feature yet starts unavailable', () => {
-    const landed = new Set(['sessions', 'history', 'plans', 'memory', 'todos', 'commands', 'skills', 'outputStyles', 'hooks', 'plugins', 'models', 'mcpServers', 'subAgents']);
+    const landed = new Set(['sessions', 'history', 'plans', 'memory', 'todos', 'commands', 'skills', 'outputStyles', 'hooks', 'plugins', 'models', 'mcpServers', 'subAgents', 'analytics']);
     const stillUnbuilt = navigationItems.filter((item) => !landed.has(item.id));
     expect(stillUnbuilt.every((item) => item.available === false)).toBe(true);
   });
@@ -128,5 +128,9 @@ describe('navigationItems (NavigationItemTests)', () => {
 
   it('subAgents is available now that M3-14 has built it', () => {
     expect(navigationItems.find((item) => item.id === 'subAgents')?.available).toBe(true);
+  });
+
+  it('analytics is available now that M3-32 has built it', () => {
+    expect(navigationItems.find((item) => item.id === 'analytics')?.available).toBe(true);
   });
 });

@@ -1,7 +1,10 @@
-<!-- Placeholder (task M2-06's stub rule, port-plan.md section 5.4): M3-31 replaces this
-     completely with the real Analytics screen. Renders an empty state only. -->
+<!-- Ported from AnalyticsDashboardView.swift (M3-32): this route component is a thin wrapper, the
+     same division TodosPage.vue/HistoryPage.vue already use between a routed page and its own
+     real content component. -->
+<script setup lang="ts">
+import AnalyticsDashboard from './AnalyticsDashboard.vue';
+</script>
+
 <template>
-  <div class="flex h-full items-center justify-center text-(--text-tertiary)">
-    <p>Analytics is not built yet.</p>
-  </div>
+  <AnalyticsDashboard />
 </template>
