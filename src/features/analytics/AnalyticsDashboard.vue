@@ -15,6 +15,7 @@ import { ipc, IpcError } from '@/ipc/client';
 import { useToastsStore } from '@/stores/toasts';
 import type { CsvKind } from '@/ipc/bindings';
 import { useAnalyticsStore } from './store';
+import { formatCost, formatLargeNumber } from './charts/formatters';
 import AppIcon from '@/components/AppIcon.vue';
 import StatCard from './components/StatCard.vue';
 import AnalyticsShimmer from './components/AnalyticsShimmer.vue';
@@ -27,19 +28,6 @@ const toastsStore = useToastsStore();
 
 onMounted(() => void store.load());
 
-// --- Formatters (AnalyticsFormatters.swift, analytics.md §4) -- also duplicated (small, pure) in
-// AnalyticsCharts.vue, which needs them too but must not statically import anything from this
-// eager chunk's own module graph. ---
-function formatLargeNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return String(n);
-}
-function formatCost(n: number): string {
-  if (n >= 1000) return `$${n.toFixed(0)}`;
-  if (n >= 100) return `$${n.toFixed(1)}`;
-  return `$${n.toFixed(2)}`;
-}
 function formatFirstSessionDate(iso: string | undefined): string {
   if (!iso) return 'Unknown';
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });

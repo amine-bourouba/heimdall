@@ -1,6 +1,8 @@
-// Direct-mount coverage for the chart-option builders, heatmap grid and cost table that M3-32
-// moved out of AnalyticsDashboard.vue into this lazy chunk (see this file's own header comment
-// for why). AnalyticsDashboard.spec.ts only reaches this component through `defineAsyncComponent`,
+// Direct-mount coverage for the lazy chart area M3-32 moved out of AnalyticsDashboard.vue (see
+// this file's own header comment for why). Since M3-33/M3-34, AnalyticsCharts.vue is itself a
+// thin composition root over `../charts/*.vue` + `./ContributionHeatmap.vue`; mounting it here
+// still exercises the real tree end to end. AnalyticsDashboard.spec.ts only reaches this
+// component through `defineAsyncComponent`,
 // which it stubs out entirely -- a real reproduction showed the dynamic `import()` that loader
 // fires never settles under Vitest's happy-dom + Vite SSR module runner (no error, no rejection),
 // even though the exact same import resolves immediately when awaited directly or mounted

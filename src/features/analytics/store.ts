@@ -145,6 +145,17 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       .sort((a, b) => b.cost - a.cost);
   });
 
+  // analytics.md §12.3: computed once, here, so every chart (M3-33) shares the identical sorted
+  // model-name set -- `colorForModel` looks a model up against this same array regardless of
+  // which chart is asking, which is what keeps one model's colour stable across all of them
+  // (the open question the Swift reference app's own per-chart re-slicing never resolved).
+  const allModelNames = computed<string[]>(() => {
+    const names = new Set<string>();
+    for (const e of costBreakdownEntries.value) names.add(e.model);
+    for (const e of tokenTimeSeriesData.value) names.add(e.model);
+    return [...names].sort();
+  });
+
   // analytics.md §3.4: Heimdall's own `StatsCache` DTO has no pre-computed `totalCostUSD`/
   // `totalInputTokens`/`totalOutputTokens` fields (confirmed directly in bindings.ts) -- those are
   // Swift-side computed properties on `StatsCache`, not raw JSON, so they're derived from
@@ -208,6 +219,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     tokenTimeSeriesData,
     heatmapData,
     costBreakdownEntries,
+    allModelNames,
     totalCost,
     hasCostData,
     totalTokens,
