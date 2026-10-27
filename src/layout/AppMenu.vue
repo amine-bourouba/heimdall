@@ -26,12 +26,19 @@ function select(action: AppAction) {
   isOpen.value = false;
   dispatch(action);
 }
+
+function onFocusOut(event: FocusEvent) {
+  const next = event.relatedTarget as Node | null;
+  if (!(event.currentTarget as HTMLElement).contains(next)) {
+    isOpen.value = false;
+  }
+}
 </script>
 
 <template>
   <div
     class="relative"
-    @focusout="isOpen = false"
+    @focusout="onFocusOut"
   >
     <button
       type="button"
