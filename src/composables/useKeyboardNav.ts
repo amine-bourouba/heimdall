@@ -51,6 +51,13 @@ export function useKeyboardNav(options: UseKeyboardNavOptions) {
 
   function onKeydown(event: KeyboardEvent) {
     if (options.isSuppressed?.()) return;
+    // A modal dialog owns the keyboard while focus is inside it. Without this, Return/arrows from
+    // a dialog's own button or select reached this handler too -- Return activated the highlighted
+    // sidebar item (navigating away right after a form saved; found by driving the real build,
+    // M3-47) and the unconditional `preventDefault` below stopped Return clicking a focused button
+    // and the arrows changing a <select> -- and Escape also dismissed an unrelated escape layer
+    // alongside the dialog's own close.
+    if (event.target instanceof Element && event.target.closest('[aria-modal="true"]')) return;
 
     if (event.key === 'Escape') {
       handleEscape();

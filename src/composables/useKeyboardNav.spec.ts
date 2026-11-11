@@ -139,3 +139,43 @@ describe('useKeyboardNav: sidebar arrow navigation and Enter', () => {
     expect(onSidebarActivate).not.toHaveBeenCalled();
   });
 });
+
+// Found by driving the real build (M3-47): a dialog's own Return/arrows/Escape also reached this
+// document-level handler. Keys whose target is inside an aria-modal dialog belong to the dialog.
+describe('useKeyboardNav: keys from inside an aria-modal dialog are left to the dialog', () => {
+  function fireFromModal(init: KeyboardEventInit, tag: 'button' | 'select' | 'input' = 'button') {
+    document.body.innerHTML = '<div aria-modal="true" role="dialog"><div><' + tag + '></' + tag + '></div></div>';
+    const target = document.querySelector(tag)!;
+    const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  it('Return does not activate the sidebar, and is not default-prevented (so a focused button can still be clicked)', () => {
+    const { onSidebarActivate } = mountWith();
+    const event = fireFromModal({ key: 'Enter' });
+    expect(onSidebarActivate).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('arrow keys do not move the sidebar and are not default-prevented (so a <select> can change)', () => {
+    const { sidebarIndex } = mountWith();
+    const event = fireFromModal({ key: 'ArrowDown' }, 'select');
+    expect(sidebarIndex.value).toBe(0);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('Escape does not dismiss an unrelated escape layer, nor blur the dialog field, alongside the dialog' + "'s own close", () => {
+    let dismissed = false;
+    mountWith({ escapeLayers: [{ isActive: () => true, dismiss: () => (dismissed = true) }] });
+    fireFromModal({ key: 'Escape' }, 'input');
+    expect(dismissed).toBe(false);
+  });
+
+  it('the same keys from outside any dialog still navigate (the guard is scoped to aria-modal)', () => {
+    const { onSidebarActivate } = mountWith();
+    document.body.innerHTML = '<div><button></button></div>';
+    document.querySelector('button')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(onSidebarActivate).toHaveBeenCalledTimes(1);
+  });
+});
