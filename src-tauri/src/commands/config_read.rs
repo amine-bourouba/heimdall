@@ -127,6 +127,13 @@ fn agent_summary(a: &SubAgent) -> ConfigItemSummary {
     if !a.tools.is_empty() {
         meta.insert("tools".into(), a.tools.join(","));
     }
+    // The editor needs it to show (and so to send back) an agent's memory setting; unlike
+    // `color` above this is the lowercase wire value `AgentInput.memory` takes, not a Debug name.
+    if let Some(memory) = a.memory
+        && let Ok(serde_json::Value::String(raw)) = serde_json::to_value(memory)
+    {
+        meta.insert("memory".into(), raw);
+    }
     let config_ref = a.config_ref.clone().unwrap_or_else(|| ConfigRef {
         kind: ConfigKind::Agent,
         project: None,
@@ -554,6 +561,18 @@ mod tests {
         };
         let item = get_config_item_inner(&app, &app.state::<AppState>(), config_ref).unwrap();
         assert_eq!((item.scope, item.display_path.as_str()), (ConfigItemScope::BuiltIn, ""));
+    }
+
+    // The agent editor can only show -- and so send back -- a memory setting the summary carries.
+    #[test]
+    fn agent_summary_exposes_memory_as_its_lowercase_wire_value_and_omits_it_when_unset() {
+        use heimdall_core::models::config::sub_agent::AgentMemory;
+        let mut agent = SubAgent::built_in().remove(0);
+        assert!(!agent_summary(&agent).meta.contains_key("memory"));
+        for (memory, wire) in [(AgentMemory::User, "user"), (AgentMemory::None, "none")] {
+            agent.memory = Some(memory);
+            assert_eq!(agent_summary(&agent).meta.get("memory").map(String::as_str), Some(wire));
+        }
     }
 
     #[test]

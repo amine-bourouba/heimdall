@@ -21,7 +21,7 @@ use crate::models::config::scope::{ConfigKind, ConfigRef};
 use crate::models::config::sub_agent::AgentInput;
 use crate::paths::ensure_within_root;
 
-use super::super::read::{config_ref, item_path, kind_dir};
+use super::super::read::{agents::modelled_fields, config_ref, frontmatter, item_path, kind_dir};
 
 fn ensure_directory(dir: &Path) -> Result<()> {
     std::fs::create_dir_all(dir).map_err(|e| AppError::from_io(&e, dir))
@@ -49,26 +49,138 @@ fn unique_slug(claude_dir: &Path, kind: ConfigKind, base: &str) -> Result<String
     }
 }
 
-fn agent_frontmatter(input: &AgentInput) -> String {
-    let mut fm = String::from("---\n");
-    fm += &format!("name: {}\n", input.name);
-    fm += &format!("description: {}\n", input.description);
-    if !input.tools.is_empty() {
-        fm += &format!("tools: {}\n", input.tools.join(", "));
-    }
-    if let Some(model) = &input.model
-        && !model.is_empty()
+/// AgentColor/AgentMemory's own Serialize (camelCase of a single-word variant) is exactly the
+/// lowercase raw value the frontmatter and their `from_raw`/`Deserialize` already agree on --
+/// reused rather than a second hand-written lowercasing.
+fn raw_value<T: serde::Serialize>(value: &T) -> String {
+    serde_json::to_value(value)
+        .expect("a unit-variant enum always serialises")
+        .as_str()
+        .expect("a unit-variant enum serialises to a string")
+        .to_string()
+}
+
+/// The front-matter keys the agent editor models; every other top-level key of an existing file
+/// is carried over verbatim by a save (see [`frontmatter_blocks`]).
+const EDITOR_KEYS: [&str; 6] = ["name", "description", "tools", "model", "color", "memory"];
+
+/// One top-level front-matter key and everything under it: its own line plus the continuation
+/// lines (indented lines, `- ` list items, blank lines, comments) up to the next key. `key` is
+/// `None` only for stray text before the first key. The reader (`read::frontmatter`) is
+/// deliberately not full YAML -- a `skills:` list's `- a` lines are invisible to it -- so a writer
+/// that must keep what it does not understand has to work on raw lines too.
+struct Block {
+    key: Option<String>,
+    text: String,
+}
+
+fn frontmatter_blocks(text: &str) -> Vec<Block> {
+    let Some(after_opening) = text.trim().strip_prefix("---") else {
+        return Vec::new();
+    };
+    let Some(close) = after_opening.find("\n---") else {
+        return Vec::new();
+    };
+    let mut blocks: Vec<Block> = Vec::new();
+    for line in after_opening[..close]
+        .split('\n')
+        .map(|l| l.strip_suffix('\r').unwrap_or(l))
     {
-        fm += &format!("model: {model}\n");
+        let is_key_line = !line.starts_with(char::is_whitespace) && !line.starts_with(['#', '-']) && line.contains(':');
+        if is_key_line {
+            let key = line.split_once(':').map(|(k, _)| k.trim().to_string());
+            blocks.push(Block {
+                key,
+                text: line.to_string(),
+            });
+        } else if let Some(last) = blocks.last_mut() {
+            last.text.push('\n');
+            last.text.push_str(line);
+        } else if !line.trim().is_empty() {
+            blocks.push(Block {
+                key: None,
+                text: line.to_string(),
+            });
+        }
     }
-    if let Some(color) = input.color {
-        // AgentColor's own Serialize (camelCase of a single-word variant) is exactly the
-        // lowercase raw value the frontmatter and `AgentColor::from_raw` already agree on --
-        // reused rather than a second hand-written lowercasing.
-        fm += &format!("color: {}\n", serde_json::to_value(color).unwrap().as_str().unwrap());
+    for block in &mut blocks {
+        block.text.truncate(block.text.trim_end().len());
     }
-    if let Some(memory) = input.memory {
-        fm += &format!("memory: {}\n", serde_json::to_value(memory).unwrap().as_str().unwrap());
+    blocks
+}
+
+/// Builds the file text. `existing` is the file being edited (the original, which a rename also
+/// writes over); `None` for a new agent. A save must not erase what the editor cannot show or
+/// did not change, so, against `existing`:
+///
+/// - every key the editor does not model (`skills`, `permissionMode`, `maxTurns`, ... -- Claude
+///   Code's agent files carry many) is kept verbatim, with its continuation lines;
+/// - a modelled key keeps its original text when the submitted value equals what the reader showed
+///   the user for it (`read::agents::modelled_fields`, the same derivation). That is what leaves
+///   `color: yellow`, `memory: project`, a `tools:` YAML list and a folded `description: >` alone
+///   when the user only edits something else, since the editor's own enums cannot represent them.
+///
+/// Modelled keys are emitted first, in a fixed order; preserved keys follow, in file order.
+fn agent_frontmatter(input: &AgentInput, existing: Option<&str>) -> String {
+    let blocks = existing.map(frontmatter_blocks).unwrap_or_default();
+    let before = existing.map(|text| modelled_fields(&frontmatter::parse(text)));
+    let model = input.model.as_deref().filter(|m| !m.is_empty());
+
+    // The original text of `key` if the user left it unchanged, else the freshly formatted line.
+    let field = |key: &str, unchanged: bool, fresh: Option<String>| -> Option<String> {
+        if unchanged && let Some(block) = blocks.iter().find(|b| b.key.as_deref() == Some(key)) {
+            return Some(block.text.clone());
+        }
+        fresh
+    };
+    let lines = [
+        field(
+            "name",
+            before
+                .as_ref()
+                .is_some_and(|b| b.name.as_deref() == Some(input.name.as_str())),
+            Some(format!("name: {}", input.name)),
+        ),
+        field(
+            "description",
+            before
+                .as_ref()
+                .is_some_and(|b| b.description.as_deref() == Some(input.description.as_str())),
+            Some(format!("description: {}", input.description)),
+        ),
+        field(
+            "tools",
+            before.as_ref().is_some_and(|b| b.tools == input.tools),
+            (!input.tools.is_empty()).then(|| format!("tools: {}", input.tools.join(", "))),
+        ),
+        field(
+            "model",
+            before.as_ref().is_some_and(|b| b.model.as_deref() == model),
+            model.map(|m| format!("model: {m}")),
+        ),
+        field(
+            "color",
+            before.as_ref().is_some_and(|b| b.color == input.color),
+            input.color.map(|c| format!("color: {}", raw_value(&c))),
+        ),
+        field(
+            "memory",
+            before.as_ref().is_some_and(|b| b.memory == input.memory),
+            input.memory.map(|m| format!("memory: {}", raw_value(&m))),
+        ),
+    ];
+
+    let mut fm = String::from("---\n");
+    for line in lines.into_iter().flatten() {
+        fm += &line;
+        fm.push('\n');
+    }
+    for block in blocks
+        .iter()
+        .filter(|b| b.key.as_deref().is_none_or(|k| !EDITOR_KEYS.contains(&k)))
+    {
+        fm += &block.text;
+        fm.push('\n');
     }
     fm += "---\n";
     format!("{fm}\n{}", input.prompt.as_deref().unwrap_or(""))
@@ -76,10 +188,25 @@ fn agent_frontmatter(input: &AgentInput) -> String {
 
 /// Renaming (a new slug derived from `input.name` differs from `original_slug`) writes the new
 /// file first, then deletes the old one -- matching Swift's own order (`saveAgent`'s own comment:
-/// "Delete old file if renamed") so a failed write never loses the old content.
+/// "Delete old file if renamed") so a failed write never loses the old content. Whatever the old
+/// file carries that the editor does not model moves to the new one with it (see
+/// [`agent_frontmatter`]); a file that exists but cannot be read is an error, never a silent
+/// fall-back to writing a lossy replacement.
 pub fn save_agent(claude_dir: &Path, input: &AgentInput, original_slug: Option<&str>) -> Result<WriteOutcome> {
     let dir = kind_dir(claude_dir, ConfigKind::Agent);
     ensure_directory(&dir)?;
+
+    let existing = match original_slug {
+        Some(slug) => {
+            let old_path = item_path(claude_dir, ConfigKind::Agent, slug)?;
+            match std::fs::read_to_string(&old_path) {
+                Ok(text) => Some(text),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+                Err(e) => return Err(AppError::from_io(&e, &old_path)),
+            }
+        }
+        None => None,
+    };
 
     let desired_slug = agent_slug(&input.name);
     let target_slug = match original_slug {
@@ -87,7 +214,7 @@ pub fn save_agent(claude_dir: &Path, input: &AgentInput, original_slug: Option<&
         _ => unique_slug(claude_dir, ConfigKind::Agent, &desired_slug)?,
     };
     let path = item_path(claude_dir, ConfigKind::Agent, &target_slug)?;
-    std::fs::write(&path, agent_frontmatter(input)).map_err(|e| AppError::from_io(&e, &path))?;
+    std::fs::write(&path, agent_frontmatter(input, existing.as_deref())).map_err(|e| AppError::from_io(&e, &path))?;
 
     if let Some(original_slug) = original_slug
         && original_slug != target_slug
@@ -288,6 +415,176 @@ mod tests {
         assert!(!d.path().join("agents").join("will-be-renamed.md").exists());
         assert!(d.path().join("agents").join("keep-this-one.md").exists());
         assert!(d.path().join("agents").join("keep-this-one-2.md").exists());
+    }
+
+    // MARK: - save_agent keeps what the editor cannot show or did not change
+
+    fn write_agent(d: &tempfile::TempDir, slug: &str, text: &str) -> std::path::PathBuf {
+        let dir = d.path().join("agents");
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(format!("{slug}.md"));
+        std::fs::write(&path, text).unwrap();
+        path
+    }
+
+    /// What the editor sends back for an agent whose colour and memory it cannot represent: the
+    /// reader showed `None` for both, so that is what comes back.
+    fn input_as_shown(name: &str, description: &str) -> AgentInput {
+        AgentInput {
+            description: description.to_string(),
+            color: None,
+            memory: None,
+            ..input(name)
+        }
+    }
+
+    const POWER_USER_AGENT: &str = "---\nname: Reviewer\ndescription: A test agent\ntools: Read, Grep\nmodel: sonnet\ncolor: yellow\nmemory: project\nskills:\n  - code-review\n- security\npermissionMode: plan\nmaxTurns: 12\n# kept with the block above\n---\n\nBe helpful.";
+
+    #[test]
+    fn editing_keeps_front_matter_keys_the_editor_does_not_model() {
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", POWER_USER_AGENT);
+        save_agent(
+            d.path(),
+            &input_as_shown("Reviewer", "Updated description"),
+            Some("reviewer"),
+        )
+        .unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(text.contains("description: Updated description"));
+        assert!(
+            text.contains("skills:\n  - code-review\n- security\n"),
+            "a YAML list under an unmodelled key must survive, both indented and column-0 items: {text}"
+        );
+        assert!(text.contains("permissionMode: plan\n"));
+        assert!(text.contains("maxTurns: 12\n# kept with the block above\n"));
+    }
+
+    #[test]
+    fn a_colour_and_memory_the_editor_cannot_represent_survive_an_edit_that_leaves_them_alone() {
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", POWER_USER_AGENT);
+        save_agent(
+            d.path(),
+            &input_as_shown("Reviewer", "Updated description"),
+            Some("reviewer"),
+        )
+        .unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(text.contains("color: yellow\n"), "{text}");
+        assert!(text.contains("memory: project\n"), "{text}");
+    }
+
+    #[test]
+    fn choosing_a_value_replaces_the_one_the_editor_could_not_represent() {
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", POWER_USER_AGENT);
+        let mut chosen = input_as_shown("Reviewer", "A test agent");
+        chosen.color = Some(AgentColor::Blue);
+        chosen.memory = Some(AgentMemory::None);
+        save_agent(d.path(), &chosen, Some("reviewer")).unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(text.contains("color: blue\n") && !text.contains("yellow"), "{text}");
+        assert!(text.contains("memory: none\n") && !text.contains("project"), "{text}");
+        assert!(
+            text.contains("permissionMode: plan\n"),
+            "unmodelled keys are still kept: {text}"
+        );
+    }
+
+    #[test]
+    fn a_tools_list_written_as_yaml_is_left_alone_unless_the_user_picks_tools() {
+        let yaml_tools =
+            "---\nname: Reviewer\ndescription: A test agent\ntools:\n  - Read\n  - Grep\n---\n\nBe helpful.";
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", yaml_tools);
+        // The reader cannot parse a YAML list, so it showed no tools -- and the editor sends none.
+        let mut untouched = input_as_shown("Reviewer", "Updated");
+        untouched.tools = Vec::new();
+        save_agent(d.path(), &untouched, Some("reviewer")).unwrap();
+        let kept = std::fs::read_to_string(&path).unwrap();
+        assert!(
+            kept.contains("tools:\n  - Read\n  - Grep\n"),
+            "an unparsed tools list must not be dropped: {kept}"
+        );
+
+        let mut picked = input_as_shown("Reviewer", "Updated");
+        picked.tools = vec!["Bash".to_string()];
+        save_agent(d.path(), &picked, Some("reviewer")).unwrap();
+        let replaced = std::fs::read_to_string(&path).unwrap();
+        assert!(
+            replaced.contains("tools: Bash\n") && !replaced.contains("- Read"),
+            "{replaced}"
+        );
+    }
+
+    #[test]
+    fn a_folded_description_keeps_its_formatting_when_it_is_not_edited() {
+        let folded = "---\nname: Reviewer\ndescription: >\n  Use when reviewing\n  a change.\n---\n\nBe helpful.";
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", folded);
+        // The reader folds the block to one line; sending that back unchanged is "not edited".
+        let mut shown = input_as_shown("Reviewer", "Use when reviewing a change.");
+        shown.prompt = Some("A different prompt.".to_string());
+        save_agent(d.path(), &shown, Some("reviewer")).unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(
+            text.contains("description: >\n  Use when reviewing\n  a change.\n"),
+            "{text}"
+        );
+        assert!(text.ends_with("A different prompt."));
+    }
+
+    #[test]
+    fn renaming_carries_the_unmodelled_keys_to_the_new_file() {
+        let d = tempfile::tempdir().unwrap();
+        write_agent(&d, "reviewer", POWER_USER_AGENT);
+        save_agent(
+            d.path(),
+            &input_as_shown("Code Reviewer", "A test agent"),
+            Some("reviewer"),
+        )
+        .unwrap();
+        assert!(!d.path().join("agents").join("reviewer.md").exists());
+        let text = std::fs::read_to_string(d.path().join("agents").join("code-reviewer.md")).unwrap();
+        assert!(
+            text.contains("name: Code Reviewer")
+                && text.contains("permissionMode: plan")
+                && text.contains("color: yellow")
+        );
+    }
+
+    #[test]
+    fn crlf_files_keep_their_unmodelled_keys_too() {
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(
+            &d,
+            "reviewer",
+            "---\r\nname: Reviewer\r\ndescription: A test agent\r\nskills:\r\n  - x\r\n---\r\n\r\nBe helpful.",
+        );
+        save_agent(d.path(), &input_as_shown("Reviewer", "Updated"), Some("reviewer")).unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(text.contains("skills:\n  - x\n"), "{text}");
+    }
+
+    #[test]
+    fn an_original_that_cannot_be_read_is_an_error_and_is_not_overwritten() {
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", "");
+        std::fs::write(&path, [0xff, 0xfe, 0xfd]).unwrap(); // not UTF-8
+        assert!(save_agent(d.path(), &input_as_shown("Reviewer", "Updated"), Some("reviewer")).is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), [0xff, 0xfe, 0xfd]);
+    }
+
+    #[test]
+    fn a_new_agent_has_nothing_to_preserve() {
+        let d = tempfile::tempdir().unwrap();
+        save_agent(d.path(), &input("Fresh"), None).unwrap();
+        let text = std::fs::read_to_string(d.path().join("agents").join("fresh.md")).unwrap();
+        assert_eq!(
+            text,
+            "---\nname: Fresh\ndescription: A test agent\ntools: Read, Grep\nmodel: sonnet\ncolor: blue\nmemory: user\n---\n\nBe helpful."
+        );
     }
 
     // MARK: - create_template, AC2

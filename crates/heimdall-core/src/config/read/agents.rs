@@ -20,6 +20,42 @@ pub fn load(claude_home: &Path) -> Loaded<Vec<SubAgent>> {
     )
 }
 
+/// The fields the agent editor models, derived from a parsed front matter. Shared with
+/// `write::files::save_agent`, which keeps a field's original text byte for byte whenever the
+/// submitted value equals what this returns for the file being edited -- i.e. whenever the user
+/// did not change what they were shown. That is what lets a save leave alone a value the editor
+/// cannot represent (`color: yellow`, `memory: project`, a `tools:` written as a YAML list, a
+/// folded `description: >`) instead of erasing it, and it holds by construction because it is the
+/// very derivation `load_custom` uses to build what the user sees.
+pub(crate) struct ModelledFields {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub tools: Vec<String>,
+    pub model: Option<String>,
+    pub color: Option<AgentColor>,
+    pub memory: Option<AgentMemory>,
+}
+
+pub(crate) fn modelled_fields(fm: &frontmatter::Frontmatter) -> ModelledFields {
+    let meta = |k: &str| fm.metadata.get(k).cloned();
+    ModelledFields {
+        name: meta("name"),
+        description: meta("description"),
+        tools: meta("tools")
+            .map(|t| {
+                t.split(',')
+                    .map(str::trim)
+                    .filter(|t| !t.is_empty())
+                    .map(String::from)
+                    .collect()
+            })
+            .unwrap_or_default(),
+        model: meta("model"),
+        color: meta("color").and_then(|c| AgentColor::from_raw(&c)),
+        memory: meta("memory").and_then(|m| serde_json::from_value::<AgentMemory>(Value::String(m)).ok()),
+    }
+}
+
 /// Custom agents only. Tools are the comma-separated `tools` list; unknown colours and memory
 /// settings are left unset.
 pub fn load_custom(claude_home: &Path) -> Loaded<Vec<SubAgent>> {
@@ -31,27 +67,18 @@ pub fn load_custom(claude_home: &Path) -> Loaded<Vec<SubAgent>> {
             continue;
         };
         let fm = frontmatter::parse(&text);
-        let meta = |k: &str| fm.metadata.get(k).cloned();
-        let tools = meta("tools")
-            .map(|t| {
-                t.split(',')
-                    .map(str::trim)
-                    .filter(|t| !t.is_empty())
-                    .map(String::from)
-                    .collect()
-            })
-            .unwrap_or_default();
+        let fields = modelled_fields(&fm);
         items.push(SubAgent {
             id: format!("custom-{stem}"),
-            name: meta("name").unwrap_or_else(|| stem.clone()),
+            name: fields.name.unwrap_or_else(|| stem.clone()),
             icon: "person.crop.circle.badge.plus".into(),
-            description: meta("description").unwrap_or_default(),
-            tools,
-            model: meta("model"),
-            color: meta("color").and_then(|c| AgentColor::from_raw(&c)),
+            description: fields.description.unwrap_or_default(),
+            tools: fields.tools,
+            model: fields.model,
+            color: fields.color,
             prompt: (!fm.body.is_empty()).then(|| fm.body.clone()),
             file_path: Some(path.display().to_string()),
-            memory: meta("memory").and_then(|m| serde_json::from_value::<AgentMemory>(Value::String(m)).ok()),
+            memory: fields.memory,
             scope: AgentScope::Global,
             config_ref: Some(config_ref(ConfigKind::Agent, &None, &stem)),
         });
