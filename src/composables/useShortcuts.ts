@@ -20,7 +20,7 @@ import { useThemeStore } from '@/stores/theme';
 
 /** macOS's Mod is metaKey (⌘); everywhere else it's ctrlKey (docs/parity-matrix.md section J:
  * "On Windows and Linux, ⌘ becomes Ctrl everywhere"). */
-function isMod<R extends KeyboardEvent>(event: R, isMac: boolean): boolean {
+export function isMod<R extends KeyboardEvent>(event: R, isMac: boolean): boolean {
   return isMac ? event.metaKey : event.ctrlKey;
 }
 
