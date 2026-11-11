@@ -5,7 +5,7 @@
 
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { ipc } from '@/ipc/client';
+import { ipc, IpcError } from '@/ipc/client';
 
 export type ToastStyle = 'success' | 'error' | 'info';
 
@@ -50,6 +50,13 @@ export const useToastsStore = defineStore('toasts', () => {
     if (queue.value.length === 1) scheduleAutoDismiss(toast);
   }
 
+  /** A failed command, shown instead of vanishing (ADR 0005: errors are not swallowed). An
+   * `IpcError`'s own message names the real cause (a busy file, a settings.json that does not
+   * parse, ...); anything else gets the caller's plain `fallback`, never a raw exception string. */
+  function showError(error: unknown, fallback = 'Something went wrong') {
+    show(error instanceof IpcError ? error.message : fallback, { style: 'error' });
+  }
+
   function dismissCurrent() {
     clearTimer();
     if (queue.value.length === 0) return;
@@ -67,5 +74,5 @@ export const useToastsStore = defineStore('toasts', () => {
     dismissCurrent();
   }
 
-  return { queue, current, show, dismissCurrent, clickCurrent };
+  return { queue, current, show, showError, dismissCurrent, clickCurrent };
 });

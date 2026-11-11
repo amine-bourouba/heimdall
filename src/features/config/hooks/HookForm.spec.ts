@@ -20,6 +20,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HookEntry, ProjectContext, TargetOs } from '@/ipc/bindings';
 import { usePlatformStore } from '@/stores/platform';
+import { useToastsStore } from '@/stores/toasts';
 import { useConfigStore } from '../store';
 import HookForm from './HookForm.vue';
 
@@ -32,7 +33,7 @@ let savedCalls: unknown[] = [];
 
 interface MountOptions {
   editingEntry?: HookEntry | null;
-  outcome?: 'written' | 'cancelled';
+  outcome?: 'written' | 'cancelled' | 'error';
   selectedProject?: ProjectContext | null;
   os?: TargetOs;
 }
@@ -45,6 +46,7 @@ function mountForm({ editingEntry = null, outcome = 'written', selectedProject =
   mockIPC((cmd, args) => {
     if (cmd === 'save_hook') {
       savedCalls.push(args);
+      if (outcome === 'error') throw { kind: 'busy', message: 'settings.json is in use by another program', path: null };
       return outcome;
     }
     throw new Error(`unexpected command: ${cmd}`);
@@ -310,6 +312,23 @@ describe('HookForm: save', () => {
 
     expect(onSaved).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('a rejected save shows its real cause as an error toast and keeps the form open with the input intact, and can be retried', async () => {
+    const { onClose, onSaved } = mountForm({ outcome: 'error' });
+    const input = body().find('[placeholder="e.g. .claude/hooks/check.sh"]');
+    await input.setValue('echo hi');
+    await createButton().trigger('click');
+    await flushPromises();
+
+    expect(useToastsStore().current).toMatchObject({ message: 'settings.json is in use by another program', style: 'error' });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
+    expect((input.element as HTMLInputElement).value).toBe('echo hi');
+
+    await createButton().trigger('click');
+    await flushPromises();
+    expect(savedCalls).toHaveLength(2);
   });
 
   it('can be retried after a declined confirmation (the in-flight guard is released)', async () => {

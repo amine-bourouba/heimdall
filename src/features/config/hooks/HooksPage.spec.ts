@@ -11,6 +11,7 @@ import { mockIPC } from '@tauri-apps/api/mocks';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HookEntry, ProjectContext } from '@/ipc/bindings';
+import { useToastsStore } from '@/stores/toasts';
 import { useConfigStore } from '../store';
 import HooksPage from './HooksPage.vue';
 
@@ -262,6 +263,54 @@ describe('HooksPage: global and project entries side by side', () => {
     const wrapper = await mountPage(listBoth, project);
     await wrapper.findAll('button[title="Edit hook"]')[0].trigger('click');
     expect(body().find('[role="dialog"]').text()).toContain('Global');
+  });
+});
+
+// No global error handler exists, so a rejected command used to vanish -- including the realistic
+// ones (a busy file, a settings.json that does not parse, which ADR 0009 refuses to overwrite).
+describe('HooksPage: failed commands are shown, not swallowed', () => {
+  const busy = () => {
+    throw { kind: 'busy', message: 'settings.json is in use by another program', path: null };
+  };
+  const expectedToast = { message: 'settings.json is in use by another program', style: 'error' };
+
+  it('a failed delete shows the cause', async () => {
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
+    const wrapper = await mountPage((cmd) => {
+      if (cmd === 'list_hooks') return { value: [makeEntry()], skipped: 0 };
+      if (cmd === 'delete_hook') return busy();
+    });
+    await wrapper.find('button[title="Delete hook"]').trigger('click');
+    await flushPromises();
+    expect(useToastsStore().current).toMatchObject(expectedToast);
+  });
+
+  it('a failed import shows the cause', async () => {
+    const wrapper = await mountPage((cmd) => {
+      if (cmd === 'list_hooks') return { value: [], skipped: 0 };
+      if (cmd === 'import_hooks') return busy();
+    });
+    await wrapper.find('button[title="Import JSON"]').trigger('click');
+    await flushPromises();
+    expect(useToastsStore().current).toMatchObject(expectedToast);
+  });
+
+  it('a failed export shows the cause', async () => {
+    const wrapper = await mountPage((cmd) => {
+      if (cmd === 'list_hooks') return { value: [], skipped: 0 };
+      if (cmd === 'export_hooks') return busy();
+    });
+    await wrapper.find('button[title="Export JSON"]').trigger('click');
+    await flushPromises();
+    expect(useToastsStore().current).toMatchObject(expectedToast);
+  });
+
+  it('a failed load shows the cause and does not leave the skeleton up forever', async () => {
+    const wrapper = await mountPage((cmd) => {
+      if (cmd === 'list_hooks') return busy();
+    });
+    expect(useToastsStore().current).toMatchObject(expectedToast);
+    expect(wrapper.text()).toContain('No hooks found');
   });
 });
 

@@ -29,6 +29,7 @@
 import { computed, ref, watch } from 'vue';
 import { ipc } from '@/ipc/client';
 import { fuzzyMatch } from '@/lib/fuzzyMatch';
+import { useToastsStore } from '@/stores/toasts';
 import { useConfigStore } from '../store';
 import ConfigScreenHeader from '../shared/ConfigScreenHeader.vue';
 import ConfigLayoutToolbar from '../shared/ConfigLayoutToolbar.vue';
@@ -41,6 +42,7 @@ import type { HookEntry } from '@/ipc/bindings';
 
 const SCREEN_ID = 'hooks';
 const configStore = useConfigStore();
+const toastsStore = useToastsStore();
 
 const isFormOpen = ref(false);
 const editingEntry = ref<HookEntry | null>(null);
@@ -61,12 +63,20 @@ async function deleteEntry(entry: HookEntry) {
   const handlerNote = entry.handlers.length > 1 ? ` and all ${entry.handlers.length} of its handlers` : '';
   if (!window.confirm(`Delete this ${entry.event} hook (${label})${handlerNote}?`)) return;
   const project = entry.scope === 'project' ? configStore.selectedProject : null;
-  const outcome = await ipc.deleteHook(project, entry.event, entry.matcherGroupIndex);
-  if (outcome === 'written') await load();
+  try {
+    const outcome = await ipc.deleteHook(project, entry.event, entry.matcherGroupIndex);
+    if (outcome === 'written') await load();
+  } catch (error) {
+    toastsStore.showError(error, 'Could not delete the hook');
+  }
 }
 async function importJson() {
-  const outcome = await ipc.importHooks(configStore.selectedProject);
-  if (outcome === 'written') await load();
+  try {
+    const outcome = await ipc.importHooks(configStore.selectedProject);
+    if (outcome === 'written') await load();
+  } catch (error) {
+    toastsStore.showError(error, 'Could not import hooks');
+  }
 }
 
 const entries = ref<HookEntry[]>([]);
@@ -76,8 +86,13 @@ const exported = ref(false);
 
 async function load() {
   isLoading.value = true;
-  entries.value = (await ipc.listHooks(configStore.selectedProject)).value;
-  isLoading.value = false;
+  try {
+    entries.value = (await ipc.listHooks(configStore.selectedProject)).value;
+  } catch (error) {
+    toastsStore.showError(error, 'Could not load hooks');
+  } finally {
+    isLoading.value = false;
+  }
 }
 watch(() => configStore.selectedProject, load, { deep: true, immediate: true });
 
@@ -110,10 +125,14 @@ const groups = computed<{ event: string; entries: HookEntry[] }[]>(() => {
 });
 
 async function exportJson() {
-  const outcome = await ipc.exportHooks(configStore.selectedProject);
-  if (outcome !== 'written') return;
-  exported.value = true;
-  setTimeout(() => (exported.value = false), 1500);
+  try {
+    const outcome = await ipc.exportHooks(configStore.selectedProject);
+    if (outcome !== 'written') return;
+    exported.value = true;
+    setTimeout(() => (exported.value = false), 1500);
+  } catch (error) {
+    toastsStore.showError(error, 'Could not export hooks');
+  }
 }
 
 const emptyMessage = computed(() => (filterQuery.value ? `No hooks match "${filterQuery.value}"` : 'No hooks found'));

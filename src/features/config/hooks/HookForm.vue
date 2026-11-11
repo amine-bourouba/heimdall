@@ -153,6 +153,10 @@ async function save() {
     toastsStore.show(isEditing.value ? 'Hook updated' : 'Hook created');
     props.onSaved();
     props.onClose();
+  } catch (error) {
+    // A busy file, a settings.json that does not parse (ADR 0009 refuses to overwrite it), a bad
+    // project context ... -- shown, and the form stays open so nothing typed is lost.
+    toastsStore.showError(error, 'Could not save the hook');
   } finally {
     isSaving.value = false;
   }

@@ -1,6 +1,7 @@
 import { mockIPC } from '@tauri-apps/api/mocks';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { IpcError } from '@/ipc/client';
 import { useToastsStore } from './toasts';
 
 beforeEach(() => {
@@ -93,5 +94,25 @@ describe('useToastsStore', () => {
   it('clickCurrent on an empty queue is a no-op', async () => {
     const store = useToastsStore();
     await expect(store.clickCurrent()).resolves.toBeUndefined();
+  });
+});
+
+describe('useToastsStore.showError', () => {
+  it("shows an IpcError's own message as an error toast (it names the real cause)", () => {
+    const store = useToastsStore();
+    store.showError(new IpcError({ kind: 'busy', message: 'settings.json is in use by another program', path: null }));
+    expect(store.current).toMatchObject({ message: 'settings.json is in use by another program', style: 'error' });
+  });
+
+  it('never shows a raw exception string: anything that is not an IpcError gets the fallback the caller passed', () => {
+    const store = useToastsStore();
+    store.showError(new TypeError("Cannot read properties of undefined (reading 'map')"), 'Could not save the hook');
+    expect(store.current).toMatchObject({ message: 'Could not save the hook', style: 'error' });
+  });
+
+  it('has a generic default so a caller that passes no fallback still says something', () => {
+    const store = useToastsStore();
+    store.showError('not even an Error');
+    expect(store.current?.message).toBe('Something went wrong');
   });
 });
