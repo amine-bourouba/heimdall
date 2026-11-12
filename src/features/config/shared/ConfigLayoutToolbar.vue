@@ -10,12 +10,17 @@ import ConfigProjectPicker from './ConfigProjectPicker.vue';
 import { useConfigStore } from '../store';
 
 const filterQuery = defineModel<string>('filterQuery', { required: true });
-defineProps<{
-  screenId: string;
-  filterPlaceholder: string;
-  showProjectPicker?: boolean;
-  showAddButton?: boolean;
-}>();
+// `addLabel` names what the (icon-only) add button creates: "New command", not just "Add".
+withDefaults(
+  defineProps<{
+    screenId: string;
+    filterPlaceholder: string;
+    showProjectPicker?: boolean;
+    showAddButton?: boolean;
+    addLabel?: string;
+  }>(),
+  { addLabel: 'Add' },
+);
 defineEmits<{ add: [] }>();
 
 const configStore = useConfigStore();
@@ -31,31 +36,35 @@ const configStore = useConfigStore();
       class="w-50 bg-(--bg-elevated)"
     />
 
-    <div class="flex-1" />
+    <!-- One group, pushed right with ml-auto rather than a flex-1 spacer: when the picker and the
+         filter fill the row (900px, the minimum window) the buttons wrap to a second row, and a
+         spacer collapses there, leaving them at the left. -->
+    <div class="ml-auto flex items-center gap-(--spacing-sm)">
+      <button
+        type="button"
+        :title="configStore.layoutFor(screenId) === 'grid' ? 'Switch to list' : 'Switch to grid'"
+        class="rounded-sm p-(--spacing-xs) text-(--text-secondary)"
+        @click="configStore.toggleLayout(screenId)"
+      >
+        <AppIcon
+          :name="configStore.layoutFor(screenId) === 'grid' ? 'square.grid.2x2' : 'list.bullet'"
+          size="sm"
+        />
+      </button>
 
-    <button
-      type="button"
-      :title="configStore.layoutFor(screenId) === 'grid' ? 'Switch to list' : 'Switch to grid'"
-      class="rounded-sm p-(--spacing-xs) text-(--text-secondary)"
-      @click="configStore.toggleLayout(screenId)"
-    >
-      <AppIcon
-        :name="configStore.layoutFor(screenId) === 'grid' ? 'square.grid.2x2' : 'list.bullet'"
-        size="sm"
-      />
-    </button>
-
-    <button
-      v-if="showAddButton"
-      type="button"
-      title="Add"
-      class="rounded-sm border border-(--accent)/30 bg-(--accent-dim) p-(--spacing-xs) text-(--accent)"
-      @click="$emit('add')"
-    >
-      <AppIcon
-        name="plus"
-        size="sm"
-      />
-    </button>
+      <button
+        v-if="showAddButton"
+        type="button"
+        :title="addLabel"
+        :aria-label="addLabel"
+        class="rounded-sm border border-(--accent)/30 bg-(--accent-dim) p-(--spacing-xs) text-(--accent)"
+        @click="$emit('add')"
+      >
+        <AppIcon
+          name="plus"
+          size="sm"
+        />
+      </button>
+    </div>
   </div>
 </template>

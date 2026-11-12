@@ -1,5 +1,6 @@
-// M3-12's own AC: "Copy /name works for commands (CommandsListView.swift:297-300)." / "No
-// create, edit or delete controls yet (M3-50)."
+// M3-12's own AC: "Copy /name works for commands (CommandsListView.swift:297-300)." The create and
+// delete controls M3-12 left out arrived with M3-50; their wiring is covered, for all three
+// template screens at once, by shared/configWritePages.spec.ts.
 import { flushPromises, mount } from '@vue/test-utils';
 import { mockIPC } from '@tauri-apps/api/mocks';
 import { createPinia, setActivePinia } from 'pinia';
@@ -86,12 +87,12 @@ describe('CommandsPage: list', () => {
     expect(wrapper.text()).toContain('No commands found');
   });
 
-  it('renders no Add button (AC: no create/edit/delete controls yet)', async () => {
+  it('has an Add button that says what it adds (M3-50)', async () => {
     const { wrapper } = await mountPage((cmd) => {
       if (cmd === 'list_config_items') return { value: [makeSummary()], skipped: 0 };
       if (cmd === 'list_projects') return { value: [], skipped: 0 };
     });
-    expect(wrapper.find('button[title="Add"]').exists()).toBe(false);
+    expect(wrapper.find('button[title="New command"]').exists()).toBe(true);
   });
 });
 

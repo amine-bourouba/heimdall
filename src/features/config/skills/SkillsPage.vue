@@ -6,12 +6,17 @@
 // all), and a detail view that lists one badge per allowed tool instead of a single "N tools"
 // count -- SkillsListView.swift:53-72's own, deliberately different choice from
 // CommandsListView.swift's aggregate badge.
+//
+// M3-50 adds the "+" (create from template) and the detail view's trash button (delete), both in
+// useConfigWriteActions; deleting a skill removes its whole folder.
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { ipc } from '@/ipc/client';
 import { fuzzyMatch } from '@/lib/fuzzyMatch';
+import { useToastsStore } from '@/stores/toasts';
 import { useConfigStore } from '../store';
+import { useConfigWriteActions } from '../shared/useConfigWriteActions';
 import ConfigScreenHeader from '../shared/ConfigScreenHeader.vue';
 import ConfigLayoutToolbar from '../shared/ConfigLayoutToolbar.vue';
 import ConfigListLayout from '../shared/ConfigListLayout.vue';
@@ -24,6 +29,8 @@ const SCREEN_ID = 'skills';
 const route = useRoute();
 const router = useRouter();
 const configStore = useConfigStore();
+const toastsStore = useToastsStore();
+const actions = useConfigWriteActions('skill');
 
 const items = ref<ConfigItemSummary[]>([]);
 const isLoading = ref(true);
@@ -32,8 +39,13 @@ const copiedSlug = ref<string | null>(null);
 
 async function load() {
   isLoading.value = true;
-  items.value = (await ipc.listConfigItems('skill', configStore.selectedProject)).value;
-  isLoading.value = false;
+  try {
+    items.value = (await ipc.listConfigItems('skill', configStore.selectedProject)).value;
+  } catch (error) {
+    toastsStore.showError(error, 'Could not load skills');
+  } finally {
+    isLoading.value = false;
+  }
 }
 watch(() => configStore.selectedProject, load, { deep: true, immediate: true });
 
@@ -85,10 +97,29 @@ watch(
   detailRef,
   async (ref) => {
     detail.value = null;
-    if (ref) detail.value = await ipc.getConfigItem(ref);
+    if (!ref) return;
+    try {
+      detail.value = await ipc.getConfigItem(ref);
+    } catch (error) {
+      toastsStore.showError(error, 'Could not open the skill');
+    }
   },
   { immediate: true },
 );
+
+async function create() {
+  if (await actions.createFromTemplate()) await load();
+}
+
+// Deletes exactly what the detail view shows: `detail.ref` is the reference the backend resolved,
+// not one rebuilt from the route (whose project could have changed since).
+async function removeShown() {
+  const shown = detail.value;
+  if (shown && (await actions.deleteItem(shown.ref, shown.name))) {
+    closeDetail();
+    await load();
+  }
+}
 
 const emptyMessage = computed(() => (filterQuery.value ? `No skills match "${filterQuery.value}"` : 'No skills found'));
 const emptyHint = computed(() => (filterQuery.value ? 'Try a different search term' : '~/.claude/skills/'));
@@ -101,7 +132,9 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
     :title="detail.name"
     :scope="detail.scope"
     :body="detail.body"
+    deletable
     @close="closeDetail"
+    @delete="removeShown"
   >
     <template #badges>
       <ConfigBadge
@@ -131,6 +164,9 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
       :screen-id="SCREEN_ID"
       filter-placeholder="Find in Skills…"
       show-project-picker
+      show-add-button
+      add-label="New skill"
+      @add="create"
     />
     <div class="flex-1 overflow-y-auto px-(--spacing-xxxl) py-(--spacing-lg)">
       <ConfigListLayout

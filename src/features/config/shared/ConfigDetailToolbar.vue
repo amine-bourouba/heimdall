@@ -13,8 +13,10 @@ import { ref } from 'vue';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import AppIcon from '@/components/AppIcon.vue';
 
-const props = defineProps<{ name: string; content: string; formatted: boolean }>();
-defineEmits<{ 'update:formatted': [value: boolean]; close: [] }>();
+// `deletable` opts in to the Delete button (ConfigToolbarDelete in Swift, shown only for items a
+// delete command can address); Plans share this toolbar and stay without it.
+const props = defineProps<{ name: string; content: string; formatted: boolean; deletable?: boolean }>();
+defineEmits<{ 'update:formatted': [value: boolean]; close: []; delete: [] }>();
 
 const nameCopied = ref(false);
 const contentCopied = ref(false);
@@ -68,6 +70,20 @@ async function copyContent() {
         :name="contentCopied ? 'checkmark' : 'doc.text'"
         size="sm"
         :class="contentCopied ? 'text-(--color-green)' : 'text-(--text-tertiary)'"
+      />
+    </button>
+    <button
+      v-if="deletable"
+      type="button"
+      title="Delete"
+      aria-label="Delete"
+      class="flex h-7 w-7 items-center justify-center rounded-sm bg-(--bg-elevated)"
+      @click="$emit('delete')"
+    >
+      <AppIcon
+        name="trash"
+        size="sm"
+        class="text-(--text-tertiary)"
       />
     </button>
     <button

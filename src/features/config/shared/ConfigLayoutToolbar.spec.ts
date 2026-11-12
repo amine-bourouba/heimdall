@@ -95,6 +95,13 @@ describe('ConfigLayoutToolbar: add button visibility (config-screens.md §1.2)',
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
 
+  it('names what the add button creates, for hover and for assistive technology (M3-50)', () => {
+    const wrapper = mount(ConfigLayoutToolbar, { props: { screenId: 'skills', filterQuery: '', filterPlaceholder: '', showAddButton: true, addLabel: 'New skill' } });
+    const button = wrapper.find('button[title="New skill"]');
+    expect(button.attributes('aria-label')).toBe('New skill');
+    expect(wrapper.find('button[title="Add"]').exists()).toBe(false);
+  });
+
   it('renders no Add button when showAddButton is false', () => {
     const wrapper = mount(ConfigLayoutToolbar, { props: { screenId: 'models', filterQuery: '', filterPlaceholder: '', showAddButton: false } });
     expect(wrapper.find('button[title="Add"]').exists()).toBe(false);

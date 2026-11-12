@@ -4,15 +4,18 @@
 // ConfigListRoute.vue/ConfigDetailRoute.vue both dispatch here for the "command" kind, so which
 // pane shows is purely a function of whether :scope/:slug are present on the current route.
 //
-// AC: "No create, edit or delete controls yet (M3-50)" -- showAddButton stays false even though
-// Swift's own CommandsListView passes true: the "+" button exists in Swift only because its own
-// create flow (createAndOpen -> createCommandTemplate) already exists; Heimdall's does not yet.
+// M3-50 adds the write actions: the toolbar's "+" creates a command from the template (Swift's
+// createAndOpen -> createCommandTemplate) and the detail view's trash button deletes it (Swift's
+// ConfigToolbarDelete). Both live in useConfigWriteActions. There is still no edit: opening the
+// file in an editor is M3-55.
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { ipc } from '@/ipc/client';
 import { fuzzyMatch } from '@/lib/fuzzyMatch';
+import { useToastsStore } from '@/stores/toasts';
 import { useConfigStore } from '../store';
+import { useConfigWriteActions } from '../shared/useConfigWriteActions';
 import ConfigScreenHeader from '../shared/ConfigScreenHeader.vue';
 import ConfigLayoutToolbar from '../shared/ConfigLayoutToolbar.vue';
 import ConfigListLayout from '../shared/ConfigListLayout.vue';
@@ -25,6 +28,8 @@ const SCREEN_ID = 'commands';
 const route = useRoute();
 const router = useRouter();
 const configStore = useConfigStore();
+const toastsStore = useToastsStore();
+const actions = useConfigWriteActions('command');
 
 const items = ref<ConfigItemSummary[]>([]);
 const isLoading = ref(true);
@@ -33,8 +38,13 @@ const copiedSlug = ref<string | null>(null);
 
 async function load() {
   isLoading.value = true;
-  items.value = (await ipc.listConfigItems('command', configStore.selectedProject)).value;
-  isLoading.value = false;
+  try {
+    items.value = (await ipc.listConfigItems('command', configStore.selectedProject)).value;
+  } catch (error) {
+    toastsStore.showError(error, 'Could not load commands');
+  } finally {
+    isLoading.value = false;
+  }
 }
 watch(() => configStore.selectedProject, load, { deep: true, immediate: true });
 
@@ -93,10 +103,29 @@ watch(
   detailRef,
   async (ref) => {
     detail.value = null;
-    if (ref) detail.value = await ipc.getConfigItem(ref);
+    if (!ref) return;
+    try {
+      detail.value = await ipc.getConfigItem(ref);
+    } catch (error) {
+      toastsStore.showError(error, 'Could not open the command');
+    }
   },
   { immediate: true },
 );
+
+async function create() {
+  if (await actions.createFromTemplate()) await load();
+}
+
+// Deletes exactly what the detail view shows: `detail.ref` is the reference the backend resolved,
+// not one rebuilt from the route (whose project could have changed since).
+async function removeShown() {
+  const shown = detail.value;
+  if (shown && (await actions.deleteItem(shown.ref, shown.name))) {
+    closeDetail();
+    await load();
+  }
+}
 </script>
 
 <template>
@@ -106,7 +135,9 @@ watch(
     :title="detail.name"
     :scope="detail.scope"
     :body="detail.body"
+    deletable
     @close="closeDetail"
+    @delete="removeShown"
   >
     <template #badges>
       <ConfigBadge
@@ -143,6 +174,9 @@ watch(
       :screen-id="SCREEN_ID"
       filter-placeholder="Find in Commands…"
       show-project-picker
+      show-add-button
+      add-label="New command"
+      @add="create"
     />
     <div class="flex-1 overflow-y-auto px-(--spacing-xxxl) py-(--spacing-lg)">
       <ConfigListLayout

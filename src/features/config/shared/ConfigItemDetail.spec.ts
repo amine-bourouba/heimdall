@@ -56,4 +56,15 @@ describe('ConfigItemDetail: header', () => {
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('offers Delete only when deletable, and forwards the toolbar\'s delete event (M3-50)', async () => {
+    const onDelete = vi.fn();
+    const plain = mount(ConfigItemDetail, { props: { icon: 'apple.terminal.fill', title: '/deploy', scope: 'global', body: 'x' } });
+    expect(plain.find('button[title="Delete"]').exists()).toBe(false);
+
+    const wrapper = mount(ConfigItemDetail, { props: { icon: 'apple.terminal.fill', title: '/deploy', scope: 'global', body: 'x', deletable: true, onDelete } });
+    await wrapper.find('button[title="Delete"]').trigger('click');
+
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
 });

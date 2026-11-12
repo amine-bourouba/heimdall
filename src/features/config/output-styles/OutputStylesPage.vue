@@ -10,11 +10,16 @@
 // not ported: ConfigScreenHeader.vue/ConfigItemDetail.vue (M3-11) hardcode the accent tint with no
 // color override prop, and adding one for a single cosmetic difference nowhere in this task's own
 // AC isn't worth the ripple. All three screens share one tint instead.
+//
+// M3-50 adds the "+" (create from template) and the detail view's trash button (delete), both in
+// useConfigWriteActions.
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ipc } from '@/ipc/client';
 import { fuzzyMatch } from '@/lib/fuzzyMatch';
+import { useToastsStore } from '@/stores/toasts';
 import { useConfigStore } from '../store';
+import { useConfigWriteActions } from '../shared/useConfigWriteActions';
 import ConfigScreenHeader from '../shared/ConfigScreenHeader.vue';
 import ConfigLayoutToolbar from '../shared/ConfigLayoutToolbar.vue';
 import ConfigListLayout from '../shared/ConfigListLayout.vue';
@@ -26,6 +31,8 @@ const SCREEN_ID = 'outputStyles';
 const route = useRoute();
 const router = useRouter();
 const configStore = useConfigStore();
+const toastsStore = useToastsStore();
+const actions = useConfigWriteActions('outputStyle');
 
 const items = ref<ConfigItemSummary[]>([]);
 const isLoading = ref(true);
@@ -33,8 +40,13 @@ const filterQuery = ref('');
 
 async function load() {
   isLoading.value = true;
-  items.value = (await ipc.listConfigItems('outputStyle', configStore.selectedProject)).value;
-  isLoading.value = false;
+  try {
+    items.value = (await ipc.listConfigItems('outputStyle', configStore.selectedProject)).value;
+  } catch (error) {
+    toastsStore.showError(error, 'Could not load output styles');
+  } finally {
+    isLoading.value = false;
+  }
 }
 watch(() => configStore.selectedProject, load, { deep: true, immediate: true });
 
@@ -66,10 +78,29 @@ watch(
   detailRef,
   async (ref) => {
     detail.value = null;
-    if (ref) detail.value = await ipc.getConfigItem(ref);
+    if (!ref) return;
+    try {
+      detail.value = await ipc.getConfigItem(ref);
+    } catch (error) {
+      toastsStore.showError(error, 'Could not open the output style');
+    }
   },
   { immediate: true },
 );
+
+async function create() {
+  if (await actions.createFromTemplate()) await load();
+}
+
+// Deletes exactly what the detail view shows: `detail.ref` is the reference the backend resolved,
+// not one rebuilt from the route (whose project could have changed since).
+async function removeShown() {
+  const shown = detail.value;
+  if (shown && (await actions.deleteItem(shown.ref, shown.name))) {
+    closeDetail();
+    await load();
+  }
+}
 
 const emptyMessage = computed(() => (filterQuery.value ? `No output styles match "${filterQuery.value}"` : 'No output styles found'));
 const emptyHint = computed(() => (filterQuery.value ? 'Try a different search term' : '~/.claude/output-styles/'));
@@ -82,7 +113,9 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
     :title="detail.name"
     :scope="detail.scope"
     :body="detail.body"
+    deletable
     @close="closeDetail"
+    @delete="removeShown"
   >
     <template #badges>
       <ConfigBadge
@@ -108,6 +141,9 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
       :screen-id="SCREEN_ID"
       filter-placeholder="Find in Output Styles…"
       show-project-picker
+      show-add-button
+      add-label="New output style"
+      @add="create"
     />
     <div class="flex-1 overflow-y-auto px-(--spacing-xxxl) py-(--spacing-lg)">
       <ConfigListLayout

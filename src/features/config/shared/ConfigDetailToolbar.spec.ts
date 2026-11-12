@@ -52,6 +52,24 @@ describe('ConfigDetailToolbar: format toggle (read-only, no IPC)', () => {
   });
 });
 
+describe('ConfigDetailToolbar: delete (M3-50, opt-in)', () => {
+  it('has no Delete button unless the caller says the item can be deleted (Plans share this toolbar)', () => {
+    const wrapper = mount(ConfigDetailToolbar, { props: { name: 'n', content: 'c', formatted: true } });
+    expect(wrapper.find('button[title="Delete"]').exists()).toBe(false);
+  });
+
+  it('shows a labelled Delete button when deletable, and calls onDelete when clicked', async () => {
+    const onDelete = vi.fn();
+    const wrapper = mount(ConfigDetailToolbar, { props: { name: 'n', content: 'c', formatted: true, deletable: true, onDelete } });
+    const button = wrapper.find('button[title="Delete"]');
+
+    expect(button.attributes('aria-label')).toBe('Delete');
+    await button.trigger('click');
+
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('ConfigDetailToolbar: close', () => {
   it('calls onClose when clicked', async () => {
     const onClose = vi.fn();

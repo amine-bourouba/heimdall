@@ -10,8 +10,8 @@ import ConfigDetailToolbar from './ConfigDetailToolbar.vue';
 import ConfigBadge from './ConfigBadge.vue';
 import type { ConfigItemScope } from '@/ipc/bindings';
 
-defineProps<{ icon: string; title: string; scope: ConfigItemScope; body: string }>();
-defineEmits<{ close: [] }>();
+defineProps<{ icon: string; title: string; scope: ConfigItemScope; body: string; deletable?: boolean }>();
+defineEmits<{ close: []; delete: [] }>();
 
 const isFormatted = ref(true);
 </script>
@@ -41,7 +41,9 @@ const isFormatted = ref(true);
         v-model:formatted="isFormatted"
         :name="title"
         :content="body"
+        :deletable="deletable"
         @close="$emit('close')"
+        @delete="$emit('delete')"
       />
     </div>
 
