@@ -178,7 +178,8 @@ pub fn backup_path(path: &Path) -> PathBuf {
     path.with_file_name(name)
 }
 
-fn back_up_once(path: &Path, original: &[u8]) -> Result<()> {
+/// Copies `original` to [`backup_path`] unless a backup already exists (ADR 0009, rule 2).
+pub(super) fn back_up_once(path: &Path, original: &[u8]) -> Result<()> {
     let backup = backup_path(path);
     match std::fs::OpenOptions::new().write(true).create_new(true).open(&backup) {
         Ok(mut f) => std::io::Write::write_all(&mut f, original)

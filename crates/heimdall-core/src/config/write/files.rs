@@ -10,9 +10,12 @@
 //! its folder (`paths::plain_file_name`), but says nothing about a *symlink* already sitting at an
 //! otherwise-legitimate-looking path inside that folder and pointing elsewhere -- `ensure_within_root`
 //! below canonicalises (resolving every symlink) and checks containment before any delete or
-//! rename-induced old-file removal touches a path that already exists on disk. New template files
-//! never need this check at all: their own uniqueness loop already skips straight past any name
-//! that already exists (symlink or not), so a planted symlink is simply never written through.
+//! rename-induced old-file removal touches a path that already exists on disk. The same check now
+//! also guards every *read* of an agent file that a save depends on and every *write* (agent save
+//! and template scaffolding): a symlink planted at an agent's path must not be read through (its
+//! contents would be copied into a regular agent file) or written through (it would overwrite
+//! whatever it points at). Existence is tested with `symlink_metadata`, because `exists()` follows
+//! a link and reports a dangling one as absent, which would make the write create its target.
 
 use std::path::Path;
 
@@ -22,6 +25,8 @@ use crate::models::config::sub_agent::AgentInput;
 use crate::paths::ensure_within_root;
 
 use super::super::read::{agents::modelled_fields, config_ref, frontmatter, item_path, kind_dir};
+use super::atomic;
+use super::json_doc::back_up_once;
 
 fn ensure_directory(dir: &Path) -> Result<()> {
     std::fs::create_dir_all(dir).map_err(|e| AppError::from_io(&e, dir))
@@ -36,12 +41,13 @@ fn agent_slug(name: &str) -> String {
 }
 
 /// `<base>.md` (or, for skills, `<base>/SKILL.md`), else `<base>-2`, `<base>-3`, ... -- the first
-/// name `item_path` resolves to something that does not already exist.
+/// name `item_path` resolves to nothing at all -- a dangling symlink counts as taken, since a
+/// write to that path would create the link's target.
 fn unique_slug(claude_dir: &Path, kind: ConfigKind, base: &str) -> Result<String> {
     let mut candidate = base.to_string();
     let mut counter = 2;
     loop {
-        if !item_path(claude_dir, kind, &candidate)?.exists() {
+        if item_path(claude_dir, kind, &candidate)?.symlink_metadata().is_err() {
             return Ok(candidate);
         }
         candidate = format!("{base}-{counter}");
@@ -75,7 +81,7 @@ struct Block {
 }
 
 fn frontmatter_blocks(text: &str) -> Vec<Block> {
-    let Some(after_opening) = text.trim().strip_prefix("---") else {
+    let Some(after_opening) = text.trim_start_matches('\u{feff}').trim().strip_prefix("---") else {
         return Vec::new();
     };
     let Some(close) = after_opening.find("\n---") else {
@@ -121,17 +127,36 @@ fn frontmatter_blocks(text: &str) -> Vec<Block> {
 ///   when the user only edits something else, since the editor's own enums cannot represent them.
 ///
 /// Modelled keys are emitted first, in a fixed order; preserved keys follow, in file order.
-fn agent_frontmatter(input: &AgentInput, existing: Option<&str>) -> String {
+///
+/// A value the user changed is written as one `key: value` line, so it must be a single line: a
+/// newline in it would start a new top-level key, and the webview is not trusted to supply keys
+/// (`hooks`, `mcpServers`, `permissionMode`, ... run code or widen permissions). It is refused
+/// rather than flattened, so nothing is silently altered. An unchanged value never reaches that
+/// check -- it is kept verbatim from the file, multi-line or not.
+fn agent_frontmatter(input: &AgentInput, existing: Option<&str>) -> Result<String> {
     let blocks = existing.map(frontmatter_blocks).unwrap_or_default();
     let before = existing.map(|text| modelled_fields(&frontmatter::parse(text)));
     let model = input.model.as_deref().filter(|m| !m.is_empty());
 
     // The original text of `key` if the user left it unchanged, else the freshly formatted line.
-    let field = |key: &str, unchanged: bool, fresh: Option<String>| -> Option<String> {
-        if unchanged && let Some(block) = blocks.iter().find(|b| b.key.as_deref() == Some(key)) {
-            return Some(block.text.clone());
+    // Unchanged with no top-level block of its own means the reader found the key somewhere else
+    // (indented under another key): writing a fresh line would add a real top-level key the file
+    // never had, so nothing is written. The *last* block wins, as in the reader, which keeps the
+    // last of a duplicated key.
+    let field = |key: &str, unchanged: bool, fresh: Option<String>| -> Result<Option<String>> {
+        if unchanged {
+            return Ok(blocks
+                .iter()
+                .rev()
+                .find(|b| b.key.as_deref() == Some(key))
+                .map(|b| b.text.clone()));
         }
-        fresh
+        if fresh.as_ref().is_some_and(|line| line.contains(['\n', '\r'])) {
+            return Err(AppError::invalid_input(format!(
+                "the agent's {key} must be a single line"
+            )));
+        }
+        Ok(fresh)
     };
     let lines = [
         field(
@@ -140,34 +165,34 @@ fn agent_frontmatter(input: &AgentInput, existing: Option<&str>) -> String {
                 .as_ref()
                 .is_some_and(|b| b.name.as_deref() == Some(input.name.as_str())),
             Some(format!("name: {}", input.name)),
-        ),
+        )?,
         field(
             "description",
             before
                 .as_ref()
                 .is_some_and(|b| b.description.as_deref() == Some(input.description.as_str())),
             Some(format!("description: {}", input.description)),
-        ),
+        )?,
         field(
             "tools",
             before.as_ref().is_some_and(|b| b.tools == input.tools),
             (!input.tools.is_empty()).then(|| format!("tools: {}", input.tools.join(", "))),
-        ),
+        )?,
         field(
             "model",
             before.as_ref().is_some_and(|b| b.model.as_deref() == model),
             model.map(|m| format!("model: {m}")),
-        ),
+        )?,
         field(
             "color",
             before.as_ref().is_some_and(|b| b.color == input.color),
             input.color.map(|c| format!("color: {}", raw_value(&c))),
-        ),
+        )?,
         field(
             "memory",
             before.as_ref().is_some_and(|b| b.memory == input.memory),
             input.memory.map(|m| format!("memory: {}", raw_value(&m))),
-        ),
+        )?,
     ];
 
     let mut fm = String::from("---\n");
@@ -183,28 +208,46 @@ fn agent_frontmatter(input: &AgentInput, existing: Option<&str>) -> String {
         fm.push('\n');
     }
     fm += "---\n";
-    format!("{fm}\n{}", input.prompt.as_deref().unwrap_or(""))
+    Ok(format!("{fm}\n{}", input.prompt.as_deref().unwrap_or("")))
+}
+
+/// An agent file is a few KiB of front matter and a prompt; this is far beyond any real one.
+const MAX_AGENT_FILE_BYTES: u64 = 1 << 20;
+
+/// The text of the agent file a save is based on, or `None` if there is none yet. The file must be
+/// inside `dir` once symlinks are resolved and must be a regular file of sane size: a planted
+/// symlink would otherwise be read through (its contents copied into the new agent file), and a
+/// FIFO or `/dev/zero` link would hang or exhaust the blocking thread. A file that exists but
+/// cannot be read is an error, never a silent fall-back to writing a lossy replacement.
+fn read_original(path: &Path, dir: &Path) -> Result<Option<String>> {
+    match path.symlink_metadata() {
+        Ok(_) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(AppError::from_io(&e, path)),
+    }
+    let safe = ensure_within_root(path, dir)?;
+    let meta = std::fs::metadata(&safe).map_err(|e| AppError::from_io(&e, &safe))?;
+    if !meta.is_file() || meta.len() > MAX_AGENT_FILE_BYTES {
+        return Err(AppError::invalid_input("an agent file must be a regular file under 1 MiB").with_path(path));
+    }
+    std::fs::read_to_string(&safe)
+        .map(Some)
+        .map_err(|e| AppError::from_io(&e, &safe))
 }
 
 /// Renaming (a new slug derived from `input.name` differs from `original_slug`) writes the new
 /// file first, then deletes the old one -- matching Swift's own order (`saveAgent`'s own comment:
 /// "Delete old file if renamed") so a failed write never loses the old content. Whatever the old
 /// file carries that the editor does not model moves to the new one with it (see
-/// [`agent_frontmatter`]); a file that exists but cannot be read is an error, never a silent
-/// fall-back to writing a lossy replacement.
+/// [`agent_frontmatter`]). Overwriting an existing agent follows ADR 0009: a one-time
+/// `<file>.heimdall.bak` first, then an atomic replace, so a crash or a full disk cannot leave a
+/// half-written file where the user's agent was.
 pub fn save_agent(claude_dir: &Path, input: &AgentInput, original_slug: Option<&str>) -> Result<WriteOutcome> {
     let dir = kind_dir(claude_dir, ConfigKind::Agent);
     ensure_directory(&dir)?;
 
     let existing = match original_slug {
-        Some(slug) => {
-            let old_path = item_path(claude_dir, ConfigKind::Agent, slug)?;
-            match std::fs::read_to_string(&old_path) {
-                Ok(text) => Some(text),
-                Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
-                Err(e) => return Err(AppError::from_io(&e, &old_path)),
-            }
-        }
+        Some(slug) => read_original(&item_path(claude_dir, ConfigKind::Agent, slug)?, &dir)?,
         None => None,
     };
 
@@ -213,8 +256,15 @@ pub fn save_agent(claude_dir: &Path, input: &AgentInput, original_slug: Option<&
         Some(slug) if slug == desired_slug => slug.to_string(),
         _ => unique_slug(claude_dir, ConfigKind::Agent, &desired_slug)?,
     };
-    let path = item_path(claude_dir, ConfigKind::Agent, &target_slug)?;
-    std::fs::write(&path, agent_frontmatter(input, existing.as_deref())).map_err(|e| AppError::from_io(&e, &path))?;
+    // Built before anything is written, so a refused value leaves every file untouched.
+    let text = agent_frontmatter(input, existing.as_deref())?;
+    let path = ensure_within_root(&item_path(claude_dir, ConfigKind::Agent, &target_slug)?, &dir)?;
+    if original_slug == Some(target_slug.as_str())
+        && let Some(previous) = &existing
+    {
+        back_up_once(&path, previous.as_bytes())?;
+    }
+    atomic::replace(&path, text.as_bytes())?;
 
     if let Some(original_slug) = original_slug
         && original_slug != target_slug
@@ -249,7 +299,8 @@ pub fn create_template(claude_dir: &Path, kind: ConfigKind) -> Result<ConfigRef>
     let slug = unique_slug(claude_dir, kind, base)?;
     let path = item_path(claude_dir, kind, &slug)?;
     ensure_directory(path.parent().expect("item_path always has a parent"))?;
-    std::fs::write(&path, template).map_err(|e| AppError::from_io(&e, &path))?;
+    let safe = ensure_within_root(&path, &kind_dir(claude_dir, kind))?;
+    std::fs::write(&safe, template).map_err(|e| AppError::from_io(&e, &safe))?;
     Ok(config_ref(kind, &None, &slug))
 }
 
@@ -360,6 +411,17 @@ mod tests {
         }
     }
 
+    /// The names in the agents folder, sorted.
+    fn agent_files(d: &tempfile::TempDir) -> Vec<String> {
+        let mut names: Vec<_> = std::fs::read_dir(d.path().join("agents"))
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    }
+
     // MARK: - save_agent
 
     #[test]
@@ -384,9 +446,8 @@ mod tests {
         let mut second = input("Reviewer");
         second.description = "Updated description".to_string();
         save_agent(d.path(), &second, Some("reviewer")).unwrap();
-        let siblings: Vec<_> = std::fs::read_dir(d.path().join("agents")).unwrap().collect();
         assert_eq!(
-            siblings.len(),
+            agent_files(&d).iter().filter(|n| n.ends_with(".md")).count(),
             1,
             "a second save with the same resulting slug must not create reviewer-2.md"
         );
@@ -585,6 +646,146 @@ mod tests {
             text,
             "---\nname: Fresh\ndescription: A test agent\ntools: Read, Grep\nmodel: sonnet\ncolor: blue\nmemory: user\n---\n\nBe helpful."
         );
+        assert_eq!(agent_files(&d), ["fresh.md"], "no backup of a file that did not exist");
+    }
+
+    // MARK: - a changed value is one line; unchanged text is left exactly as it was
+
+    #[test]
+    fn a_changed_value_containing_a_newline_cannot_start_a_new_front_matter_key() {
+        type Edit = fn(&mut AgentInput, &str);
+        let edits: [(&str, Edit); 4] = [
+            ("name", |i, v| i.name = format!("Reviewer {v}")),
+            ("description", |i, v| i.description = v.to_string()),
+            ("tools", |i, v| i.tools = vec![v.to_string()]),
+            ("model", |i, v| i.model = Some(v.to_string())),
+        ];
+        for payload in ["x\npermissionMode: bypassPermissions", "x\rhooks: y"] {
+            for (field, apply) in edits {
+                let d = tempfile::tempdir().unwrap();
+                let path = write_agent(&d, "reviewer", POWER_USER_AGENT);
+                let mut edited = input_as_shown("Reviewer", "A test agent");
+                apply(&mut edited, payload);
+                let err = save_agent(d.path(), &edited, Some("reviewer")).unwrap_err();
+                assert!(matches!(err, AppError::InvalidInput { .. }), "{field}: {err:?}");
+                assert_eq!(std::fs::read_to_string(&path).unwrap(), POWER_USER_AGENT, "{field}");
+                assert_eq!(agent_files(&d), ["reviewer.md"], "{field}: nothing else was written");
+            }
+        }
+    }
+
+    #[test]
+    fn a_new_agent_with_a_newline_in_a_value_is_refused_too() {
+        let d = tempfile::tempdir().unwrap();
+        let mut bad = input("Fresh");
+        bad.description = "x\nmcpServers:\n  evil: {}".to_string();
+        assert!(matches!(
+            save_agent(d.path(), &bad, None),
+            Err(AppError::InvalidInput { .. })
+        ));
+        assert_eq!(agent_files(&d), Vec::<String>::new());
+    }
+
+    /// The newline check is for what the user typed: a `description: |` block is multi-line by
+    /// nature, and saving the agent without touching it must still work.
+    #[test]
+    fn a_multi_line_description_that_was_not_edited_is_kept_not_refused() {
+        let literal = "---\nname: Reviewer\ndescription: |\n  Line one\n  Line two\n---\n\nBe helpful.";
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", literal);
+        let mut shown = input_as_shown("Reviewer", "Line one\nLine two");
+        shown.tools = Vec::new();
+        shown.model = None;
+        shown.prompt = Some("Changed.".to_string());
+        save_agent(d.path(), &shown, Some("reviewer")).unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(text.contains("description: |\n  Line one\n  Line two\n"), "{text}");
+    }
+
+    #[test]
+    fn a_key_the_reader_found_nested_under_another_key_is_not_promoted_to_the_top_level() {
+        let nested = "---\nname: Reviewer\ndescription: A test agent\nmcpServers:\n  model: sonnet\n---\n\nBe helpful.";
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", nested);
+        // The reader shows `model: sonnet` (it does not track indentation) and the editor sends it back.
+        let mut shown = input_as_shown("Reviewer", "A test agent");
+        shown.tools = Vec::new();
+        shown.prompt = Some("Changed.".to_string());
+        save_agent(d.path(), &shown, Some("reviewer")).unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(
+            !text.lines().any(|l| l.starts_with("model:")),
+            "an unchanged save must not give the agent a model it did not have: {text}"
+        );
+        assert!(text.contains("mcpServers:\n  model: sonnet\n"), "{text}");
+    }
+
+    #[test]
+    fn a_duplicated_key_keeps_the_value_the_reader_showed() {
+        let duplicated = "---\nname: Reviewer\ndescription: A test agent\ntools: Read\ntools: Grep\n---\n\nBe helpful.";
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", duplicated);
+        // The reader keeps the last `tools:`, so that is what the editor showed and sends back.
+        let mut shown = input_as_shown("Reviewer", "A test agent");
+        shown.tools = vec!["Grep".to_string()];
+        shown.model = None;
+        shown.prompt = Some("Changed.".to_string());
+        save_agent(d.path(), &shown, Some("reviewer")).unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(
+            text.contains("tools: Grep\n") && !text.contains("tools: Read"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn a_byte_order_mark_does_not_hide_the_front_matter_from_a_save() {
+        let with_bom =
+            "\u{feff}---\r\nname: Reviewer\r\ndescription: A test agent\r\nskills:\r\n  - x\r\n---\r\n\r\nBe helpful.";
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", with_bom);
+        let mut shown = input_as_shown("Reviewer", "Updated");
+        shown.tools = Vec::new();
+        shown.model = None;
+        save_agent(d.path(), &shown, Some("reviewer")).unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(text.contains("skills:\n  - x\n"), "{text}");
+    }
+
+    // MARK: - safe writes (ADR 0009) and what an agent path may be
+
+    #[test]
+    fn overwriting_an_agent_keeps_its_first_version_as_a_one_time_backup_and_leaves_no_temp_file() {
+        let d = tempfile::tempdir().unwrap();
+        write_agent(&d, "reviewer", POWER_USER_AGENT);
+        save_agent(d.path(), &input_as_shown("Reviewer", "Second"), Some("reviewer")).unwrap();
+        save_agent(d.path(), &input_as_shown("Reviewer", "Third"), Some("reviewer")).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(d.path().join("agents").join("reviewer.md.heimdall.bak")).unwrap(),
+            POWER_USER_AGENT,
+            "the backup is the user's own file, made once and never replaced"
+        );
+        assert_eq!(agent_files(&d), ["reviewer.md", "reviewer.md.heimdall.bak"]);
+    }
+
+    #[test]
+    fn an_agent_path_that_is_not_a_regular_file_is_refused_and_left_alone() {
+        let d = tempfile::tempdir().unwrap();
+        let folder = d.path().join("agents").join("reviewer.md");
+        std::fs::create_dir_all(&folder).unwrap();
+        let err = save_agent(d.path(), &input_as_shown("Reviewer", "Updated"), Some("reviewer")).unwrap_err();
+        assert!(matches!(err, AppError::InvalidInput { .. }), "{err:?}");
+        assert!(folder.is_dir());
+    }
+
+    #[test]
+    fn an_agent_file_far_larger_than_any_real_one_is_refused_unread() {
+        let d = tempfile::tempdir().unwrap();
+        let path = write_agent(&d, "reviewer", "");
+        std::fs::write(&path, vec![b'a'; MAX_AGENT_FILE_BYTES as usize + 1]).unwrap();
+        let err = save_agent(d.path(), &input_as_shown("Reviewer", "Updated"), Some("reviewer")).unwrap_err();
+        assert!(matches!(err, AppError::InvalidInput { .. }), "{err:?}");
+        assert_eq!(std::fs::metadata(&path).unwrap().len(), MAX_AGENT_FILE_BYTES + 1);
     }
 
     // MARK: - create_template, AC2
@@ -687,19 +888,68 @@ mod tests {
         );
     }
 
+    /// An agent file that is a symlink to `outside.md`, a file with front matter of its own.
     #[cfg(unix)]
-    #[test]
-    fn a_symlinked_old_agent_file_is_not_followed_when_a_rename_would_delete_it() {
-        let d = tempfile::tempdir().unwrap();
-        let outside = d.path().join("outside.txt");
-        std::fs::write(&outside, "do not delete me").unwrap();
+    fn symlinked_agent(d: &tempfile::TempDir, slug: &str) -> std::path::PathBuf {
+        let outside = d.path().join("outside.md");
+        std::fs::write(&outside, "---\nname: Outside\nsecret: value\n---\n\nnot an agent").unwrap();
         let agents_dir = d.path().join("agents");
         std::fs::create_dir_all(&agents_dir).unwrap();
-        std::os::unix::fs::symlink(&outside, agents_dir.join("old-name.md")).unwrap();
+        std::os::unix::fs::symlink(&outside, agents_dir.join(format!("{slug}.md"))).unwrap();
+        outside
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlinked_old_agent_file_is_not_read_through_nor_deleted_by_a_rename() {
+        let d = tempfile::tempdir().unwrap();
+        let outside = symlinked_agent(&d, "old-name");
+        let before = std::fs::read(&outside).unwrap();
 
         let err = save_agent(d.path(), &input("New Name"), Some("old-name")).unwrap_err();
         assert!(matches!(err, AppError::InvalidInput { .. }), "{err:?}");
-        assert!(outside.exists());
+        assert_eq!(std::fs::read(&outside).unwrap(), before);
+        assert_eq!(
+            agent_files(&d),
+            ["old-name.md"],
+            "refused before anything was written: its `secret` key was not copied into a new agent file"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_in_place_save_does_not_write_through_a_symlink() {
+        let d = tempfile::tempdir().unwrap();
+        let outside = symlinked_agent(&d, "old-name");
+        let before = std::fs::read(&outside).unwrap();
+
+        let err = save_agent(d.path(), &input("Old Name"), Some("old-name")).unwrap_err();
+        assert!(matches!(err, AppError::InvalidInput { .. }), "{err:?}");
+        assert_eq!(
+            std::fs::read(&outside).unwrap(),
+            before,
+            "the link's target is untouched"
+        );
+    }
+
+    /// `exists()` says a dangling link is not there, so a new agent (or a template) used to take
+    /// its name and the write created the link's target outside the folder.
+    #[cfg(unix)]
+    #[test]
+    fn a_dangling_symlink_at_a_new_agents_path_is_not_written_through() {
+        let d = tempfile::tempdir().unwrap();
+        let agents_dir = d.path().join("agents");
+        std::fs::create_dir_all(&agents_dir).unwrap();
+        let target = d.path().join("created-by-mistake.md");
+        std::os::unix::fs::symlink(&target, agents_dir.join("new-agent.md")).unwrap();
+        std::os::unix::fs::symlink(&target, agents_dir.join("fresh.md")).unwrap();
+
+        save_agent(d.path(), &input("Fresh"), None).unwrap();
+        let template = create_template(d.path(), ConfigKind::Agent).unwrap();
+
+        assert!(!target.exists(), "nothing was created through the dangling link");
+        assert_eq!(template.slug, "new-agent-2");
+        assert!(agents_dir.join("fresh-2.md").is_file());
     }
 
     // MARK: - Export / import

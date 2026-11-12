@@ -307,10 +307,20 @@ pub fn plain_file_name(name: &str) -> Result<&str> {
 /// `projects::delete` (M3-43): both delete or rename-replace a path derived from a caller-supplied
 /// slug/id inside a known root, where a planted symlink at that path could otherwise redirect the
 /// operation outside the Claude home.
+///
+/// "Already there" is decided with `symlink_metadata`, not `exists()`: `exists()` follows the link,
+/// so a *dangling* symlink would read as absent, take the parent-rejoin branch below and pass, and
+/// the write that follows would create its target wherever it points. A dangling symlink is refused.
 pub fn ensure_within_root(path: &Path, root: &Path) -> Result<PathBuf> {
     let canonical_root = root.canonicalize().map_err(|e| AppError::from_io(&e, root))?;
-    let canonical = if path.exists() {
-        path.canonicalize().map_err(|e| AppError::from_io(&e, path))?
+    let canonical = if path.symlink_metadata().is_ok() {
+        path.canonicalize().map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                AppError::invalid_input("path is a symlink that points nowhere").with_path(path)
+            } else {
+                AppError::from_io(&e, path)
+            }
+        })?
     } else {
         let parent = path
             .parent()
@@ -452,5 +462,44 @@ mod tests {
         for bad in ["", ".", "..", "../x", "a/b", "a\\b", "C:x", "a\0b"] {
             assert!(plain_file_name(bad).is_err(), "{bad:?}");
         }
+    }
+
+    #[test]
+    fn a_path_inside_the_root_is_accepted_whether_or_not_it_exists_yet() {
+        let d = tempfile::tempdir().unwrap();
+        let existing = d.path().join("here.md");
+        std::fs::write(&existing, "x").unwrap();
+        assert!(ensure_within_root(&existing, d.path()).is_ok());
+        assert!(ensure_within_root(&d.path().join("not-yet.md"), d.path()).is_ok());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlink_leaving_the_root_is_refused() {
+        let d = tempfile::tempdir().unwrap();
+        let root = d.path().join("root");
+        std::fs::create_dir(&root).unwrap();
+        let outside = d.path().join("outside.txt");
+        std::fs::write(&outside, "x").unwrap();
+        std::os::unix::fs::symlink(&outside, root.join("link.md")).unwrap();
+        assert!(matches!(
+            ensure_within_root(&root.join("link.md"), &root),
+            Err(AppError::InvalidInput { .. })
+        ));
+    }
+
+    /// `exists()` is false for a dangling link, so it used to look like an absent file and pass:
+    /// the write that followed would then create the link's target outside the root.
+    #[cfg(unix)]
+    #[test]
+    fn a_dangling_symlink_is_refused_rather_than_mistaken_for_an_absent_file() {
+        let d = tempfile::tempdir().unwrap();
+        let root = d.path().join("root");
+        std::fs::create_dir(&root).unwrap();
+        std::os::unix::fs::symlink(d.path().join("nowhere.txt"), root.join("link.md")).unwrap();
+        assert!(matches!(
+            ensure_within_root(&root.join("link.md"), &root),
+            Err(AppError::InvalidInput { .. })
+        ));
     }
 }

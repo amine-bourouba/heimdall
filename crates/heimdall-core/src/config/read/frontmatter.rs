@@ -11,13 +11,15 @@ pub struct Frontmatter {
 }
 
 /// Splits `content` into metadata and body. Without an opening and a closing `---`, the metadata
-/// is empty and the body is `content` unchanged. CRLF files parse like LF files.
+/// is empty and the body is `content` unchanged. CRLF files parse like LF files, and a leading
+/// UTF-8 byte-order mark (Windows PowerShell 5.1's `-Encoding utf8` writes one; `trim` does not
+/// count it as whitespace) is skipped rather than hiding the whole block.
 pub fn parse(content: &str) -> Frontmatter {
     let unchanged = || Frontmatter {
         metadata: BTreeMap::new(),
         body: content.to_string(),
     };
-    let Some(after_opening) = content.trim().strip_prefix("---") else {
+    let Some(after_opening) = content.trim_start_matches('\u{feff}').trim().strip_prefix("---") else {
         return unchanged();
     };
     let Some(close) = after_opening.find("\n---") else {
@@ -105,6 +107,11 @@ mod tests {
             meta(&parse("---\ndescription: foo: bar\n---\nBody"), "description"),
             Some("foo: bar")
         );
+    }
+    #[test]
+    fn parse_skips_a_leading_byte_order_mark() {
+        let r = parse("\u{feff}---\r\nname: Reviewer\r\n---\r\nBody");
+        assert_eq!((meta(&r, "name"), r.body.as_str()), (Some("Reviewer"), "Body"));
     }
     #[test]
     fn parse_empty_lines_in_yaml_skipped() {
