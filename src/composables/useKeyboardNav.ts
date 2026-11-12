@@ -33,6 +33,17 @@ function isTextInput(element: Element | null): boolean {
   return element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement;
 }
 
+// A focused control takes its own keys before this document-level handler (in the Swift app a focused
+// field or button consumes the key before the window-level modifier sees it). Without that, Return on a
+// page button never clicked it and instead navigated to the highlighted sidebar item (found driving the
+// real build, M3-50: "Set as Default" on the Models screen), and the arrows could not change a page-level
+// <select> or move a caret.
+const UNEDITABLE = ':not([contenteditable="false"])';
+/** Controls that act on Return themselves: a button or link clicks, a field submits or adds a line. */
+const OWNS_RETURN = `button, a[href], input, textarea, select, summary, [contenteditable]${UNEDITABLE}, [role="button"], [role="switch"], [role="checkbox"], [role="radio"], [role="tab"], [role="menuitem"], [role="option"], [role="link"]`;
+/** Controls that also use the arrow keys (a button does not, so arrows still reach the sidebar from one). */
+const OWNS_ARROWS = `input, textarea, select, [contenteditable]${UNEDITABLE}, [role="radio"], [role="tab"], [role="menuitem"], [role="option"], [role="slider"], [role="listbox"]`;
+
 export function useKeyboardNav(options: UseKeyboardNavOptions) {
   function handleEscape() {
     if (isTextInput(document.activeElement)) {
@@ -67,16 +78,17 @@ export function useKeyboardNav(options: UseKeyboardNavOptions) {
     // KeyboardNavigationModifier.swift:33's own guard: plain arrow/Enter only, no modifiers.
     if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
 
+    // `event.target` is the document itself for a key with nothing focused: not an Element, so no guard.
+    const target = event.target instanceof Element ? event.target : null;
     switch (event.key) {
       case 'ArrowDown':
-        moveSidebarSelection(1);
-        event.preventDefault();
-        break;
       case 'ArrowUp':
-        moveSidebarSelection(-1);
+        if (target?.closest(OWNS_ARROWS)) return;
+        moveSidebarSelection(event.key === 'ArrowDown' ? 1 : -1);
         event.preventDefault();
         break;
       case 'Enter':
+        if (target?.closest(OWNS_RETURN)) return;
         options.onSidebarActivate();
         event.preventDefault();
         break;

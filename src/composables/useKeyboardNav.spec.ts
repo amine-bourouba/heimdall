@@ -174,8 +174,65 @@ describe('useKeyboardNav: keys from inside an aria-modal dialog are left to the 
 
   it('the same keys from outside any dialog still navigate (the guard is scoped to aria-modal)', () => {
     const { onSidebarActivate } = mountWith();
-    document.body.innerHTML = '<div><button></button></div>';
-    document.querySelector('button')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    document.body.innerHTML = '<div><p></p></div>';
+    document.querySelector('p')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
     expect(onSidebarActivate).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Found by driving the real build (M3-50): Return on a focused page button ("Set as Default") never
+// clicked it and navigated to the highlighted sidebar item instead. A focused control takes its own keys.
+describe('useKeyboardNav: a focused control keeps the keys it handles itself', () => {
+  function fireFrom(markup: string, init: KeyboardEventInit) {
+    document.body.innerHTML = `<main>${markup}</main>`;
+    const target = document.body.querySelector('main')!.firstElementChild!;
+    const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  const RETURN_OWNERS: [string, string][] = [
+    ['a button', '<button></button>'],
+    ['a link', '<a href="#/x"></a>'],
+    ['a text input', '<input type="text">'],
+    ['a textarea', '<textarea></textarea>'],
+    ['a select', '<select></select>'],
+    ['a switch', '<span role="switch" tabindex="0"></span>'],
+    ['an element inside a button', '<button><svg></svg></button>'],
+    ['an editable element', '<div contenteditable="true"></div>'],
+  ];
+
+  it.each(RETURN_OWNERS)('Return on %s is left to it: no sidebar activation, not default-prevented', (_name, markup) => {
+    const { onSidebarActivate } = mountWith();
+    const event = fireFrom(markup, { key: 'Enter' });
+    expect(onSidebarActivate).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('Return on nothing in particular still activates the sidebar, and on a non-editable div too', () => {
+    const { onSidebarActivate } = mountWith();
+    fireKeydown({ key: 'Enter' }); // nothing focused: the target is the document
+    const event = fireFrom('<div contenteditable="false"></div>', { key: 'Enter' });
+    expect(onSidebarActivate).toHaveBeenCalledTimes(2);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it.each([
+    ['a select', '<select></select>'],
+    ['a text input', '<input type="text">'],
+    ['a textarea', '<textarea></textarea>'],
+  ])('the arrow keys on %s are left to it', (_name, markup) => {
+    const { sidebarIndex } = mountWith();
+    const down = fireFrom(markup, { key: 'ArrowDown' });
+    const up = fireFrom(markup, { key: 'ArrowUp' });
+    expect(sidebarIndex.value).toBe(0);
+    expect([down.defaultPrevented, up.defaultPrevented]).toEqual([false, false]);
+  });
+
+  it('a button does not use the arrow keys, so they still move the sidebar from one', () => {
+    const { sidebarIndex } = mountWith();
+    const event = fireFrom('<button></button>', { key: 'ArrowDown' });
+    expect(sidebarIndex.value).toBe(1);
+    expect(event.defaultPrevented).toBe(true);
   });
 });
