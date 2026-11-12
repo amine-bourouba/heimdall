@@ -1,8 +1,12 @@
 <script setup lang="ts">
-// Ported from MCPServersListView.swift (M3-14). Read-only: no "+" (wizard, M3-48), no per-card
-// pencil/braces/folder/trash (M3-45/M3-48) -- `server.source === 'user'` would gate those in
-// Swift, but none of the four actions exist here yet, so nothing is rendered at all rather than
-// shown disabled.
+// Ported from MCPServersListView.swift (M3-14 list, M3-48 actions). The toolbar "+" opens the setup
+// wizard, and a server from the global `~/.claude.json` (`source === 'user'`, the only place the writer
+// touches; Swift gates its actions the same way) gets Edit (pencil: the wizard) and Remove (trash). Open
+// in editor and Show in Finder (braces and folder in Swift) come with M3-55.
+//
+// Remove shows no `window.confirm`: `remove_mcp_server` raises its own native confirmation naming the
+// server and what goes with it, and answers `cancelled` if it is declined (then nothing happens here).
+// It removes the server and its `mcp__<name>__*` permissions from settings.json in one command.
 //
 // AC1: "env and header values are never displayed (only keys)." `McpServer.envKeys`/`headerKeys`
 // are `string[]` -- confirmed directly in bindings.ts and mcp.rs's own header comment ("No
@@ -21,15 +25,19 @@ import { computed, ref, watch } from 'vue';
 import { useConfigStore } from '../store';
 import { ipc } from '@/ipc/client';
 import { fuzzyMatch } from '@/lib/fuzzyMatch';
+import { useToastsStore } from '@/stores/toasts';
+import AppIcon from '@/components/AppIcon.vue';
 import ConfigScreenHeader from '../shared/ConfigScreenHeader.vue';
 import ConfigLayoutToolbar from '../shared/ConfigLayoutToolbar.vue';
 import ConfigListLayout from '../shared/ConfigListLayout.vue';
 import ConfigBadge from '../shared/ConfigBadge.vue';
 import McpStatusIndicator from './McpStatusIndicator.vue';
+import McpSetupWizard from './McpSetupWizard.vue';
 import type { McpServer, McpServerStatus } from '@/ipc/bindings';
 
 const SCREEN_ID = 'mcpServers';
 const configStore = useConfigStore();
+const toastsStore = useToastsStore();
 
 const servers = ref<McpServer[]>([]);
 const statuses = ref<Record<string, McpServerStatus>>({});
@@ -37,15 +45,74 @@ const isLoading = ref(true);
 const filterQuery = ref('');
 const expandedTools = ref<Set<string>>(new Set());
 
-async function load() {
-  isLoading.value = true;
+/** Re-reads the list in place (no skeleton), so a save or a remove does not flash the screen. */
+async function refresh() {
   const project = configStore.selectedProject;
   const [serverList, statusMap] = await Promise.all([ipc.listMcpServers(project), ipc.getMcpStatuses(project)]);
   servers.value = serverList.value;
   statuses.value = statusMap;
-  isLoading.value = false;
+}
+
+async function load() {
+  isLoading.value = true;
+  try {
+    await refresh();
+  } catch (error) {
+    toastsStore.showError(error, 'Could not load MCP servers');
+  } finally {
+    isLoading.value = false;
+  }
 }
 watch(() => configStore.selectedProject, load, { deep: true, immediate: true });
+
+// --- Actions ---------------------------------------------------------------------------------
+
+const wizardOpen = ref(false);
+const editing = ref<McpServer | null>(null);
+// One write at a time: a second click while a ~/.claude.json write is in flight must not queue another.
+const isBusy = ref(false);
+
+/** Only a server from the global `~/.claude.json` can be written (config::write::mcp). */
+const canWrite = (server: McpServer) => server.source === 'user';
+/** The names the wizard must not reuse: the keys of that same file's `mcpServers`. */
+const existingNames = computed(() => servers.value.filter(canWrite).map((s) => s.rawName));
+
+function openAdd() {
+  editing.value = null;
+  wizardOpen.value = true;
+}
+
+function openEdit(server: McpServer) {
+  editing.value = server;
+  wizardOpen.value = true;
+}
+
+function closeWizard() {
+  wizardOpen.value = false;
+}
+
+async function onSaved() {
+  try {
+    await refresh();
+  } catch (error) {
+    toastsStore.showError(error, 'Could not reload MCP servers');
+  }
+}
+
+async function remove(server: McpServer) {
+  if (isBusy.value) return;
+  isBusy.value = true;
+  try {
+    const outcome = await ipc.removeMcpServer(server.rawName);
+    if (outcome === 'cancelled') return; // declined in the native confirmation: nothing happened
+    toastsStore.show(outcome === 'written' ? `Removed ${server.name}` : `${server.name} was already gone`, { style: 'info' });
+    await refresh();
+  } catch (error) {
+    toastsStore.showError(error, 'Could not remove the server');
+  } finally {
+    isBusy.value = false;
+  }
+}
 
 const filteredServers = computed<McpServer[]>(() => {
   const q = filterQuery.value.trim();
@@ -98,6 +165,9 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
       :screen-id="SCREEN_ID"
       filter-placeholder="Find in MCP Servers…"
       show-project-picker
+      show-add-button
+      add-label="Add MCP server"
+      @add="openAdd"
     />
     <div class="flex-1 overflow-y-auto px-(--spacing-xxxl) py-(--spacing-lg)">
       <p class="mb-(--spacing-lg) rounded-md bg-(--bg-elevated) p-(--spacing-md) text-(length:--text-small) text-(--text-tertiary)">
@@ -122,6 +192,34 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
                 v-if="transportLabel(server)"
                 :text="transportLabel(server)!"
               />
+              <template v-if="canWrite(server)">
+                <button
+                  type="button"
+                  title="Edit server"
+                  :aria-label="`Edit ${server.name}`"
+                  :disabled="isBusy"
+                  class="shrink-0 rounded-sm p-(--spacing-xxs) text-(--text-tertiary) disabled:opacity-50"
+                  @click="openEdit(server)"
+                >
+                  <AppIcon
+                    name="pencil"
+                    size="sm"
+                  />
+                </button>
+                <button
+                  type="button"
+                  title="Remove server"
+                  :aria-label="`Remove ${server.name}`"
+                  :disabled="isBusy"
+                  class="shrink-0 rounded-sm p-(--spacing-xxs) text-(--text-tertiary) disabled:opacity-50"
+                  @click="remove(server)"
+                >
+                  <AppIcon
+                    name="trash"
+                    size="sm"
+                  />
+                </button>
+              </template>
             </div>
             <p
               v-if="connectionInfo(server)"
@@ -163,5 +261,12 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
         </template>
       </ConfigListLayout>
     </div>
+    <McpSetupWizard
+      v-if="wizardOpen"
+      :editing="editing"
+      :existing-names="existingNames"
+      :on-close="closeWizard"
+      :on-saved="onSaved"
+    />
   </div>
 </template>
