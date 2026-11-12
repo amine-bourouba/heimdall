@@ -1,20 +1,28 @@
 <script setup lang="ts">
-// Ported from ModelsListView.swift (M3-13). Read-only: "Set as Default"/"Set as Project Default"/
-// "Clear Project Override" are all mutating (M3-50's job), so no per-card buttons render, only
-// the two pills showing which model currently holds each role. No project picker widget
-// (config-screens.md §1.2: Models reads project scope through its own inline banner/per-card
-// buttons in Swift, neither of which exists yet here) -- but `list_models` still takes a
-// `project` argument (confirmed directly in bindings.ts, unlike list_plugins), so this screen
-// still passes the shared `configStore.selectedProject` straight through, reusing whatever
-// another screen's own picker may already have set rather than always sending `null`.
+// Ported from ModelsListView.swift (M3-13 read-only shell + M3-50 actions). The per-card buttons
+// follow Swift's own rules (ModelsListView.swift:304-356, config-screens.md §7): "Set as Default"
+// (hidden when the model already is the default), "Set as Project Default" (only when a project is
+// picked and it is not already the project default) and "Clear Project Override" (only on the project
+// default).
+//
+// **What is written is the model's `id`, never its display name** (port-plan C-27): Swift writes the
+// display name ("Opus 5") into Claude Code's `model` setting, which takes an id or alias. A model with
+// no id (a discovered one naming no known family, such as `<synthetic>`) gets no "set" buttons at all.
+// The badges still compare display names, and the Rust reader maps what was written back to the same
+// name (a test pins that for every curated id), so the badge moves to the model just set.
+//
+// No project picker widget here (config-screens.md §1.2: not on this toolbar in Swift): the project
+// comes from the shared `configStore.selectedProject`, whatever another screen's picker set -- which
+// is why a hint says where to pick one. `list_models` takes the same project, so the "Project Default"
+// badge and the buttons agree.
 //
 // No skeleton and no "items missing" empty state (§1.4/§1.5: the curated catalog is never truly
-// empty) -- `isLoading` is tracked for the fetch itself but deliberately never passed to
-// ConfigListLayout, which always shows the filter-miss flavour of ConfigEmptyState.vue instead of
-// a loading skeleton for the brief window before the first list_models resolves.
+// empty) -- `isLoading` is not tracked at all; ConfigListLayout always shows the filter-miss flavour of
+// ConfigEmptyState.vue instead of a loading skeleton for the brief window before the first list_models.
 import { computed, ref, watch } from 'vue';
 import { ipc } from '@/ipc/client';
 import { fuzzyMatch } from '@/lib/fuzzyMatch';
+import { useToastsStore } from '@/stores/toasts';
 import { useConfigStore } from '../store';
 import ConfigScreenHeader from '../shared/ConfigScreenHeader.vue';
 import ConfigLayoutToolbar from '../shared/ConfigLayoutToolbar.vue';
@@ -25,12 +33,19 @@ import type { ClaudeModelInfo, ModelsView } from '@/ipc/bindings';
 
 const SCREEN_ID = 'models';
 const configStore = useConfigStore();
+const toastsStore = useToastsStore();
 
 const view = ref<ModelsView>({ models: [], defaultModel: '', projectModel: null });
 const filterQuery = ref('');
+// One write at a time: a second click while a settings.json write is in flight must not queue another.
+const isBusy = ref(false);
 
 async function load() {
-  view.value = await ipc.listModels(configStore.selectedProject);
+  try {
+    view.value = await ipc.listModels(configStore.selectedProject);
+  } catch (error) {
+    toastsStore.showError(error, 'Could not load models');
+  }
 }
 watch(() => configStore.selectedProject, load, { deep: true, immediate: true });
 
@@ -43,6 +58,50 @@ const filteredModels = computed<ClaudeModelInfo[]>(() => {
     .sort((a, b) => b.score - a.score)
     .map((r) => r.model);
 });
+
+const hasProject = computed(() => configStore.selectedProject !== null);
+const isDefault = (model: ClaudeModelInfo) => model.displayName === view.value.defaultModel;
+const isProjectDefault = (model: ClaudeModelInfo) => view.value.projectModel !== null && model.displayName === view.value.projectModel;
+/** Which buttons a card shows. `id` is what gets written, so no id means nothing can be set. */
+function buttons(model: ClaudeModelInfo) {
+  const writable = model.id !== '';
+  return {
+    setDefault: writable && !isDefault(model),
+    setProject: writable && hasProject.value && !isProjectDefault(model),
+    clear: hasProject.value && isProjectDefault(model),
+  };
+}
+
+/** Runs one write, then re-reads the view so the badges follow; says so, or says why not. */
+async function write(message: string, failure: string, action: () => Promise<unknown>) {
+  if (isBusy.value) return;
+  isBusy.value = true;
+  try {
+    await action();
+    toastsStore.show(message);
+    await load();
+  } catch (error) {
+    toastsStore.showError(error, failure);
+  } finally {
+    isBusy.value = false;
+  }
+}
+
+function setDefault(model: ClaudeModelInfo) {
+  return write(`Set ${model.displayName} as default model`, 'Could not set the default model', () => ipc.setDefaultModel(model.id));
+}
+
+function setProjectDefault(model: ClaudeModelInfo) {
+  const project = configStore.selectedProject;
+  if (!project) return;
+  return write(`Set ${model.displayName} as project default`, 'Could not set the project model', () => ipc.setProjectModel(project, model.id));
+}
+
+function clearProjectDefault() {
+  const project = configStore.selectedProject;
+  if (!project) return;
+  return write('Cleared project model override', 'Could not clear the project model', () => ipc.setProjectModel(project, null));
+}
 
 const emptyMessage = computed(() => `No models match "${filterQuery.value}"`);
 </script>
@@ -63,6 +122,7 @@ const emptyMessage = computed(() => `No models match "${filterQuery.value}"`);
     <div class="flex-1 overflow-y-auto px-(--spacing-xxxl) py-(--spacing-lg)">
       <p class="mb-(--spacing-lg) rounded-md bg-(--bg-elevated) p-(--spacing-md) text-(length:--text-small) text-(--text-tertiary)">
         The <code>ANTHROPIC_MODEL</code> environment variable overrides the on-disk default shown here.
+        <span v-if="!hasProject"> To set a project default, first pick a project on the Commands, Skills or Output Styles screen.</span>
       </p>
       <ConfigListLayout
         :layout="configStore.layoutFor(SCREEN_ID)"
@@ -79,13 +139,13 @@ const emptyMessage = computed(() => `No models match "${filterQuery.value}"`);
                 {{ item.displayName }}
               </p>
               <ConfigBadge
-                v-if="item.displayName === view.defaultModel"
+                v-if="isDefault(item)"
                 text="Global Default"
                 fg-class="text-(--accent)"
                 bg-class="bg-(--accent-dim)"
               />
               <ConfigBadge
-                v-if="view.projectModel && item.displayName === view.projectModel"
+                v-if="isProjectDefault(item)"
                 text="Project Default"
                 fg-class="text-(--color-green)"
                 bg-class="bg-(--color-green)/10"
@@ -114,6 +174,44 @@ const emptyMessage = computed(() => `No models match "${filterQuery.value}"`);
                 {{ strength }}
               </li>
             </ul>
+            <div
+              v-if="buttons(item).setDefault || buttons(item).setProject || buttons(item).clear"
+              class="mt-(--spacing-xs) flex flex-wrap items-center gap-(--spacing-md) border-t border-(--border)/20 pt-(--spacing-sm)"
+            >
+              <button
+                v-if="buttons(item).setDefault"
+                type="button"
+                title="Set as global default"
+                :aria-label="`Set as Default: ${item.displayName}`"
+                :disabled="isBusy"
+                class="text-(length:--text-tiny) text-(--accent) disabled:opacity-50"
+                @click="setDefault(item)"
+              >
+                Set as Default
+              </button>
+              <button
+                v-if="buttons(item).setProject"
+                type="button"
+                title="Set as project default"
+                :aria-label="`Set as Project Default: ${item.displayName}`"
+                :disabled="isBusy"
+                class="text-(length:--text-tiny) text-(--color-green) disabled:opacity-50"
+                @click="setProjectDefault(item)"
+              >
+                Set as Project Default
+              </button>
+              <button
+                v-if="buttons(item).clear"
+                type="button"
+                title="Clear project override"
+                :aria-label="`Clear Project Override: ${item.displayName}`"
+                :disabled="isBusy"
+                class="text-(length:--text-tiny) text-(--color-red) disabled:opacity-50"
+                @click="clearProjectDefault()"
+              >
+                Clear Project Override
+              </button>
+            </div>
           </div>
         </template>
       </ConfigListLayout>

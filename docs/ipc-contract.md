@@ -130,7 +130,7 @@ type HookEntry = { event: string; matcherGroupIndex: number; matcher: string | n
 
 type PluginInfo = { key: string; name: string; author: string; version: string | null; installedAt: string | null; enabled: boolean }
 type ModelsView = { models: ClaudeModelInfo[]; defaultModel: string; projectModel: string | null }   // display names
-type ClaudeModelInfo = { displayName: string; description: string; strengths: string[] }             // description empty for discovered models
+type ClaudeModelInfo = { displayName: string; id: string; description: string; strengths: string[] }  // `id` is what set_default_model / set_project_model take (C-27: an id, never a display name); empty for a discovered model whose id names no known family; description empty for discovered models
 
 type MemorySource = { id: MemorySourceId; label: string; kind: "project" | "folder"; fileCount: number }
 type MemoryFileSummary = { id: string; sourceId: MemorySourceId; name: string; filename: string; isMain: boolean }

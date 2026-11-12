@@ -56,6 +56,17 @@ mod tests {
         );
     }
 
+    /// What the Models screen writes (a catalog entry's `id`) must read back as that same entry, or the
+    /// "Global Default" / "Project Default" badge would not light up after "Set as Default".
+    #[test]
+    fn every_id_the_screen_can_write_reads_back_as_its_own_model() {
+        for m in crate::models::catalog::claude_models::curated() {
+            let v = models_view(&[], Some(&m.id), Some(&m.id));
+            assert_eq!(v.default_model, m.display_name, "{}", m.id);
+            assert_eq!(v.project_model.as_deref(), Some(m.display_name.as_str()), "{}", m.id);
+        }
+    }
+
     #[test]
     fn the_catalog_default_applies_when_settings_set_none() {
         let v = models_view(&[], None, None);

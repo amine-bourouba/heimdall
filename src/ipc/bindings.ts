@@ -133,7 +133,16 @@ export type AppInfo = {
 export type Area = "projects" | "sessions" | "transcript" | "todos" | "history" | "debugLogs" | "facets" | "fileHistory" | "stats" | "commands" | "skills" | "plans" | "outputStyles" | "agents" | "hooks" | "settings" | "mcp" | "plugins" | "memory" | "prefs" | "all";
 
 export type ClaudeModelInfo = {
+	/**  What a user is shown. Never written to Claude Code's settings: see `id`. */
 	displayName: string,
+	/**
+	 *  The value that goes into Claude Code's `model` setting (port-plan C-27: an id or alias, never a
+	 *  display name, which the Swift reference app wrote). A curated model's is its API model id; a
+	 *  discovered one's is the id its transcript recorded, so it is one that really ran. Empty when a
+	 *  discovered id names no known model family (`<synthetic>`, a non-Claude model): nothing safe
+	 *  can be written for it, and the screen offers no "set as default" for it.
+	 */
+	id: string,
 	/**  Empty for models discovered only in transcripts. */
 	description: string,
 	strengths: string[],
