@@ -83,12 +83,15 @@ pub fn set_plugin_enabled(claude_home: &Path, key: &str, enabled: bool) -> Resul
     doc.save()
 }
 
+// `Map::remove` is a *swap* remove under serde_json's `preserve_order`: it moves the last entry into the
+// freed slot, reordering keys the write never meant to touch (ADR 0009 rule 3: minimal diff, key order
+// preserved). Every removal from a JSON object in this file and in `mcp.rs` uses `shift_remove`.
 pub fn remove_plugin(claude_home: &Path, key: &str) -> Result<WriteOutcome> {
     let Some(mut doc) = open_settings(&global_settings_path(claude_home), false)? else {
         return Ok(WriteOutcome::Unchanged);
     };
     let plugins = object_entry(doc.root_mut()?, "enabledPlugins");
-    plugins.remove(key);
+    plugins.shift_remove(key);
     doc.save()
 }
 
@@ -136,7 +139,7 @@ pub fn set_project_model(project_root: &Path, model: Option<&str>) -> Result<Wri
     let root = doc.root_mut()?;
     match model {
         Some(m) => root.insert("model".to_string(), Value::String(m.to_string())),
-        None => root.remove("model"),
+        None => root.shift_remove("model"),
     };
     doc.save()
 }
@@ -246,10 +249,10 @@ pub fn delete_hook(
     }
     groups.remove(index);
     if groups.is_empty() {
-        hooks.remove(event);
+        hooks.shift_remove(event);
     }
     if hooks.is_empty() {
-        root.remove("hooks");
+        root.shift_remove("hooks");
     }
     doc.save()
 }
@@ -368,6 +371,63 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         assert_eq!(remove_plugin(d.path(), "a@b").unwrap(), WriteOutcome::Unchanged);
         assert!(!d.path().join("settings.json").exists());
+    }
+
+    // MARK: - Key order (ADR 0009 rule 3, user answer 6): a write must not reorder what it did not touch.
+    // `json!` equality ignores key order, so these read the keys themselves. Under `preserve_order`,
+    // `Map::remove` is a swap remove -- it moves the *last* entry into the freed slot.
+
+    fn keys(v: &Value) -> Vec<&str> {
+        v.as_object().unwrap().keys().map(String::as_str).collect()
+    }
+
+    #[test]
+    fn removing_a_plugin_keeps_the_order_of_the_others() {
+        let d = tempfile::tempdir().unwrap();
+        settings_with(
+            d.path(),
+            r#"{"enabledPlugins": {"a@x": true, "b@x": true, "c@x": true, "d@x": true}}"#,
+        );
+        remove_plugin(d.path(), "b@x").unwrap();
+        let v = read(&d.path().join("settings.json"));
+        assert_eq!(keys(&v["enabledPlugins"]), ["a@x", "c@x", "d@x"]);
+    }
+
+    #[test]
+    fn clearing_the_project_model_keeps_the_order_of_the_other_keys() {
+        let d = tempfile::tempdir().unwrap();
+        let dir = d.path().join(".claude");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("settings.json"),
+            r#"{"model": "opus", "a": 1, "b": 2, "c": 3}"#,
+        )
+        .unwrap();
+        set_project_model(d.path(), None).unwrap();
+        let v = read(&dir.join("settings.json"));
+        assert_eq!(keys(&v), ["a", "b", "c"]);
+    }
+
+    #[test]
+    fn deleting_a_hook_keeps_the_order_of_the_other_events() {
+        let d = tempfile::tempdir().unwrap();
+        settings_with(
+            d.path(),
+            r#"{"x": 1, "hooks": {"A": [{"hooks": []}], "B": [{"hooks": []}], "C": [{"hooks": []}], "D": [{"hooks": []}]}, "y": 2}"#,
+        );
+        delete_hook(d.path(), ConfigScope::Global, None, "B", 0).unwrap();
+        let v = read(&d.path().join("settings.json"));
+        assert_eq!(keys(&v["hooks"]), ["A", "C", "D"]);
+        assert_eq!(keys(&v), ["x", "hooks", "y"]);
+    }
+
+    #[test]
+    fn deleting_the_last_hook_drops_the_hooks_key_without_reordering_the_rest() {
+        let d = tempfile::tempdir().unwrap();
+        settings_with(d.path(), r#"{"x": 1, "hooks": {"A": [{"hooks": []}]}, "y": 2, "z": 3}"#);
+        delete_hook(d.path(), ConfigScope::Global, None, "A", 0).unwrap();
+        let v = read(&d.path().join("settings.json"));
+        assert_eq!(keys(&v), ["x", "y", "z"]);
     }
 
     // MARK: - MCP permission stripping

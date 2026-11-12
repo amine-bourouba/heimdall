@@ -10,12 +10,13 @@
 //! (`SettingsWriter.swift:150-177`) always writes a fresh `{"command", "args", "env"}` object from
 //! its own three plain parameters, regardless of what the server being edited actually is -- an
 //! HTTP or SSE server (`type`/`url`/`headers`, no `command`/`args` at all) silently loses every one
-//! of those fields the moment its edit form is submitted, since that function's own signature has
-//! nowhere to put them. This never comes up for Heimdall's own `McpServerInput`: its `transport`
-//! field is required and its own command/url/env/headers always fully describe the chosen
-//! transport, so every write below constructs a complete, correct object from the input directly,
-//! never a partial patch of the old one -- there is no way to reach the Swift bug's own precondition
-//! (the fields it drops were never modeled on this input's own shape to begin with).
+//! of those fields the moment its edit form is submitted. `McpServerInput` models all of them, with a
+//! required transport, so the keys the form owns (`MODELLED`) are always written complete.
+//!
+//! The form does *not* own everything a definition can hold (`timeout`, `alwaysAllow`, an `oauth` block,
+//! keys a later Claude Code adds), so an update merges into the stored object instead of replacing it
+//! (ADR 0009 rule 6): those keys stay, in place. An update and a delete also leave every other entry
+//! where it was (rule 3), and neither an add nor a rename may overwrite a different server.
 
 use std::path::Path;
 
@@ -65,12 +66,16 @@ fn resolve_secrets(
         .collect()
 }
 
-/// The complete, correct server object for `input`, given `old` (the previously-stored definition,
-/// for secret `Keep` resolution only -- `None` for a brand new server). Every field this task's own
-/// Goal names (`type`, `url`, `headers`, `command`, `args` as an array, `env`) is written based
-/// entirely on `input`'s own transport; nothing is conditionally carried over from `old` except a
-/// kept secret's own value.
-fn server_json(input: &McpServerInput, old: Option<&McpServerDefinition>) -> Value {
+/// The keys the add/edit form owns. Everything else in a stored definition (`timeout`, `alwaysAllow`,
+/// an `oauth` block, a key a later Claude Code adds) is the form's to leave alone: [`merged`] keeps it.
+const MODELLED: [&str; 6] = ["type", "command", "args", "url", "env", "headers"];
+
+/// The server object for `input`, given `old` (the previously-stored definition, for secret `Keep`
+/// resolution only -- `None` for a brand new server). The keys the form owns (`MODELLED`) are written
+/// based entirely on `input`'s own transport; nothing is conditionally carried over from `old` except
+/// a kept secret's own value. Keys the form does not own are not in this object at all: an update adds
+/// them back with [`merged`].
+fn server_json(input: &McpServerInput, old: Option<&McpServerDefinition>) -> Map<String, Value> {
     let mut obj = Map::new();
     match input.transport {
         McpServerInputTransport::Stdio => {
@@ -103,27 +108,80 @@ fn server_json(input: &McpServerInput, old: Option<&McpServerDefinition>) -> Val
             }
         }
     }
-    Value::Object(obj)
+    obj
 }
 
+/// The stored definition `old` with the form's keys replaced by `new`'s and every other key left
+/// exactly as it was, in its original position. A form key `new` no longer has (`command`, `args` and
+/// `env` after a switch to http) is dropped; a form key the old object lacked comes after the rest.
+fn merged(old: Option<&Value>, mut new: Map<String, Value>) -> Value {
+    let mut out = Map::new();
+    if let Some(Value::Object(old)) = old {
+        for (key, value) in old {
+            if MODELLED.contains(&key.as_str()) {
+                if let Some(replacement) = new.shift_remove(key) {
+                    out.insert(key.clone(), replacement);
+                }
+            } else {
+                out.insert(key.clone(), value.clone());
+            }
+        }
+    }
+    out.extend(new);
+    Value::Object(out)
+}
+
+/// Puts `value` where `old_key` was, under `new_key`, without moving any other entry. `old_key` absent
+/// appends it. (`Map::insert` on an existing key already replaces in place; a rename has to rebuild.)
+fn replace_entry(servers: &mut Map<String, Value>, old_key: &str, new_key: &str, value: Value) {
+    if old_key == new_key || !servers.contains_key(old_key) {
+        servers.insert(new_key.to_string(), value);
+        return;
+    }
+    let mut value = Some(value);
+    let mut rebuilt = Map::new();
+    for (key, existing) in std::mem::take(servers) {
+        if key == old_key
+            && let Some(value) = value.take()
+        {
+            rebuilt.insert(new_key.to_string(), value);
+        } else {
+            rebuilt.insert(key, existing);
+        }
+    }
+    *servers = rebuilt;
+}
+
+fn name_taken(name: &str) -> AppError {
+    AppError::invalid_input(format!("an MCP server named \"{name}\" already exists"))
+}
+
+/// A name already in `mcpServers` is refused, not overwritten: a new server must not silently replace
+/// another one's definition (and its secrets).
 pub fn add_server(config_file: &Path, input: &McpServerInput) -> Result<WriteOutcome> {
     let mut doc = JsonDoc::open(config_file, true)?;
     let servers = servers_object(doc.root_mut()?);
-    servers.insert(input.name.clone(), server_json(input, None));
+    if servers.contains_key(&input.name) {
+        return Err(name_taken(&input.name));
+    }
+    servers.insert(input.name.clone(), Value::Object(server_json(input, None)));
     doc.save()
 }
 
-/// `original_name` may differ from `input.name` (a rename); the old entry is dropped either way
-/// and the new one inserted under whatever name the input gives, matching Swift's own
-/// `updateMCPServer(originalName:newName:...)`.
+/// `original_name` may differ from `input.name` (a rename), matching Swift's own
+/// `updateMCPServer(originalName:newName:...)`. The entry is edited **in place** (same position, same
+/// keys the form does not own -- see [`merged`]); a rename onto a *different* existing server is
+/// refused rather than overwriting it.
 pub fn update_server(config_file: &Path, original_name: &str, input: &McpServerInput) -> Result<WriteOutcome> {
     let mut doc = JsonDoc::open(config_file, true)?;
     let servers = servers_object(doc.root_mut()?);
-    let old: Option<McpServerDefinition> = servers
-        .get(original_name)
-        .and_then(|v| serde_json::from_value(v.clone()).ok());
-    servers.remove(original_name);
-    servers.insert(input.name.clone(), server_json(input, old.as_ref()));
+    if input.name != original_name && servers.contains_key(&input.name) {
+        return Err(name_taken(&input.name));
+    }
+    let stored = servers.get(original_name);
+    let old: Option<McpServerDefinition> = stored.and_then(|v| serde_json::from_value(v.clone()).ok());
+    let value = merged(stored, server_json(input, old.as_ref()));
+    replace_entry(servers, original_name, &input.name, value);
     doc.save()
 }
 
@@ -135,7 +193,8 @@ pub fn remove_server(config_file: &Path, name: &str) -> Result<WriteOutcome> {
     let Some(servers) = root.get_mut("mcpServers").and_then(Value::as_object_mut) else {
         return Ok(WriteOutcome::Unchanged);
     };
-    if servers.remove(name).is_none() {
+    // `shift_remove`, not `remove`: see the note above `settings::remove_plugin`.
+    if servers.shift_remove(name).is_none() {
         return Ok(WriteOutcome::Unchanged);
     }
     doc.save()
@@ -265,6 +324,100 @@ mod tests {
         assert_eq!(v["numStartups"], 5);
         assert_eq!(v["mcpServers"]["existing"]["command"], "x");
         assert_eq!(v["mcpServers"]["new"]["command"], "node");
+    }
+
+    // MARK: - Key order, kept fields, and not clobbering another server (ADR 0009 rules 3 and 6)
+    //
+    // `json!` equality ignores key order, so the order tests read the keys themselves. Under
+    // `preserve_order`, `Map::remove` is a swap remove: it moves the *last* entry into the freed slot.
+
+    fn keys(v: &Value) -> Vec<&str> {
+        v.as_object().unwrap().keys().map(String::as_str).collect()
+    }
+
+    const FOUR_SERVERS: &str = r#"{"mcpServers": {
+        "a": {"type": "stdio", "command": "a", "args": []},
+        "b": {"type": "stdio", "command": "b", "args": []},
+        "c": {"type": "stdio", "command": "c", "args": []},
+        "d": {"type": "stdio", "command": "d", "args": []}}}"#;
+
+    #[test]
+    fn removing_a_server_keeps_the_order_of_the_others() {
+        let d = tempfile::tempdir().unwrap();
+        let path = config_with(d.path(), FOUR_SERVERS);
+        remove_server(&path, "b").unwrap();
+        assert_eq!(keys(&read(&path)["mcpServers"]), ["a", "c", "d"]);
+    }
+
+    #[test]
+    fn updating_a_server_keeps_its_position() {
+        let d = tempfile::tempdir().unwrap();
+        let path = config_with(d.path(), FOUR_SERVERS);
+        update_server(&path, "b", &stdio_input("b", "node", BTreeMap::new())).unwrap();
+        assert_eq!(keys(&read(&path)["mcpServers"]), ["a", "b", "c", "d"]);
+    }
+
+    #[test]
+    fn renaming_a_server_keeps_its_position() {
+        let d = tempfile::tempdir().unwrap();
+        let path = config_with(d.path(), FOUR_SERVERS);
+        update_server(&path, "b", &stdio_input("z", "node", BTreeMap::new())).unwrap();
+        assert_eq!(keys(&read(&path)["mcpServers"]), ["a", "z", "c", "d"]);
+    }
+
+    /// Claude Code's server definitions carry more than the form models (`timeout`, `alwaysAllow`, an
+    /// `oauth` block, keys a later version adds): an edit must not erase them.
+    #[test]
+    fn updating_keeps_the_keys_the_form_does_not_edit() {
+        let d = tempfile::tempdir().unwrap();
+        let path = config_with(
+            d.path(),
+            r#"{"mcpServers": {"s": {"type": "stdio", "command": "old", "args": ["x"], "timeout": 30, "alwaysAllow": ["read"], "oauth": {"clientId": "c"}}}}"#,
+        );
+        update_server(&path, "s", &stdio_input("s", "new", BTreeMap::new())).unwrap();
+        let s = read(&path)["mcpServers"]["s"].clone();
+        assert_eq!(s["command"], "new");
+        assert_eq!(s["args"], serde_json::json!(["--flag"]));
+        assert_eq!(s["timeout"], 30);
+        assert_eq!(s["alwaysAllow"], serde_json::json!(["read"]));
+        assert_eq!(s["oauth"], serde_json::json!({"clientId": "c"}));
+    }
+
+    #[test]
+    fn switching_transport_drops_the_old_transports_fields_but_keeps_the_rest() {
+        let d = tempfile::tempdir().unwrap();
+        let path = config_with(
+            d.path(),
+            r#"{"mcpServers": {"s": {"type": "stdio", "command": "old", "args": ["x"], "env": {"K": "v"}, "timeout": 30}}}"#,
+        );
+        update_server(&path, "s", &http_input("s", "https://x", BTreeMap::new())).unwrap();
+        let s = read(&path)["mcpServers"]["s"].clone();
+        assert_eq!(s["type"], "http");
+        assert_eq!(s["url"], "https://x");
+        for gone in ["command", "args", "env"] {
+            assert!(s.get(gone).is_none(), "{gone} belongs to the stdio transport: {s}");
+        }
+        assert_eq!(s["timeout"], 30);
+    }
+
+    #[test]
+    fn renaming_onto_another_server_is_refused_and_changes_nothing() {
+        let d = tempfile::tempdir().unwrap();
+        let path = config_with(d.path(), FOUR_SERVERS);
+        let before = std::fs::read(&path).unwrap();
+        let err = update_server(&path, "b", &stdio_input("c", "node", BTreeMap::new())).unwrap_err();
+        assert!(matches!(err, AppError::InvalidInput { .. }), "{err:?}");
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+    }
+
+    #[test]
+    fn adding_a_name_that_is_already_taken_is_refused_and_changes_nothing() {
+        let d = tempfile::tempdir().unwrap();
+        let path = config_with(d.path(), FOUR_SERVERS);
+        let before = std::fs::read(&path).unwrap();
+        let err = add_server(&path, &stdio_input("c", "node", BTreeMap::new())).unwrap_err();
+        assert!(matches!(err, AppError::InvalidInput { .. }), "{err:?}");
+        assert_eq!(std::fs::read(&path).unwrap(), before);
     }
 
     // MARK: - Update: AC1, the real Swift bug this task fixes
