@@ -54,6 +54,13 @@ function selectSort(option: ProjectSortOption) {
   isSortMenuOpen.value = false;
 }
 
+// Close only when focus leaves the whole menu. Closing on any focusout removed the item before the
+// click that caused it landed (clicking an item first moves focus off the toggle), so choosing a sort
+// did nothing in a real browser: AppMenu.vue's fix, M3-51.
+function onSortFocusOut(event: FocusEvent) {
+  if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) isSortMenuOpen.value = false;
+}
+
 onMounted(() => void sessionStore.load());
 </script>
 
@@ -107,7 +114,7 @@ onMounted(() => void sessionStore.load());
 
       <div
         class="relative"
-        @focusout="isSortMenuOpen = false"
+        @focusout="onSortFocusOut"
       >
         <button
           type="button"

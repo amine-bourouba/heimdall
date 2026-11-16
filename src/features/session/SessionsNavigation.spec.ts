@@ -146,6 +146,39 @@ describe('SessionsNavigation: sorting', () => {
     expect(projectNames()).toEqual(['alpha', 'zebra']);
     expect(useSessionStore().projectSortOption).toBe('name');
   });
+
+  // A real click on a menu item first moves focus from the toggle to the item. Closing on *any*
+  // focusout removed the item before the click that caused it landed, so choosing a sort did nothing
+  // (found checking the real build, M3-51; AppMenu.vue had the same bug and the same fix).
+  // The test above clicks the item directly, which a browser never does.
+  it('stays open while focus moves from the toggle to one of its own items, and closes when focus leaves it', async () => {
+    const wrapper = mountNavigation({ p1: [makeSessionSummary()] }, [makeProjectSummary()]);
+    await flushPromises();
+
+    const toggle = wrapper.find('button[title="Sort projects"]');
+    await toggle.trigger('click');
+    const item = wrapper.find('button[role="menuitemradio"]');
+
+    toggle.element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: item.element }));
+    await flushPromises();
+    expect(wrapper.find('[role="menu"]').exists()).toBe(true);
+
+    item.element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }));
+    await flushPromises();
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false);
+  });
+
+  it('closes when focus leaves for nowhere at all (a click on the page)', async () => {
+    const wrapper = mountNavigation({ p1: [makeSessionSummary()] }, [makeProjectSummary()]);
+    await flushPromises();
+    const toggle = wrapper.find('button[title="Sort projects"]');
+    await toggle.trigger('click');
+
+    toggle.element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+    await flushPromises();
+
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false);
+  });
 });
 
 describe('SessionsNavigation: search filtering', () => {
