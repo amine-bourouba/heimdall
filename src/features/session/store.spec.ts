@@ -342,12 +342,90 @@ describe('session store: filteredSortedProjects', () => {
 });
 
 describe('session store: deleteSession', () => {
-  function mockDelete() {
+  // The command's real answer is a WriteOutcome; the native confirmation is Rust's.
+  function mockDelete(outcome: 'written' | 'cancelled' | 'unchanged' = 'written') {
     mockIPC((cmd) => {
-      if (cmd === 'delete_session' || cmd === 'delete_project') return { status: 'ok' };
+      if (cmd === 'delete_session' || cmd === 'delete_project') return outcome;
       throw new Error(`unexpected command: ${cmd}`);
     });
   }
+
+  // M3-51 AC: "a `cancelled` result changes nothing in the UI".
+  it('deleteSession_cancelledChangesNothing', async () => {
+    mockDelete('cancelled');
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' }), makeSessionSummary({ id: 's2' })] })];
+    store.selectedSession = makeLoadedSession('s1');
+    store.selectedProjectId = 'p1';
+    store.cacheSession(makeLoadedSession('s1'));
+
+    const outcome = await store.deleteSession('s1');
+
+    expect(outcome).toBe('cancelled');
+    expect(store.projects[0].sessions.map((s) => s.id)).toEqual(['s1', 's2']);
+    expect(store.selectedSession?.id).toBe('s1');
+    expect(store.selectedProjectId).toBe('p1');
+    expect(store.cachedSession('s1')).toBeDefined();
+  });
+
+  it('deleteSession_alreadyGoneStillLeavesTheList', async () => {
+    mockDelete('unchanged');
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' }), makeSessionSummary({ id: 's2' })] })];
+
+    expect(await store.deleteSession('s1')).toBe('unchanged');
+
+    expect(store.projects[0].sessions.map((s) => s.id)).toEqual(['s2']);
+  });
+
+  it('deleteSession_resolvesWithWhatTheCommandAnswered', async () => {
+    mockDelete('written');
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' })] })];
+    expect(await store.deleteSession('s1')).toBe('written');
+  });
+
+  it('deleteSession_sendsTheOwningProjectAndTheSession', async () => {
+    const sent: unknown[] = [];
+    mockIPC((cmd, args) => {
+      sent.push([cmd, args]);
+      return 'written';
+    });
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' })] })];
+    await store.deleteSession('s1');
+    expect(sent).toEqual([['delete_session', { projectId: 'p1', sessionId: 's1' }]]);
+  });
+
+  it('deleteSession_unknownSessionSendsNothing', async () => {
+    const sent: string[] = [];
+    mockIPC((cmd) => {
+      sent.push(cmd);
+      return 'written';
+    });
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' })] })];
+    expect(await store.deleteSession('nope')).toBe('unchanged');
+    expect(sent).toEqual([]);
+  });
+
+  it('deleteSession_lastSessionClearsTheProjectSelectionToo', async () => {
+    mockDelete();
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' })] }), makeProject({ id: 'p2', sessions: [makeSessionSummary({ id: 's2' })] })];
+    store.selectedProjectId = 'p1';
+    await store.deleteSession('s1');
+    expect(store.selectedProjectId).toBeNull();
+  });
+
+  it('deleteSession_keepsTheProjectSelectionWhileSessionsRemain', async () => {
+    mockDelete();
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' }), makeSessionSummary({ id: 's2' })] })];
+    store.selectedProjectId = 'p1';
+    await store.deleteSession('s1');
+    expect(store.selectedProjectId).toBe('p1');
+  });
 
   it('deleteSession_removesFromProject', async () => {
     mockDelete();
@@ -419,12 +497,59 @@ describe('session store: deleteSession', () => {
 });
 
 describe('session store: deleteProject', () => {
-  function mockDelete() {
+  function mockDelete(outcome: 'written' | 'cancelled' | 'unchanged' = 'written') {
     mockIPC((cmd) => {
-      if (cmd === 'delete_session' || cmd === 'delete_project') return { status: 'ok' };
+      if (cmd === 'delete_session' || cmd === 'delete_project') return outcome;
       throw new Error(`unexpected command: ${cmd}`);
     });
   }
+
+  it('deleteProject_cancelledChangesNothing', async () => {
+    mockDelete('cancelled');
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' })] })];
+    store.selectedSession = makeLoadedSession('s1');
+    store.selectedProjectId = 'p1';
+    store.cacheSession(makeLoadedSession('s1'));
+
+    expect(await store.deleteProject('p1')).toBe('cancelled');
+
+    expect(store.projects.map((p) => p.id)).toEqual(['p1']);
+    expect(store.selectedSession?.id).toBe('s1');
+    expect(store.selectedProjectId).toBe('p1');
+    expect(store.cachedSession('s1')).toBeDefined();
+  });
+
+  it('deleteProject_alreadyGoneStillLeavesTheList', async () => {
+    mockDelete('unchanged');
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' })] })];
+    expect(await store.deleteProject('p1')).toBe('unchanged');
+    expect(store.projects).toEqual([]);
+  });
+
+  it('deleteProject_sendsTheProjectId', async () => {
+    const sent: unknown[] = [];
+    mockIPC((cmd, args) => {
+      sent.push([cmd, args]);
+      return 'written';
+    });
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' })] })];
+    await store.deleteProject('p1');
+    expect(sent).toEqual([['delete_project', { projectId: 'p1' }]]);
+  });
+
+  it('deleteProject_clearsTheProjectSelectionOnlyForTheDeletedProject', async () => {
+    mockDelete();
+    const store = useSessionStore();
+    store.projects = [makeProject({ id: 'p1', sessions: [makeSessionSummary({ id: 's1' })] }), makeProject({ id: 'p2', sessions: [makeSessionSummary({ id: 's2' })] })];
+    store.selectedProjectId = 'p2';
+    await store.deleteProject('p1');
+    expect(store.selectedProjectId).toBe('p2');
+    await store.deleteProject('p2');
+    expect(store.selectedProjectId).toBeNull();
+  });
 
   it('deleteProject_removesFromProjects', async () => {
     mockDelete();

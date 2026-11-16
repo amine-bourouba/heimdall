@@ -18,6 +18,7 @@ import MarqueeText from '@/components/MarqueeText.vue';
 import type { SessionSummary } from '@/ipc/bindings';
 import { formatModel, formatRelativeTime, formatTokenCount, totalTokens } from './format';
 import { useSessionStore } from './store';
+import { useDeleteActions } from './useDeleteActions';
 
 const props = defineProps<{
   session: SessionSummary;
@@ -25,6 +26,7 @@ const props = defineProps<{
 }>();
 
 const sessionStore = useSessionStore();
+const { isBusy, deleteSession } = useDeleteActions();
 const isHovered = ref(false);
 
 const isSelected = computed(() => sessionStore.selectedSession?.id === props.session.id);
@@ -61,11 +63,11 @@ function select() {
           <MarqueeText
             v-if="layout === 'list'"
             :text="session.title"
-            class="text-(length:--text-body-medium) text-(--text-primary)"
+            class="pr-7 text-(length:--text-body-medium) text-(--text-primary)"
           />
           <p
             v-else
-            class="line-clamp-2 text-(length:--text-body-medium) text-(--text-primary)"
+            class="line-clamp-2 pr-7 text-(length:--text-body-medium) text-(--text-primary)"
           >
             {{ session.title }}
           </p>
@@ -103,6 +105,20 @@ function select() {
           </div>
         </div>
       </CardChrome>
+    </button>
+    <!-- A sibling of the card button, not inside it: a button cannot hold a button. -->
+    <button
+      type="button"
+      title="Delete session"
+      :aria-label="`Delete session: ${session.title}`"
+      :disabled="isBusy"
+      class="absolute top-(--spacing-sm) right-(--spacing-sm) rounded-sm p-(--spacing-xxs) text-(--text-tertiary) disabled:opacity-50"
+      @click="deleteSession(session.id)"
+    >
+      <AppIcon
+        name="trash"
+        size="sm"
+      />
     </button>
     <div
       class="pointer-events-none absolute inset-y-(--spacing-sm) left-0 w-[3px] rounded-full"

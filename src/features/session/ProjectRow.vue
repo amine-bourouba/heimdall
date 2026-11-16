@@ -11,6 +11,7 @@ import AppIcon from '@/components/AppIcon.vue';
 import { formatModel, formatRelativeTime, formatTokenCount, totalTokens } from './format';
 import { useSessionStore } from './store';
 import type { ProjectWithSessions } from './store';
+import { useDeleteActions } from './useDeleteActions';
 
 const props = defineProps<{
   project: ProjectWithSessions;
@@ -20,6 +21,7 @@ const props = defineProps<{
 defineEmits<{ 'toggle-collapse': [] }>();
 
 const sessionStore = useSessionStore();
+const { isBusy, deleteProject } = useDeleteActions();
 
 function selectProject() {
   sessionStore.selectedSession = null;
@@ -61,6 +63,19 @@ function selectSession(sessionId: string) {
         />
         <span class="flex-1 truncate text-(length:--text-subheading) text-(--text-primary)">{{ project.name }}</span>
         <span class="rounded-full bg-(--bg-card) px-(--spacing-xs) text-(length:--text-tiny) text-(--text-tertiary)">{{ project.sessions.length }}</span>
+      </button>
+      <button
+        type="button"
+        title="Delete project"
+        :aria-label="`Delete project ${project.name}`"
+        :disabled="isBusy"
+        class="shrink-0 rounded-sm p-(--spacing-xxs) text-(--text-tertiary) disabled:opacity-50"
+        @click="deleteProject(project)"
+      >
+        <AppIcon
+          name="trash"
+          size="sm"
+        />
       </button>
     </div>
 

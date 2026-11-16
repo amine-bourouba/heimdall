@@ -15,7 +15,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { ipc, onDataChanged } from '@/ipc/client';
-import type { DataChange, Message, ProjectSummary, SessionDetail, SessionSummary } from '@/ipc/bindings';
+import type { DataChange, Message, ProjectSummary, SessionDetail, SessionSummary, WriteOutcome } from '@/ipc/bindings';
 import { bestScore, fuzzyMatch } from '@/lib/fuzzyMatch';
 import { usePrefsStore } from '@/stores/prefs';
 
@@ -207,18 +207,28 @@ export const useSessionStore = defineStore('session', () => {
 
   // Ported from AppState.swift:443-464. The Swift reference app finds the owning project by searching, since the
   // view only ever has the `Session` itself on hand -- same shape here, just an id.
-  async function deleteSession(sessionId: string) {
+  //
+  // Unlike Swift (which deletes unconditionally), `delete_session` shows a native confirmation and answers
+  // `cancelled` when it is declined (M3-46): nothing was deleted, so nothing here may change either (M3-51
+  // AC). `written` and `unchanged` (already gone) both mean the session is no longer there, so it leaves
+  // the list. Resolves with the outcome so the caller can say what happened.
+  async function deleteSession(sessionId: string): Promise<WriteOutcome> {
     const owner = projects.value.find((p) => p.sessions.some((s) => s.id === sessionId));
-    if (owner) await ipc.deleteSession(owner.id, sessionId);
+    const outcome: WriteOutcome = owner ? await ipc.deleteSession(owner.id, sessionId) : 'unchanged';
+    if (outcome === 'cancelled') return outcome;
 
     if (selectedSession.value?.id === sessionId) selectedSession.value = null;
     sessionCache.delete(sessionId);
     projects.value = projects.value.map((p) => ({ ...p, sessions: p.sessions.filter((s) => s.id !== sessionId) })).filter((p) => p.sessions.length > 0);
+    // The project goes with its last session: do not leave the selection pointing at nothing.
+    if (owner && selectedProjectId.value === owner.id && !projects.value.some((p) => p.id === owner.id)) selectedProjectId.value = null;
+    return outcome;
   }
 
-  // Ported from AppState.swift:379-396.
-  async function deleteProject(projectId: string) {
-    await ipc.deleteProject(projectId);
+  // Ported from AppState.swift:379-396; `cancelled` changes nothing, as for `deleteSession`.
+  async function deleteProject(projectId: string): Promise<WriteOutcome> {
+    const outcome = await ipc.deleteProject(projectId);
+    if (outcome === 'cancelled') return outcome;
 
     const project = projects.value.find((p) => p.id === projectId);
     if (project) {
@@ -228,6 +238,8 @@ export const useSessionStore = defineStore('session', () => {
       for (const s of project.sessions) sessionCache.delete(s.id);
     }
     projects.value = projects.value.filter((p) => p.id !== projectId);
+    if (selectedProjectId.value === projectId) selectedProjectId.value = null;
+    return outcome;
   }
 
   return {

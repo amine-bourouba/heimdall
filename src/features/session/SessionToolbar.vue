@@ -8,8 +8,9 @@
 // job) -- so is "Copy File Name": Heimdall never exposes a raw file path to the webview at all
 // (commands take ids, never paths, AI_INSTRUCTIONS.md), so "copy session id" (this task's own
 // Goal wording, not Swift's "copy file name") copies `summary.id` directly, the natural
-// architecture-correct adaptation. Delete/Close (session-views.md §6 items 10/11) aren't in this
-// task's Goal either and are left for whichever task does own them.
+// architecture-correct adaptation. Delete (session-views.md §6 item 10) was left for whichever task
+// owns it: M3-51 added it (the trash button at the end, with Rust's native confirmation). Close
+// (item 11) still is not here.
 //
 // `claude --resume <id>` (AC1) is hard-coded, not built from a `claudeCodePath` preference --
 // the AC's own wording is an exact, literal string, not "whatever CLI the user configured".
@@ -17,11 +18,13 @@ import { ref } from 'vue';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import AppIcon from '@/components/AppIcon.vue';
 import { useSessionStore } from './store';
+import { useDeleteActions } from './useDeleteActions';
 import type { SessionSummary } from '@/ipc/bindings';
 
 const props = defineProps<{ summary: SessionSummary }>();
 
 const sessionStore = useSessionStore();
+const { isBusy: isDeleting, deleteSession } = useDeleteActions();
 
 const resumeCopied = ref(false);
 const idCopied = ref(false);
@@ -171,6 +174,19 @@ function clearSearch() {
     >
       <AppIcon
         :name="sessionStore.allBlocksExpanded ? 'arrow.down.right.and.arrow.up.left' : 'arrow.up.left.and.arrow.down.right'"
+        size="sm"
+      />
+    </button>
+
+    <button
+      type="button"
+      title="Delete session"
+      :disabled="isDeleting"
+      class="rounded-sm p-(--spacing-xs) text-(--text-secondary) disabled:opacity-50"
+      @click="deleteSession(summary.id)"
+    >
+      <AppIcon
+        name="trash"
         size="sm"
       />
     </button>

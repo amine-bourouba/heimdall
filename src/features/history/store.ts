@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { ipc } from '@/ipc/client';
-import type { HistoryEntry } from '@/ipc/bindings';
+import type { HistoryEntry, WriteOutcome } from '@/ipc/bindings';
 import { fuzzyMatch } from '@/lib/fuzzyMatch';
 
 /** `HistoryListView.swift:35`'s own `pageSize`. */
@@ -147,7 +147,40 @@ export const useHistoryStore = defineStore('history', () => {
     isLoadingMore.value = false;
   }
 
-  return { entries, total, skipped, isLoading, isLoadingMore, query, hasMore, filteredEntries, groupedEntries, load, loadMore };
+  // M3-51. Both delete commands show a native confirmation (M3-46) and answer `cancelled` when it is
+  // declined: nothing was deleted, so the list must not change either. They resolve with the outcome so
+  // the caller can say what happened.
+
+  /** `written` and `unchanged` (already gone) both leave the entry out of the list. */
+  async function deleteEntry(entryId: string): Promise<WriteOutcome> {
+    const outcome = await ipc.deleteHistoryEntry(entryId);
+    if (outcome === 'cancelled') return outcome;
+    const before = entries.value.length;
+    entries.value = entries.value.filter((e) => e.id !== entryId);
+    if (entries.value.length < before) total.value = Math.max(0, total.value - 1);
+    return outcome;
+  }
+
+  /**
+   * Re-reads the first page. Rust deletes by age and does not say how many entries went, so the list
+   * is fetched again instead of being filtered locally; no skeleton, so the screen does not flash.
+   * (A list the user had paged further down collapses back to its first page.)
+   */
+  async function reload() {
+    const page = await ipc.listHistory(0, PAGE_SIZE);
+    entries.value = page.entries;
+    total.value = page.total;
+    skipped.value = page.skipped;
+  }
+
+  /** `unchanged`: nothing was that old. */
+  async function clearOlderThan(days: number): Promise<WriteOutcome> {
+    const outcome = await ipc.clearHistoryOlderThan(days);
+    if (outcome === 'written') await reload();
+    return outcome;
+  }
+
+  return { entries, total, skipped, isLoading, isLoadingMore, query, hasMore, filteredEntries, groupedEntries, load, loadMore, deleteEntry, clearOlderThan };
 });
 
 /** `HistoryEntry.projectName` (HistoryEntry.swift:12-14): the last path component. */

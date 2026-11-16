@@ -176,3 +176,99 @@ describe('history store: search and grouping (HistoryListView.swift:51-84)', () 
     expect(store.groupedEntries.map((g) => g.group)).toEqual(['today', 'older']); // thisWeek/lastWeek/thisMonth skipped: empty
   });
 });
+
+// M3-51. Both delete commands show a native confirmation (M3-46) and answer `cancelled` when it is
+// declined; AC: "a `cancelled` result changes nothing in the UI".
+describe('history store: deleting', () => {
+  type Outcome = 'written' | 'cancelled' | 'unchanged';
+  const page = (ids: string[], total = ids.length): HistoryPage => ({ entries: ids.map((id) => makeEntry({ id })), offset: 0, total, skipped: 0 });
+
+  /** `lists` is what each successive list_history returns (the last repeats). */
+  function mockHistory(outcome: Outcome, lists: HistoryPage[]) {
+    const sent: [string, unknown][] = [];
+    let listCalls = 0;
+    mockIPC((cmd, args) => {
+      sent.push([cmd, args]);
+      if (cmd === 'list_history') return lists[Math.min(listCalls++, lists.length - 1)];
+      if (cmd === 'delete_history_entry' || cmd === 'clear_history_older_than') return outcome;
+      throw new Error(`unexpected command: ${cmd}`);
+    });
+    return sent;
+  }
+
+  it('deleteEntry sends the entry id and takes the entry out of the list and the count', async () => {
+    const sent = mockHistory('written', [page(['a', 'b', 'c'])]);
+    const store = useHistoryStore();
+    await store.load();
+
+    expect(await store.deleteEntry('b')).toBe('written');
+
+    expect(sent).toContainEqual(['delete_history_entry', { entryId: 'b' }]);
+    expect(store.entries.map((e) => e.id)).toEqual(['a', 'c']);
+    expect(store.total).toBe(2);
+  });
+
+  it('deleteEntry: a declined confirmation changes nothing', async () => {
+    mockHistory('cancelled', [page(['a', 'b', 'c'])]);
+    const store = useHistoryStore();
+    await store.load();
+
+    expect(await store.deleteEntry('b')).toBe('cancelled');
+
+    expect(store.entries.map((e) => e.id)).toEqual(['a', 'b', 'c']);
+    expect(store.total).toBe(3);
+  });
+
+  it('deleteEntry: an entry that was already gone still leaves the list', async () => {
+    mockHistory('unchanged', [page(['a', 'b'])]);
+    const store = useHistoryStore();
+    await store.load();
+
+    expect(await store.deleteEntry('a')).toBe('unchanged');
+
+    expect(store.entries.map((e) => e.id)).toEqual(['b']);
+  });
+
+  it('deleteEntry keeps the total honest when the list is only the first page', async () => {
+    mockHistory('written', [page(['a', 'b'], 40)]);
+    const store = useHistoryStore();
+    await store.load();
+    await store.deleteEntry('a');
+    expect(store.total).toBe(39);
+    expect(store.hasMore).toBe(true);
+  });
+
+  it('clearOlderThan sends the number of days and reads the list again without the skeleton', async () => {
+    const sent = mockHistory('written', [page(['new', 'old']), page(['new'])]);
+    const store = useHistoryStore();
+    await store.load();
+
+    expect(await store.clearOlderThan(30)).toBe('written');
+
+    expect(sent).toContainEqual(['clear_history_older_than', { days: 30 }]);
+    expect(store.entries.map((e) => e.id)).toEqual(['new']);
+    expect(store.total).toBe(1);
+    expect(store.isLoading).toBe(false);
+  });
+
+  it('clearOlderThan: a declined confirmation changes nothing and reads nothing again', async () => {
+    const sent = mockHistory('cancelled', [page(['new', 'old']), page(['new'])]);
+    const store = useHistoryStore();
+    await store.load();
+
+    expect(await store.clearOlderThan(30)).toBe('cancelled');
+
+    expect(store.entries.map((e) => e.id)).toEqual(['new', 'old']);
+    expect(sent.filter(([cmd]) => cmd === 'list_history')).toHaveLength(1);
+  });
+
+  it('clearOlderThan: when nothing was that old, nothing is re-read', async () => {
+    const sent = mockHistory('unchanged', [page(['new'])]);
+    const store = useHistoryStore();
+    await store.load();
+
+    expect(await store.clearOlderThan(180)).toBe('unchanged');
+
+    expect(sent.filter(([cmd]) => cmd === 'list_history')).toHaveLength(1);
+  });
+});
