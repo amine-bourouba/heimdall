@@ -6,6 +6,9 @@
 //  - `platformStore.load()`/`prefsStore.load()` + `themeStore.applyToDocument()` (flagged by
 //    M2-05/M2-06 -- nothing before this task ever ran after `<html>` existed to call them).
 //  - `document.documentElement.dataset.os` for `--titlebar-inset` (main.css) to key off of.
+//  - The `navigate` listener (M3-58): the tray's session rows and its "Open Heimdall" button (and the
+//    Linux tray menu, M3-56) call `open_in_main_window`, which shows this window and emits `navigate`;
+//    nothing was listening, so the window came forward and stayed where it was.
 //  - The real `menu-action` IPC listener -> `useAppActions().dispatch(...)` (flagged by M2-13):
 //    `useShortcuts.ts` already registers real handlers for `fontIncrease`/`fontDecrease`/
 //    `fontReset`/`back`/`forward` in that same registry, so wiring the listener is the only
@@ -17,7 +20,9 @@
 //    fix, not new scope: it is the one call site that makes every binding in `useShortcuts.ts`
 //    (search, back/forward, tool filter, font scale, help, settings) live at all.
 import { onMounted, onUnmounted } from 'vue';
-import { onMenuAction } from '@/ipc/client';
+import { useRouter } from 'vue-router';
+import { onMenuAction, onNavigate } from '@/ipc/client';
+import { openTarget } from '@/router/openTarget';
 import { usePlatformStore } from '@/stores/platform';
 import { usePrefsStore } from '@/stores/prefs';
 import { useThemeStore } from '@/stores/theme';
@@ -34,18 +39,24 @@ import ShortcutHelp from '@/features/help/ShortcutHelp.vue';
 const platformStore = usePlatformStore();
 const prefsStore = usePrefsStore();
 const themeStore = useThemeStore();
+const router = useRouter();
 useShortcuts();
 
 let unlistenMenuAction: (() => void) | undefined;
+let unlistenNavigate: (() => void) | undefined;
 
 onMounted(async () => {
   await Promise.all([platformStore.load(), prefsStore.load()]);
   document.documentElement.dataset.os = platformStore.os ?? undefined;
   themeStore.applyToDocument();
   unlistenMenuAction = await onMenuAction((action) => useAppActions().dispatch(action));
+  unlistenNavigate = await onNavigate((target) => openTarget(router, target));
 });
 
-onUnmounted(() => unlistenMenuAction?.());
+onUnmounted(() => {
+  unlistenMenuAction?.();
+  unlistenNavigate?.();
+});
 </script>
 
 <template>

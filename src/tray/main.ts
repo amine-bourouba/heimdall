@@ -3,14 +3,11 @@
 // from `src/main.ts`'s main-window entry -- the router, every feature store the main window
 // loads, and the main window's own commands never ship in the tray's own chunk at all.
 //
-// Placeholder content only, same M2-06-era stub rule every other not-yet-built screen follows
-// (`src/features/*/index.ts`'s own `available: false` convention) -- M3-58 replaces this with
-// the real tray view and Menu Bar settings tab. Pinia is wired up already (not deferred to
-// M3-58) since the tray capability already grants `allow-get-prefs`, and the real view will need
-// the same prefs/theme stores `src/main.ts` sets up for the main window.
-import { createApp, h } from 'vue';
+// M3-58 replaced the placeholder with the real view. It needs the app's stylesheet (the main entry
+// imports the same one) and does its own theme loading, since this window shares no state with the main one.
+import '../styles/main.css';
+import { createApp } from 'vue';
 import { createPinia } from 'pinia';
+import TrayView from '@/features/tray/TrayView.vue';
 
-const TrayApp = { render: () => h('div', 'Tray is not built yet.') };
-
-createApp(TrayApp).use(createPinia()).mount('#app');
+createApp(TrayView).use(createPinia()).mount('#app');

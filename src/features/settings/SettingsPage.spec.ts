@@ -1,6 +1,7 @@
 // M3-16's own AC: "Every preference in parity-matrix section I except showMenuBarIcon and
 // launch-at-login is editable here." / "Editor and terminal lists show only options valid for the
-// running OS." / "The Menu Bar tab and launch-at-login toggle come later (M3-58, M3-60)."
+// running OS." / "The Menu Bar tab and launch-at-login toggle come later (M3-58, M3-60)." The Menu Bar
+// tab arrived with M3-58 (last describe block but one); the launch-at-login toggle is still M3-60's.
 import { flushPromises, mount } from '@vue/test-utils';
 import { mockIPC } from '@tauri-apps/api/mocks';
 import { createPinia, setActivePinia } from 'pinia';
@@ -200,20 +201,55 @@ describe('SettingsPage: Memory tab (reuses memoryStore.addFolder/removeFolder, M
   });
 });
 
-describe('SettingsPage: no Menu Bar tab or launch-at-login toggle (AC3)', () => {
-  it('renders exactly four tabs, none of them Menu Bar', async () => {
+describe('SettingsPage: Menu Bar tab (M3-58)', () => {
+  it('is the fifth tab, after Memory, as in Swift', async () => {
     const { wrapper } = await mountPage('windows');
     const tabs = wrapper.findAll('[role="tab"]').map((t) => t.text());
-    expect(tabs).toEqual(['General', 'Appearance', 'Viewer', 'Memory']);
+    expect(tabs).toEqual(['General', 'Appearance', 'Viewer', 'Memory', 'Menu Bar']);
   });
 
-  it('renders no showMenuBarIcon or launch-at-login control anywhere', async () => {
+  it('shows the icon toggle, on by default, and writes showMenuBarIcon when it is changed', async () => {
+    const { wrapper, getPrefs } = await mountPage('windows');
+    await wrapper.find('button[title="Menu Bar"]').trigger('click');
+    expect(wrapper.text()).toContain('Show Heimdall in menu bar');
+
+    const checkbox = wrapper.find('input[type="checkbox"]');
+    expect((checkbox.element as HTMLInputElement).checked).toBe(true);
+    await checkbox.setValue(false);
+    expect(getPrefs().showMenuBarIcon).toBe(false);
+    await checkbox.setValue(true);
+    expect(getPrefs().showMenuBarIcon).toBe(true);
+  });
+
+  it('shows it on, as the app does, before the preferences are known', async () => {
     const { wrapper } = await mountPage('windows');
-    for (const tab of ['General', 'Appearance', 'Viewer', 'Memory']) {
+    usePrefsStore().prefs = null;
+    await wrapper.find('button[title="Menu Bar"]').trigger('click');
+    expect((wrapper.find('input[type="checkbox"]').element as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('reflects the saved value, not a default', async () => {
+    const { wrapper } = await mountPage('windows');
+    usePrefsStore().prefs = defaultPrefs({ showMenuBarIcon: false });
+    await wrapper.find('button[title="Menu Bar"]').trigger('click');
+    expect((wrapper.find('input[type="checkbox"]').element as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('has only that one control: launch at login belongs to M3-60, so no tab offers it yet', async () => {
+    const { wrapper } = await mountPage('windows');
+    await wrapper.find('button[title="Menu Bar"]').trigger('click');
+    expect(wrapper.findAll('input')).toHaveLength(1);
+    for (const tab of ['General', 'Appearance', 'Viewer', 'Memory', 'Menu Bar']) {
       await wrapper.find(`button[title="${tab}"]`).trigger('click');
-      expect(wrapper.text().toLowerCase()).not.toContain('menu bar');
       expect(wrapper.text().toLowerCase()).not.toContain('launch at login');
     }
+  });
+
+  it('does not write anything just by opening the tab', async () => {
+    const { wrapper, getPrefs } = await mountPage('windows');
+    const before = JSON.stringify(getPrefs());
+    await wrapper.find('button[title="Menu Bar"]').trigger('click');
+    expect(JSON.stringify(getPrefs())).toBe(before);
   });
 });
 

@@ -2,7 +2,7 @@ import { mockIPC } from '@tauri-apps/api/mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { events } from './bindings';
 import type { AppError, DataChange } from './bindings';
-import { IpcError, ipc, onDataChanged, onMenuAction } from './client';
+import { IpcError, ipc, onDataChanged, onMenuAction, onNavigate } from './client';
 
 describe('ipc: success', () => {
   it('resolves with the unwrapped data, not the { status, data } envelope', async () => {
@@ -103,5 +103,31 @@ describe('onMenuAction', () => {
     await events.menuAction.emit({ action: 'settings' });
     unlisten();
     expect(handler).toHaveBeenCalledWith('settings');
+  });
+});
+
+describe('onNavigate', () => {
+  beforeEach(() => {
+    mockIPC(() => {}, { shouldMockEvents: true });
+  });
+
+  it('calls the handler with where to go, unwrapped from the event payload', async () => {
+    const handler = vi.fn();
+    const unlisten = await onNavigate(handler);
+    await events.navigate.emit({ target: { kind: 'session', projectId: 'p1', sessionId: 's1' } });
+    await events.navigate.emit({ target: { kind: 'screen', screen: 'sessions' } });
+    unlisten();
+    expect(handler.mock.calls).toEqual([
+      [{ kind: 'session', projectId: 'p1', sessionId: 's1' }],
+      [{ kind: 'screen', screen: 'sessions' }],
+    ]);
+  });
+
+  it('stops calling the handler once unlistened', async () => {
+    const handler = vi.fn();
+    const unlisten = await onNavigate(handler);
+    unlisten();
+    await events.navigate.emit({ target: { kind: 'screen', screen: 'history' } });
+    expect(handler).not.toHaveBeenCalled();
   });
 });

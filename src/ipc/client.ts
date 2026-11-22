@@ -6,7 +6,7 @@
 // `onDataChanged` wraps the `data-changed` event with the area filtering stores actually need.
 
 import { commands, events } from './bindings';
-import type { Area, AppAction, AppError, DataChange } from './bindings';
+import type { Area, AppAction, AppError, DataChange, NavTarget } from './bindings';
 
 /** ADR 0005's AppError, thrown instead of returned so callers can use plain try/catch. */
 export class IpcError extends Error {
@@ -63,4 +63,10 @@ export function onDataChanged(areas: Area[], handler: (changes: DataChange[]) =>
  * name so a caller can feed it straight into `useAppActions().dispatch(...)`. */
 export function onMenuAction(handler: (action: AppAction) => void) {
   return events.menuAction.listen((event) => handler(event.payload.action));
+}
+
+/** Subscribes to `navigate`, which `open_in_main_window` emits (after showing the main window) when the
+ * tray or its Linux menu asks to open a session or screen (M3-30/M3-58). */
+export function onNavigate(handler: (target: NavTarget) => void) {
+  return events.navigate.listen((event) => handler(event.payload.target));
 }

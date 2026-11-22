@@ -70,6 +70,7 @@ import {
   Minimize2,
   Minus,
   Package,
+  PanelTop,
   Palette,
   Pencil,
   Plug,
@@ -277,4 +278,8 @@ export const iconMap: Record<string, LucideIcon> = {
   'dollarsign.circle.fill': CircleDollarSign,
   'number.circle.fill': Hash,
   'wrench.and.screwdriver.fill': Wrench,
+
+  // SettingsView.swift's Menu Bar tab (task M3-58), also the search overlay's "Toggle Menu Bar Icon"
+  // quick action. Lucide has no menu-bar glyph; a window with a bar along its top edge is the closest.
+  'menubar.rectangle': PanelTop,
 };

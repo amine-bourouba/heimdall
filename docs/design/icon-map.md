@@ -219,3 +219,9 @@ later milestone's own task, not M2-04's. Found while building M2-15's sessions l
 |---|---|---|
 | `arrow.uturn.forward` | `CornerUpRight` | the Resume button's own icon |
 | `arrow.up.left.and.arrow.down.right` | `Maximize2` | "Expand All" — the mirror of `arrow.down.right.and.arrow.up.left`'s own `Minimize2` ("Collapse All", table 3) |
+
+## 11. Added after M2-04: the Menu Bar settings tab (task M3-58)
+
+| SF Symbol | Lucide icon | Note |
+|---|---|---|
+| `menubar.rectangle` | `PanelTop` | **gap**: Lucide has no menu-bar icon; a window with a bar along its top edge is the closest. Also the search overlay's "Toggle Menu Bar Icon" quick action, which had no mapping until now |

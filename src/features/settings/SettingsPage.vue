@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Ported from SettingsView.swift (M3-16). Four of its five tabs (General, Appearance, Viewer,
-// Memory) -- the Menu Bar tab and launch-at-login toggle come later (AC3, M3-58/M3-60). A routed
+// Ported from SettingsView.swift (M3-16). All five tabs (General, Appearance, Viewer, Memory, and
+// Menu Bar from M3-58); the launch-at-login toggle in the last one comes with M3-60. A routed
 // page (port-plan.md P-6: "Settings... becomes an in-app view instead of a separate OS window"),
 // not a sheet/overlay -- closed via "Done" (`useNavigation.goBack`, the same native-history back
 // Mod+[ already uses), not Escape or a backdrop click.
@@ -28,12 +28,13 @@ const { goBack } = useNavigation();
 
 onMounted(() => void memoryStore.load());
 
-type TabId = 'general' | 'appearance' | 'viewer' | 'memory';
+type TabId = 'general' | 'appearance' | 'viewer' | 'memory' | 'menuBar';
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'general', label: 'General', icon: 'gearshape' },
   { id: 'appearance', label: 'Appearance', icon: 'paintpalette' },
   { id: 'viewer', label: 'Viewer', icon: 'eye' },
   { id: 'memory', label: 'Memory', icon: 'brain.head.profile' },
+  { id: 'menuBar', label: 'Menu Bar', icon: 'menubar.rectangle' },
 ];
 const activeTab = ref<TabId>('general');
 
@@ -69,6 +70,10 @@ function onAutoExpandBlocksChange(event: Event) {
 }
 function onParseMarkdownChange(event: Event) {
   void prefsStore.update({ parseMarkdownInResults: (event.target as HTMLInputElement).checked });
+}
+// Rust applies this live: the tray icon appears or disappears as the patch is saved (`prefs::update`, M3-56).
+function onShowMenuBarIconChange(event: Event) {
+  void prefsStore.update({ showMenuBarIcon: (event.target as HTMLInputElement).checked });
 }
 </script>
 
@@ -267,7 +272,7 @@ function onParseMarkdownChange(event: Event) {
       </div>
 
       <div
-        v-else
+        v-else-if="activeTab === 'memory'"
         class="flex max-w-150 flex-col gap-(--spacing-sm)"
       >
         <span class="text-(--text-secondary)">Extra Folders</span>
@@ -314,6 +319,21 @@ function onParseMarkdownChange(event: Event) {
           />
           Add Folder…
         </button>
+      </div>
+
+      <div
+        v-else
+        class="flex max-w-150 flex-col gap-(--spacing-lg)"
+      >
+        <label class="flex items-center justify-between gap-(--spacing-lg)">
+          <span class="text-(--text-secondary)">Show Heimdall in menu bar</span>
+          <input
+            type="checkbox"
+            class="accent-(--accent)"
+            :checked="prefsStore.prefs?.showMenuBarIcon ?? true"
+            @change="onShowMenuBarIconChange"
+          >
+        </label>
       </div>
     </div>
   </div>
