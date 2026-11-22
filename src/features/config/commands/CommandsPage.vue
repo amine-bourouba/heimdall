@@ -135,6 +135,7 @@ async function removeShown() {
     :title="detail.name"
     :scope="detail.scope"
     :body="detail.body"
+    :config-ref="detail.ref"
     deletable
     @close="closeDetail"
     @delete="removeShown"

@@ -17,6 +17,7 @@
 import { ref } from 'vue';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import AppIcon from '@/components/AppIcon.vue';
+import { useLauncher } from '@/composables/useLauncher';
 import { useSessionStore } from './store';
 import { useDeleteActions } from './useDeleteActions';
 import type { SessionSummary } from '@/ipc/bindings';
@@ -25,14 +26,24 @@ const props = defineProps<{ summary: SessionSummary }>();
 
 const sessionStore = useSessionStore();
 const { isBusy: isDeleting, deleteSession } = useDeleteActions();
+const launcher = useLauncher();
 
 const resumeCopied = ref(false);
 const idCopied = ref(false);
 
+// M3-55 (SessionToolbarContent.swift:105-124): with `openTerminalOnBash` on, and a terminal that exists on
+// this OS, resuming also opens the preferred terminal at the project. Rust puts the same
+// `claude --resume <id>` on the clipboard again; the copy above stays so the button's own feedback and
+// the literal text do not depend on the terminal call succeeding.
 async function copyResume() {
   await writeText(`claude --resume ${props.summary.id}`);
   resumeCopied.value = true;
   setTimeout(() => (resumeCopied.value = false), 4000);
+  if (launcher.opensTerminalOnCopy.value) void launcher.openTerminal(props.summary.projectId, props.summary.id);
+}
+
+function revealSession() {
+  void launcher.reveal({ kind: 'session', projectId: props.summary.projectId, sessionId: props.summary.id });
 }
 
 async function copySessionId() {
@@ -71,7 +82,7 @@ function clearSearch() {
   <div
     role="toolbar"
     aria-label="Session actions"
-    class="flex items-center gap-(--spacing-xs)"
+    class="flex flex-wrap items-center gap-(--spacing-xs)"
   >
     <div class="relative flex items-center">
       <AppIcon
@@ -102,7 +113,7 @@ function clearSearch() {
 
     <button
       type="button"
-      :title="resumeCopied ? 'Copied' : 'Resume'"
+      :title="resumeCopied ? 'Copied' : launcher.opensTerminalOnCopy.value ? `Resume (copy and open ${launcher.terminalName.value})` : 'Resume'"
       class="flex items-center gap-(--spacing-xs) rounded-sm p-(--spacing-xs) text-(--text-secondary)"
       @click="copyResume"
     >
@@ -124,6 +135,19 @@ function clearSearch() {
         :name="idCopied ? 'checkmark' : 'doc.on.doc'"
         size="sm"
         :class="idCopied ? 'text-(--color-green)' : ''"
+      />
+    </button>
+
+    <button
+      type="button"
+      :title="`Show in ${launcher.fileManager.value}`"
+      :aria-label="`Show in ${launcher.fileManager.value}`"
+      class="rounded-sm p-(--spacing-xs) text-(--text-secondary)"
+      @click="revealSession"
+    >
+      <AppIcon
+        name="folder"
+        size="sm"
       />
     </button>
 

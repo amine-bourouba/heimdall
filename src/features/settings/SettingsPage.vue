@@ -16,8 +16,9 @@ import { usePlatformStore } from '@/stores/platform';
 import { useMemoryStore } from '@/features/memory/store';
 import { useNavigation } from '@/composables/useNavigation';
 import AppIcon from '@/components/AppIcon.vue';
+import { EDITOR_LABELS, TERMINAL_LABELS, editorOptions, terminalOptions } from '@/lib/launchOptions';
 import ThemePicker from './ThemePicker.vue';
-import type { PreferredEditor, PreferredTerminal, TargetOs } from '@/ipc/bindings';
+import type { PreferredEditor, PreferredTerminal } from '@/ipc/bindings';
 
 const prefsStore = usePrefsStore();
 const themeStore = useThemeStore();
@@ -36,42 +37,8 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 ];
 const activeTab = ref<TabId>('general');
 
-// Ported from prefs.rs's own PreferredEditor::options/PreferredTerminal::options (ADR 0003) --
-// no IPC command exposes these, so the per-OS filtering is replicated here exactly, not
-// re-derived from scratch (AC2: "Editor and terminal lists show only options valid for the
-// running OS").
-const EDITOR_LABELS: Record<PreferredEditor, string> = { vscode: 'VS Code', cursor: 'Cursor', xcode: 'Xcode', zed: 'Zed' };
-function editorOptions(os: TargetOs | null): PreferredEditor[] {
-  return (['vscode', 'cursor', 'xcode', 'zed'] as const).filter((e) => e !== 'xcode' || os === 'macos');
-}
-
-const TERMINAL_LABELS: Record<PreferredTerminal, string> = {
-  terminal: 'Terminal',
-  iterm2: 'iTerm2',
-  warp: 'Warp',
-  ghostty: 'Ghostty',
-  kitty: 'Kitty',
-  alacritty: 'Alacritty',
-  windowsTerminal: 'Windows Terminal',
-  powershell: 'PowerShell',
-  cmd: 'Command Prompt',
-  gnomeTerminal: 'GNOME Terminal',
-  konsole: 'Konsole',
-  system: 'System default',
-};
-function terminalOptions(os: TargetOs | null): PreferredTerminal[] {
-  switch (os) {
-    case 'macos':
-      return ['terminal', 'iterm2', 'warp', 'ghostty', 'kitty', 'alacritty'];
-    case 'windows':
-      return ['windowsTerminal', 'powershell', 'cmd'];
-    case 'linux':
-      return ['gnomeTerminal', 'konsole', 'kitty', 'alacritty', 'system'];
-    default:
-      return [];
-  }
-}
-
+// The per-OS editor and terminal lists (AC2: "Editor and terminal lists show only options valid for
+// the running OS") live in `@/lib/launchOptions`, shared with the buttons that launch them (M3-55).
 const fontScalePercent = computed(() => Math.round(themeStore.fontScale * 100));
 const customFolders = computed(() => memoryStore.sources.filter((s) => s.kind === 'folder'));
 

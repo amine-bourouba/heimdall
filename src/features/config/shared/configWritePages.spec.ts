@@ -1,7 +1,8 @@
 // M3-50's wiring on the three template screens, checked once for all of them so they cannot drift
 // apart: the "+" creates a template of the screen's own kind and reloads, and the detail view's
 // trash button deletes the reference the backend resolved (not one rebuilt from the route) and
-// returns to the list. The create/delete logic itself is in useConfigWriteActions.spec.ts.
+// returns to the list. The create/delete logic itself is in useConfigWriteActions.spec.ts. M3-55's
+// editor and file-manager buttons on the detail view are wired the same way and checked here too.
 import { flushPromises, mount } from '@vue/test-utils';
 import { mockIPC } from '@tauri-apps/api/mocks';
 import { createPinia, setActivePinia } from 'pinia';
@@ -168,6 +169,38 @@ describe.each(SCREENS)('$label: delete from the detail view', (screen) => {
     expect(toasts.current).toMatchObject({ message: 'the file is in use by another program', style: 'error' });
     expect(router.currentRoute.value.name).toBe('config-detail');
     expect(wrapper.text()).toContain('Body');
+  });
+});
+
+// M3-55: the same wiring for the editor and file-manager buttons. Each page must hand its detail view the
+// reference the backend resolved; without it the toolbar shows neither button (ConfigDetailToolbar.spec.ts).
+describe.each(SCREENS)('$label: open in the editor and show in the file manager (M3-55)', (screen) => {
+  const detailPath = `/config/${screen.kind}/global/${screen.slug}`;
+  // Differs from the reference the route would rebuild (project null), so opening the rebuilt one would open another file.
+  const resolved: ConfigRef = { kind: screen.kind, project: { kind: 'project', projectId: 'p9' }, slug: screen.slug };
+
+  it('has neither button on the list', async () => {
+    const { wrapper } = await mountScreen(screen);
+    expect(wrapper.find('button[title^="Open in"]').exists()).toBe(false);
+    expect(wrapper.find('button[title^="Show in"]').exists()).toBe(false);
+  });
+
+  it('opens and shows the reference the backend resolved', async () => {
+    const sent: [string, unknown][] = [];
+    const record = (cmd: string) => (args: unknown) => {
+      sent.push([cmd, args]);
+      return null;
+    };
+    const { wrapper } = await mountScreen(screen, { open_in_editor: record('open_in_editor'), reveal_in_file_manager: record('reveal_in_file_manager') }, detailPath, resolved);
+
+    await wrapper.find('button[title="Open in VS Code"]').trigger('click');
+    await wrapper.find('button[title="Show in file manager"]').trigger('click');
+    await flushPromises();
+
+    expect(sent).toEqual([
+      ['open_in_editor', { target: { kind: 'configItem', configRef: resolved } }],
+      ['reveal_in_file_manager', { target: { kind: 'configItem', configRef: resolved } }],
+    ]);
   });
 });
 

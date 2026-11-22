@@ -1,11 +1,14 @@
 // M3-14's own AC: "Statuses come from get_mcp_statuses; env and header values are never
-// displayed (only keys)." The add / edit / remove controls it left out arrived with M3-48 (the last
-// describe block); the wizard itself is covered in McpSetupWizard.spec.ts.
+// displayed (only keys)." The add / edit / remove controls it left out arrived with M3-48 (the
+// "add, edit and remove" block) and the editor / file-manager buttons with M3-55 (the last one); the wizard
+// itself is covered in McpSetupWizard.spec.ts.
 import { DOMWrapper, flushPromises, mount } from '@vue/test-utils';
 import { mockIPC } from '@tauri-apps/api/mocks';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { McpServer, McpServerStatus } from '@/ipc/bindings';
+import type { McpServer, McpServerStatus, PreferredEditor, TargetOs } from '@/ipc/bindings';
+import { usePlatformStore } from '@/stores/platform';
+import { usePrefsStore } from '@/stores/prefs';
 import { useToastsStore } from '@/stores/toasts';
 import McpServersPage from './McpServersPage.vue';
 
@@ -281,5 +284,105 @@ describe('McpServersPage: add, edit and remove (M3-48)', () => {
   it('shows the cause when the list cannot be read', async () => {
     await mountPage(handlerFor([user], counts(), { list_mcp_servers: busy }));
     expect(useToastsStore().current).toMatchObject({ message: '~/.claude.json is in use by another program', style: 'error' });
+  });
+});
+
+// M3-55. The editor button opens ~/.claude.json at one server's line (by its key, never a path); the
+// folder button shows the file itself (Swift's own choice, MCPServersListView.swift). Both sit with Edit
+// and Remove, so they are on the same servers: only those from the global ~/.claude.json.
+describe('McpServersPage: open in the editor and show the file (M3-55)', () => {
+  const user = makeServer({ id: 'user:github', name: 'GitHub', rawName: 'github' });
+  let launched: [string, unknown][];
+
+  async function mountLaunching(servers: McpServer[], options: { os?: TargetOs | null; editor?: PreferredEditor; fail?: string } = {}) {
+    setActivePinia(createPinia());
+    usePlatformStore().os = options.os === undefined ? 'macos' : options.os;
+    usePrefsStore().prefs = {
+      schemaVersion: 1, showMenuBarIcon: true, hasCompletedOnboarding: true, colorTheme: 'default', fontScale: 1, sessionLayout: 'grid',
+      configProjectPath: null, configLayouts: {}, showAgentSessions: false, textEditor: options.editor ?? 'vscode', preferredTerminal: 'terminal',
+      openTerminalOnBash: false, claudeCodePath: null, showAnimations: true, wrapCodeLines: true, autoExpandBlocks: true,
+      parseMarkdownInResults: true, globalSearchMode: 'fuzzy', customMemoryFolders: [],
+    };
+    launched = [];
+    mockIPC((cmd, args) => {
+      switch (cmd) {
+        case 'list_projects':
+          return { value: [], skipped: 0 };
+        case 'list_mcp_servers':
+          return { value: servers, skipped: 0 };
+        case 'get_mcp_statuses':
+          return {};
+        case 'open_in_editor':
+        case 'reveal_in_file_manager':
+          launched.push([cmd, args]);
+          if (options.fail) throw { kind: 'notFound', message: options.fail, path: null };
+          return null;
+      }
+      throw new Error(`unexpected command: ${cmd}`);
+    });
+    const wrapper = mount(McpServersPage, { attachTo: document.body });
+    mounted.push(wrapper);
+    await flushPromises();
+    return wrapper;
+  }
+
+  it('opens ~/.claude.json at that server, by the key under mcpServers', async () => {
+    const wrapper = await mountLaunching([user]);
+    await wrapper.find('button[aria-label="Open GitHub in VS Code"]').trigger('click');
+    await flushPromises();
+    expect(launched).toEqual([['open_in_editor', { target: { kind: 'mcpConfig', serverName: 'github' } }]]);
+  });
+
+  it('shows ~/.claude.json itself, not the server', async () => {
+    const wrapper = await mountLaunching([user]);
+    await wrapper.find('button[aria-label="Show ~/.claude.json in Finder"]').trigger('click');
+    await flushPromises();
+    expect(launched).toEqual([['reveal_in_file_manager', { target: { kind: 'mcpConfigFile' } }]]);
+  });
+
+  it('is on each global server, naming which one, and on no other', async () => {
+    const second = makeServer({ id: 'user:db', name: 'DB', rawName: 'db' });
+    const others = (['local', 'project', 'plugin', 'cloudIntegration'] as const).map((source) =>
+      makeServer({ id: `s:${source}`, name: `from-${source}`, rawName: `from-${source}`, source }),
+    );
+    const wrapper = await mountLaunching([user, second, ...others]);
+    const labels = wrapper.findAll('button[aria-label]').map((b) => b.attributes('aria-label')!);
+    expect(labels.filter((l) => /^(Open|Show) /.test(l))).toEqual([
+      'Open GitHub in VS Code',
+      'Show ~/.claude.json in Finder',
+      'Open DB in VS Code',
+      'Show ~/.claude.json in Finder',
+    ]);
+  });
+
+  it('hides the editor button when the saved editor does not exist on this OS (AC2), but keeps the file manager', async () => {
+    for (const os of ['windows', 'linux'] as const) {
+      const wrapper = await mountLaunching([user], { os, editor: 'xcode' });
+      expect(wrapper.find('button[aria-label^="Open GitHub in"]').exists()).toBe(false);
+      expect(wrapper.find(`button[aria-label="Show ~/.claude.json in ${os === 'windows' ? 'File Explorer' : 'file manager'}"]`).exists()).toBe(true);
+    }
+    expect((await mountLaunching([user], { os: 'macos', editor: 'xcode' })).find('button[aria-label="Open GitHub in Xcode"]').exists()).toBe(true);
+  });
+
+  it('is named for the editor the user chose', async () => {
+    const wrapper = await mountLaunching([user], { editor: 'zed' });
+    expect(wrapper.find('button[aria-label="Open GitHub in Zed"]').attributes('title')).toBe('Open in Zed');
+  });
+
+  it('shows why when the editor cannot be opened, and leaves the list as it was', async () => {
+    const wrapper = await mountLaunching([user], { fail: 'the `code` command is not on your PATH' });
+    await wrapper.find('button[aria-label="Open GitHub in VS Code"]').trigger('click');
+    await flushPromises();
+    expect(useToastsStore().current).toMatchObject({ message: 'the `code` command is not on your PATH', style: 'error' });
+    expect(wrapper.find('button[aria-label="Edit GitHub"]').exists()).toBe(true);
+  });
+
+  it('does not open the wizard or remove anything', async () => {
+    const wrapper = await mountLaunching([user]);
+    await wrapper.find('button[aria-label="Open GitHub in VS Code"]').trigger('click');
+    await wrapper.find('button[aria-label="Show ~/.claude.json in Finder"]').trigger('click');
+    await flushPromises();
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+    expect(launched.map(([cmd]) => cmd)).toEqual(['open_in_editor', 'reveal_in_file_manager']);
   });
 });

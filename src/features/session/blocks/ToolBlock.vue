@@ -20,6 +20,7 @@ import AppIcon from '@/components/AppIcon.vue';
 import MarkdownView from '@/lib/markdown/MarkdownView.vue';
 import EditDiff from './EditDiff.vue';
 import type { ToolResult, ToolUse } from '@/ipc/bindings';
+import { useLauncher } from '@/composables/useLauncher';
 import { usePrefsStore } from '@/stores/prefs';
 import { useSessionStore } from '../store';
 
@@ -39,6 +40,7 @@ const TOOL_DEFINITIONS: Record<string, { displayName: string; icon: string }> = 
 
 const prefsStore = usePrefsStore();
 const sessionStore = useSessionStore();
+const launcher = useLauncher();
 const isExpanded = ref(false);
 const showAllLines = ref(false);
 // the Swift reference app's own default really is raw/plain text, even for non-bash tools -- `isMarkdownContent`
@@ -106,11 +108,21 @@ async function copyContent() {
   setTimeout(() => (copied.value = false), 1500);
 }
 
+// M3-55: with `openTerminalOnBash` on (and a terminal that exists on this OS), copying a Bash command
+// also opens the preferred terminal at the project (ToolBlockView.swift:340-377). Rust opens it at the
+// project's directory and puts nothing on the clipboard for a null session: the command stays copied.
 async function copyCommand() {
   if (!props.tool.command) return;
   await writeText(props.tool.command);
   commandCopied.value = true;
   setTimeout(() => (commandCopied.value = false), 1500);
+  if (launcher.opensTerminalOnCopy.value) void launcher.openTerminal(props.projectId, null);
+}
+
+// The file-path tools (Read, Write, Edit, ...) open in the preferred editor, if it exists on this OS.
+// The block is named by id: the command finds the file path itself (ADR 0010).
+function openInEditor() {
+  void launcher.openInEditor({ kind: 'toolBlock', projectId: props.projectId, sessionId: props.sessionId, blockId: props.tool.id, line: null });
 }
 
 async function copyAsMarkdown() {
@@ -126,41 +138,57 @@ async function copyAsMarkdown() {
     class="overflow-hidden rounded-md border"
     :class="isError() ? 'border-(--color-red)/20' : 'border-(--border)'"
   >
-    <button
-      type="button"
-      class="flex w-full items-center gap-(--spacing-sm) bg-(--bg-elevated) px-(--spacing-lg) py-(--spacing-sm) text-left"
-      :title="isExpanded ? 'Collapse' : 'Expand'"
-      @click="isExpanded = !isExpanded"
-    >
-      <AppIcon
-        :name="toolIcon()"
-        size="sm"
-        class="text-(--text-secondary)"
-      />
-      <span class="shrink-0 text-(length:--text-small) font-bold text-(--text-secondary)">{{ toolDisplayName() }}</span>
-      <span
-        v-if="isBash() && tool.command"
-        class="truncate text-(length:--text-code-small) text-(--text-secondary)"
-      >$ {{ tool.command }}</span>
-      <span
-        v-else-if="tool.filePath"
-        class="truncate text-(length:--text-code-small) text-(--text-tertiary)"
-      >{{ tool.filePath }}</span>
+    <!-- The toggle is itself a button, so "Open in editor" sits beside it, not inside it. -->
+    <div class="flex items-center bg-(--bg-elevated)">
+      <button
+        type="button"
+        class="flex min-w-0 flex-1 items-center gap-(--spacing-sm) px-(--spacing-lg) py-(--spacing-sm) text-left"
+        :title="isExpanded ? 'Collapse' : 'Expand'"
+        @click="isExpanded = !isExpanded"
+      >
+        <AppIcon
+          :name="toolIcon()"
+          size="sm"
+          class="text-(--text-secondary)"
+        />
+        <span class="shrink-0 text-(length:--text-small) font-bold text-(--text-secondary)">{{ toolDisplayName() }}</span>
+        <span
+          v-if="isBash() && tool.command"
+          class="truncate text-(length:--text-code-small) text-(--text-secondary)"
+        >$ {{ tool.command }}</span>
+        <span
+          v-else-if="tool.filePath"
+          class="truncate text-(length:--text-code-small) text-(--text-tertiary)"
+        >{{ tool.filePath }}</span>
 
-      <div class="flex-1" />
+        <div class="flex-1" />
 
-      <span
-        class="rounded-xs px-(--spacing-xs) py-[1px] text-(length:--text-micro) font-semibold uppercase"
-        :class="isError() ? 'bg-(--color-red)/10 text-(--color-red)' : 'bg-(--color-green)/10 text-(--color-green)'"
-      >{{ isBash() ? (isError() ? 'Exit 1' : 'Exit 0') : isError() ? 'Error' : 'Done' }}</span>
+        <span
+          class="rounded-xs px-(--spacing-xs) py-[1px] text-(length:--text-micro) font-semibold uppercase"
+          :class="isError() ? 'bg-(--color-red)/10 text-(--color-red)' : 'bg-(--color-green)/10 text-(--color-green)'"
+        >{{ isBash() ? (isError() ? 'Exit 1' : 'Exit 0') : isError() ? 'Error' : 'Done' }}</span>
 
-      <AppIcon
-        name="chevron.right"
-        size="sm"
-        class="text-(--text-tertiary) transition-transform"
-        :class="{ 'rotate-90': isExpanded }"
-      />
-    </button>
+        <AppIcon
+          name="chevron.right"
+          size="sm"
+          class="text-(--text-tertiary) transition-transform"
+          :class="{ 'rotate-90': isExpanded }"
+        />
+      </button>
+      <button
+        v-if="!isBash() && tool.filePath && launcher.editorName.value"
+        type="button"
+        :title="`Open in ${launcher.editorName.value}`"
+        :aria-label="`Open in ${launcher.editorName.value}`"
+        class="mr-(--spacing-lg) shrink-0 rounded-sm p-(--spacing-xxs) text-(--text-tertiary)"
+        @click="openInEditor"
+      >
+        <AppIcon
+          name="arrow.up.forward.square"
+          size="sm"
+        />
+      </button>
+    </div>
 
     <template v-if="isExpanded">
       <div class="border-t border-(--border)/30" />
@@ -192,7 +220,7 @@ async function copyAsMarkdown() {
             <button
               v-if="isBash() && tool.command"
               type="button"
-              title="Copy command"
+              :title="launcher.opensTerminalOnCopy.value ? `Copy and open ${launcher.terminalName.value}` : 'Copy command'"
               class="flex h-6.5 w-6.5 items-center justify-center rounded-sm bg-(--bg-elevated)"
               @click="copyCommand"
             >

@@ -8,9 +8,11 @@ import AppIcon from '@/components/AppIcon.vue';
 import MarkdownView from '@/lib/markdown/MarkdownView.vue';
 import ConfigDetailToolbar from './ConfigDetailToolbar.vue';
 import ConfigBadge from './ConfigBadge.vue';
-import type { ConfigItemScope } from '@/ipc/bindings';
+import type { ConfigItemScope, ConfigRef } from '@/ipc/bindings';
 
-defineProps<{ icon: string; title: string; scope: ConfigItemScope; body: string; deletable?: boolean }>();
+// `configRef` (the item's own reference, from the page's detail) turns on the toolbar's editor and
+// file-manager buttons (M3-55); the commands take it, never a path.
+defineProps<{ icon: string; title: string; scope: ConfigItemScope; body: string; deletable?: boolean; configRef?: ConfigRef | null }>();
 defineEmits<{ close: []; delete: [] }>();
 
 const isFormatted = ref(true);
@@ -42,6 +44,7 @@ const isFormatted = ref(true);
         :name="title"
         :content="body"
         :deletable="deletable"
+        :config-ref="configRef"
         @close="$emit('close')"
         @delete="$emit('delete')"
       />

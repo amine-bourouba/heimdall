@@ -8,8 +8,10 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { mockIPC } from '@tauri-apps/api/mocks';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Prefs, ToolResult, ToolUse } from '@/ipc/bindings';
+import type { Prefs, TargetOs, ToolResult, ToolUse } from '@/ipc/bindings';
+import { usePlatformStore } from '@/stores/platform';
 import { usePrefsStore } from '@/stores/prefs';
+import { useToastsStore } from '@/stores/toasts';
 import { useSessionStore } from '../store';
 import ToolBlock from './ToolBlock.vue';
 
@@ -226,5 +228,133 @@ describe('ToolBlock: expand/collapse and status', () => {
     useSessionStore().allBlocksExpanded = false;
     await flushPromises();
     expect(wrapper.find('pre').exists()).toBe(false);
+  });
+});
+
+// M3-55. AC1: "`openTerminalOnBash` opens a terminal for Bash tool blocks when enabled." AC2: "Buttons are
+// hidden for editors or terminals not available on the running OS."
+describe('ToolBlock: open in editor and open a terminal (M3-55)', () => {
+  let launched: [string, unknown][];
+
+  async function mountLaunching(
+    tool: ToolUse,
+    options: { os?: TargetOs | null; prefs?: Partial<Prefs>; fail?: string; expanded?: boolean } = {},
+  ) {
+    setActivePinia(createPinia());
+    usePlatformStore().os = options.os === undefined ? 'macos' : options.os;
+    usePrefsStore().prefs = defaultPrefs({ autoExpandBlocks: options.expanded ?? false, ...options.prefs });
+    launched = [];
+    mockIPC((cmd, args) => {
+      if (cmd === 'open_in_editor' || cmd === 'open_terminal') {
+        launched.push([cmd, args]);
+        if (options.fail) throw { kind: 'notFound', message: options.fail, path: null };
+        return null;
+      }
+      throw new Error(`unexpected command: ${cmd}`);
+    });
+    const wrapper = mount(ToolBlock, { props: { tool, result: makeResult(), projectId: 'p1', sessionId: 's1' }, attachTo: document.body });
+    mounted.push(wrapper);
+    await flushPromises();
+    return wrapper;
+  }
+
+  const editFile = makeTool({ id: 'm1:2', name: 'Edit', filePath: '/abs/file.rs' });
+  const bash = makeTool({ id: 'm1:3', name: 'Bash', command: 'ls -la' });
+
+  describe('the editor button', () => {
+    it('opens a file-path tool in the preferred editor by block id, never by path', async () => {
+      const wrapper = await mountLaunching(editFile, { os: 'windows' });
+      await wrapper.find('button[title="Open in VS Code"]').trigger('click');
+      await flushPromises();
+      expect(launched).toEqual([['open_in_editor', { target: { kind: 'toolBlock', projectId: 'p1', sessionId: 's1', blockId: 'm1:2', line: null } }]]);
+    });
+
+    it('sits in the header, beside the expand toggle rather than inside it, and does not toggle the block', async () => {
+      const wrapper = await mountLaunching(editFile);
+      expect(wrapper.findAll('button button')).toHaveLength(0);
+      await wrapper.find('button[title="Open in VS Code"]').trigger('click');
+      await flushPromises();
+      expect(wrapper.find('button[title="Expand"]').exists()).toBe(true);
+    });
+
+    it('is named for the editor the user chose', async () => {
+      const wrapper = await mountLaunching(editFile, { os: 'macos', prefs: { textEditor: 'zed' } });
+      expect(wrapper.find('button[aria-label="Open in Zed"]').exists()).toBe(true);
+    });
+
+    it('is offered for no Bash block, and for no tool without a file path', async () => {
+      expect((await mountLaunching(makeTool({ name: 'Bash', command: 'ls', filePath: '/abs/x' }))).find('button[title^="Open in"]').exists()).toBe(false);
+      expect((await mountLaunching(makeTool({ name: 'Grep', filePath: null }))).find('button[title^="Open in"]').exists()).toBe(false);
+    });
+
+    it('is hidden when the saved editor does not exist on this OS (AC2) and shown where it does', async () => {
+      expect((await mountLaunching(editFile, { os: 'windows', prefs: { textEditor: 'xcode' } })).find('button[title^="Open in"]').exists()).toBe(false);
+      expect((await mountLaunching(editFile, { os: 'linux', prefs: { textEditor: 'xcode' } })).find('button[title^="Open in"]').exists()).toBe(false);
+      expect((await mountLaunching(editFile, { os: 'macos', prefs: { textEditor: 'xcode' } })).find('button[title="Open in Xcode"]').exists()).toBe(true);
+    });
+
+    it('shows why when the editor cannot be opened', async () => {
+      const wrapper = await mountLaunching(editFile, { fail: 'the `code` command is not on your PATH' });
+      await wrapper.find('button[title="Open in VS Code"]').trigger('click');
+      await flushPromises();
+      expect(useToastsStore().current).toMatchObject({ message: 'the `code` command is not on your PATH', style: 'error' });
+    });
+  });
+
+  describe('copying a Bash command with openTerminalOnBash', () => {
+    const copyButton = (wrapper: ReturnType<typeof mount>) => wrapper.find('button[title^="Copy"][title*="command"], button[title^="Copy and open"]');
+
+    it('copies the command and opens the preferred terminal at the project when enabled (AC1)', async () => {
+      const { writeText } = await import('@tauri-apps/plugin-clipboard-manager');
+      const wrapper = await mountLaunching(bash, { os: 'macos', expanded: true, prefs: { openTerminalOnBash: true, preferredTerminal: 'iterm2' } });
+      const button = copyButton(wrapper);
+      expect(button.attributes('title')).toBe('Copy and open iTerm2');
+      await button.trigger('click');
+      await flushPromises();
+      expect(writeText).toHaveBeenLastCalledWith('ls -la');
+      expect(launched).toEqual([['open_terminal', { projectId: 'p1', sessionId: null }]]);
+    });
+
+    it('only copies when the preference is off', async () => {
+      const wrapper = await mountLaunching(bash, { expanded: true, prefs: { openTerminalOnBash: false } });
+      expect(copyButton(wrapper).attributes('title')).toBe('Copy command');
+      await copyButton(wrapper).trigger('click');
+      await flushPromises();
+      expect(launched).toEqual([]);
+    });
+
+    it('only copies when the saved terminal does not exist on this OS (AC2), and says it only copies', async () => {
+      const { writeText } = await import('@tauri-apps/plugin-clipboard-manager');
+      const wrapper = await mountLaunching(bash, { os: 'linux', expanded: true, prefs: { openTerminalOnBash: true, preferredTerminal: 'iterm2' } });
+      expect(copyButton(wrapper).attributes('title')).toBe('Copy command');
+      await copyButton(wrapper).trigger('click');
+      await flushPromises();
+      expect(writeText).toHaveBeenLastCalledWith('ls -la');
+      expect(launched).toEqual([]);
+    });
+
+    it('opens nothing until the OS is known', async () => {
+      const wrapper = await mountLaunching(bash, { os: null, expanded: true, prefs: { openTerminalOnBash: true } });
+      await copyButton(wrapper).trigger('click');
+      await flushPromises();
+      expect(launched).toEqual([]);
+    });
+
+    it('does not open a terminal for anything but copying a Bash command', async () => {
+      const wrapper = await mountLaunching(bash, { expanded: true, prefs: { openTerminalOnBash: true } });
+      await wrapper.find('button[title="Copy as Markdown"]').trigger('click');
+      await wrapper.find('button[title="Copy content"]').trigger('click');
+      await flushPromises();
+      expect(launched).toEqual([]);
+    });
+
+    it('still copies, and shows why, when the terminal cannot be opened', async () => {
+      const { writeText } = await import('@tauri-apps/plugin-clipboard-manager');
+      const wrapper = await mountLaunching(bash, { expanded: true, fail: 'no such project', prefs: { openTerminalOnBash: true } });
+      await copyButton(wrapper).trigger('click');
+      await flushPromises();
+      expect(writeText).toHaveBeenLastCalledWith('ls -la');
+      expect(useToastsStore().current).toMatchObject({ message: 'no such project', style: 'error' });
+    });
   });
 });

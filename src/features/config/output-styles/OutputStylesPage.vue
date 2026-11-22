@@ -113,6 +113,7 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
     :title="detail.name"
     :scope="detail.scope"
     :body="detail.body"
+    :config-ref="detail.ref"
     deletable
     @close="closeDetail"
     @delete="removeShown"

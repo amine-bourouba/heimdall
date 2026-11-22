@@ -1,7 +1,10 @@
 // Ported from ConfigItemDetailView.swift:4-126.
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
+import { mockIPC } from '@tauri-apps/api/mocks';
 import { createPinia, setActivePinia } from 'pinia';
 import { vi, beforeEach, describe, expect, it } from 'vitest';
+import type { ConfigRef } from '@/ipc/bindings';
+import { usePlatformStore } from '@/stores/platform';
 import ConfigItemDetail from './ConfigItemDetail.vue';
 
 vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({ writeText: vi.fn().mockResolvedValue(undefined) }));
@@ -66,5 +69,32 @@ describe('ConfigItemDetail: header', () => {
     await wrapper.find('button[title="Delete"]').trigger('click');
 
     expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  // M3-55: the page says which item this is, and the toolbar turns the editor and file-manager buttons on.
+  it('passes the item\'s reference to the toolbar, which then offers the editor and file-manager buttons', async () => {
+    const configRef: ConfigRef = { kind: 'skill', slug: 'lint', project: null };
+    const launched: [string, unknown][] = [];
+    usePlatformStore().os = 'macos';
+    mockIPC((cmd, args) => {
+      launched.push([cmd, args]);
+      return null;
+    });
+    const wrapper = mount(ConfigItemDetail, { props: { icon: 'bolt.fill', title: 'lint', scope: 'global', body: 'x', configRef } });
+
+    await wrapper.find('button[title="Open in VS Code"]').trigger('click');
+    await wrapper.find('button[title="Show in Finder"]').trigger('click');
+    await flushPromises();
+
+    expect(launched).toEqual([
+      ['open_in_editor', { target: { kind: 'configItem', configRef } }],
+      ['reveal_in_file_manager', { target: { kind: 'configItem', configRef } }],
+    ]);
+  });
+
+  it('offers neither without one', () => {
+    const wrapper = mount(ConfigItemDetail, { props: { icon: 'bolt.fill', title: 'lint', scope: 'global', body: 'x' } });
+    expect(wrapper.find('button[title^="Open in"]').exists()).toBe(false);
+    expect(wrapper.find('button[title^="Show in"]').exists()).toBe(false);
   });
 });

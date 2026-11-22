@@ -1,8 +1,10 @@
 <script setup lang="ts">
 // Ported from MCPServersListView.swift (M3-14 list, M3-48 actions). The toolbar "+" opens the setup
 // wizard, and a server from the global `~/.claude.json` (`source === 'user'`, the only place the writer
-// touches; Swift gates its actions the same way) gets Edit (pencil: the wizard) and Remove (trash). Open
-// in editor and Show in Finder (braces and folder in Swift) come with M3-55.
+// touches; Swift gates its actions the same way) gets Edit (pencil: the wizard), Open in editor (braces: the
+// file at that server's line), Show in <file manager> (folder: `~/.claude.json` itself, as in Swift, not
+// the server) and Remove (trash). The last three of Swift's four are M3-55's; the editor button is hidden
+// when the saved editor does not exist on this OS.
 //
 // Remove shows no `window.confirm`: `remove_mcp_server` raises its own native confirmation naming the
 // server and what goes with it, and answers `cancelled` if it is declined (then nothing happens here).
@@ -26,6 +28,7 @@ import { useConfigStore } from '../store';
 import { ipc } from '@/ipc/client';
 import { fuzzyMatch } from '@/lib/fuzzyMatch';
 import { useToastsStore } from '@/stores/toasts';
+import { useLauncher } from '@/composables/useLauncher';
 import AppIcon from '@/components/AppIcon.vue';
 import ConfigScreenHeader from '../shared/ConfigScreenHeader.vue';
 import ConfigLayoutToolbar from '../shared/ConfigLayoutToolbar.vue';
@@ -38,6 +41,7 @@ import type { McpServer, McpServerStatus } from '@/ipc/bindings';
 const SCREEN_ID = 'mcpServers';
 const configStore = useConfigStore();
 const toastsStore = useToastsStore();
+const launcher = useLauncher();
 
 const servers = ref<McpServer[]>([]);
 const statuses = ref<Record<string, McpServerStatus>>({});
@@ -183,16 +187,19 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
       >
         <template #default="{ item: server }">
           <div class="flex flex-col gap-(--spacing-xs) rounded-md border bg-(--bg-card) p-(--spacing-lg)">
-            <div class="flex items-center gap-(--spacing-sm)">
+            <div class="flex flex-wrap items-center gap-x-(--spacing-sm) gap-y-(--spacing-xs)">
               <McpStatusIndicator :status="statuses[server.id] ?? 'unknown'" />
-              <p class="min-w-0 flex-1 truncate text-(length:--text-body-medium) text-(--text-primary)">
+              <p class="min-w-24 flex-1 truncate text-(length:--text-body-medium) text-(--text-primary)">
                 {{ server.name }}
               </p>
               <ConfigBadge
                 v-if="transportLabel(server)"
                 :text="transportLabel(server)!"
               />
-              <template v-if="canWrite(server)">
+              <div
+                v-if="canWrite(server)"
+                class="ml-auto flex shrink-0 items-center gap-(--spacing-xxs)"
+              >
                 <button
                   type="button"
                   title="Edit server"
@@ -203,6 +210,31 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
                 >
                   <AppIcon
                     name="pencil"
+                    size="sm"
+                  />
+                </button>
+                <button
+                  v-if="launcher.editorName.value"
+                  type="button"
+                  :title="`Open in ${launcher.editorName.value}`"
+                  :aria-label="`Open ${server.name} in ${launcher.editorName.value}`"
+                  class="shrink-0 rounded-sm p-(--spacing-xxs) text-(--text-tertiary)"
+                  @click="launcher.openInEditor({ kind: 'mcpConfig', serverName: server.rawName })"
+                >
+                  <AppIcon
+                    name="curlybraces"
+                    size="sm"
+                  />
+                </button>
+                <button
+                  type="button"
+                  :title="`Show in ${launcher.fileManager.value}`"
+                  :aria-label="`Show ~/.claude.json in ${launcher.fileManager.value}`"
+                  class="shrink-0 rounded-sm p-(--spacing-xxs) text-(--text-tertiary)"
+                  @click="launcher.reveal({ kind: 'mcpConfigFile' })"
+                >
+                  <AppIcon
+                    name="folder"
                     size="sm"
                   />
                 </button>
@@ -219,7 +251,7 @@ const emptyHint = computed(() => (filterQuery.value ? 'Try a different search te
                     size="sm"
                   />
                 </button>
-              </template>
+              </div>
             </div>
             <p
               v-if="connectionInfo(server)"
